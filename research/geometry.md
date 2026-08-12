@@ -400,12 +400,23 @@ Constitution §9 forbids vendoring that into an MIT/Apache-2.0 tool. Options, in
 order of preference:
 
 1. **Measure, don't copy.** Derive the ~95 ASCII advance widths (and any others
-   needed) by rendering a calibration string with `kicad-cli sch export svg` and
-   measuring glyph advances from the SVG path data — a build-time/one-off
-   *measurement of behaviour*, stored as our own numeric table with our own
-   provenance note. Facts about spacing are not the font program. This also
-   gives an exactness check against the real renderer, and reuses the R11
-   pipeline. **Recommended.**
+   needed) by rendering a calibration sheet with `kicad-cli sch export svg` — a
+   build-time/one-off *measurement of behaviour*, stored as our own numeric
+   table with our own provenance note. Facts about spacing are not the font
+   program. This also gives an exactness check against the real renderer, and
+   reuses the R11 pipeline. **Recommended.**
+
+   **Addendum (from R3, after this section was first written): the measurement
+   is easier than expected.** KiCad's SVG plotter emits, for every text item, an
+   invisible `<text …  textLength="…">` element whose `textLength` comes from
+   KiCad's own font engine, alongside the stroke paths
+   (`kicad-cli.md` §5.4). A 94-glyph calibration run shows
+   `textLength(XY) − textLength(X) − textLength(Y)` is a constant
+   −0.4572 mm = −3 × pen width for every tested pair, so advances are
+   recoverable directly as `advance(c) = textLength(c) − 3·penWidth`
+   (`kicad-cli.md` §5.5, with sample values and the caveat that the relation to
+   `GetTextBox`'s `INTER_CHAR` term still needs confirming across sizes and
+   styles).
 2. Use the upstream Newstroke project directly
    (<http://vovanium.ru/sledy/newstroke>, author Vladimir Uryvaev; KiCad ships a
    copy of the glyph sources under `tools/newstroke/` with a README pointing
@@ -494,8 +505,10 @@ KiCad itself makes the same distinction (`SCH_SYMBOL::GetBodyBoundingBox()` vs
 
 - **Q2 — Font metrics source.** Approve option 1 in §5.4 (measure advance widths
   from KiCad's own SVG output and store our own table with provenance), rather
-  than vendoring Newstroke? If you'd rather use upstream Newstroke directly,
-  someone needs to establish its standalone licence first.
+  than vendoring Newstroke? The R3 addendum shows the measurement is a single
+  `kicad-cli sch export svg` run against a generated calibration sheet, so the
+  cost is low. If you'd rather use upstream Newstroke directly, someone needs to
+  establish its standalone licence first.
 
 - **Q3 — Field behaviour on symbol move/rotate.** Default: fields move rigidly
   with the symbol; rotation keeps field angles unchanged and rotates their
