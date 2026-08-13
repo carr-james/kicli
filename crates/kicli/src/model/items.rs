@@ -121,6 +121,12 @@ pub struct Field {
     pub angle: Angle,
     /// Is the field hidden?
     pub hidden: bool,
+    /// The justification tokens, as the file writes them.
+    ///
+    /// A centred edge writes no token, so an empty list means centred on both
+    /// axes. The tokens decide where the text sits about its anchor, which
+    /// makes them part of the field's placement.
+    pub justify: Vec<String>,
     /// The `property` list this field was read from.
     pub node: NodeId,
 }
@@ -278,6 +284,11 @@ pub struct TextItem {
     pub angle: Angle,
     /// Does the item draw a box around the text?
     pub boxed: bool,
+    /// The width and height of a text box. Free text has none.
+    ///
+    /// A box that cannot be resized is not parity with the editor, and a
+    /// snapshot that cannot see the size reports a resize as no change at all.
+    pub size: Option<(Iu, Iu)>,
     /// The list this was read from.
     pub node: NodeId,
 }
@@ -581,6 +592,7 @@ fn read_item(doc: &Doc, node: NodeId, head: &str, version: FormatVersion) -> Ite
             at: child_point(doc, node).unwrap_or_default(),
             angle: child_angle(doc, node).unwrap_or_default(),
             boxed: head == "text_box",
+            size: child_size(doc, node),
             node,
         }),
         "sheet" => read_sheet(doc, node, uuid, version),
@@ -827,10 +839,32 @@ fn read_fields(doc: &Doc, node: NodeId, version: FormatVersion) -> Vec<Field> {
             at: child_point(doc, child).unwrap_or_default(),
             angle: child_angle(doc, child).unwrap_or_default(),
             hidden: is_hidden(doc, child, version),
+            justify: justification(doc, child),
             node: child,
         });
     }
     fields
+}
+
+/// The justification tokens of a field, as written.
+fn justification(doc: &Doc, field: NodeId) -> Vec<String> {
+    for &child in doc.children(field) {
+        if !doc.head_is(child, "effects") {
+            continue;
+        }
+        for &effect in doc.children(child) {
+            if !doc.head_is(effect, "justify") {
+                continue;
+            }
+            return doc
+                .children(effect)
+                .iter()
+                .skip(1)
+                .filter_map(|&id| doc.atom_text(id).map(str::to_owned))
+                .collect();
+        }
+    }
+    Vec::new()
 }
 
 /// Is a field hidden?
@@ -852,6 +886,20 @@ fn is_hidden(doc: &Doc, field: NodeId, version: FormatVersion) -> bool {
         return false;
     }
     child_atom(doc, field, "hide") == Some("yes")
+}
+
+/// The `(size w h)` of a list, when it has one.
+fn child_size(doc: &Doc, node: NodeId) -> Option<(Iu, Iu)> {
+    let size = doc
+        .children(node)
+        .iter()
+        .copied()
+        .find(|&child| doc.head_is(child, "size"))?;
+    let values = doc.children(size);
+    Some((
+        Iu(doc.atom_as_iu(*values.get(1)?)?),
+        Iu(doc.atom_as_iu(*values.get(2)?)?),
+    ))
 }
 
 /// The first child that is an atom after the head token.

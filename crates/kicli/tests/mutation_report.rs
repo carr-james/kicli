@@ -161,3 +161,60 @@ fn a_change_that_breaks_an_invariant_is_not_written() {
         "and the file is untouched"
     );
 }
+
+#[test]
+fn a_change_the_snapshot_cannot_see_is_a_change_nobody_reports() {
+    // Constitution: every mutation is verified and reported. A property the
+    // snapshot does not hash is a property a mutation can change while the
+    // report says nothing happened. Two of them were found in one milestone —
+    // a field's justification and a text box's size — so both are asserted
+    // here rather than left to be rediscovered.
+    use kicli::model::Schematic;
+    use kicli::view::snapshot::Snapshot;
+
+    let justified = |tokens: &str| {
+        format!(
+            concat!(
+                "(kicad_sch\n\t(version 20260306)\n\t(uuid \"root\")\n",
+                "\t(symbol\n\t\t(lib_id \"Test:R\")\n\t\t(at 50.8 50.8 0)\n\t\t(uuid \"s1\")\n",
+                "\t\t(property \"Reference\" \"R1\"\n\t\t\t(at 50.8 50.8 0)\n",
+                "\t\t\t(effects\n\t\t\t\t(font\n\t\t\t\t\t(size 1.27 1.27)\n\t\t\t\t){}\n\t\t\t)\n\t\t)\n",
+                "\t\t(instances (project \"t\" (path \"/root\" (reference \"R1\") (unit 1))))\n\t)\n)\n"
+            ),
+            tokens
+        )
+    };
+    let sized = |width: &str| {
+        format!(
+            concat!(
+                "(kicad_sch\n\t(version 20260306)\n\t(uuid \"root\")\n",
+                "\t(text_box \"note\"\n\t\t(at 25.4 25.4 0)\n\t\t(size {} 12.7)\n",
+                "\t\t(uuid \"t1\")\n\t)\n)\n"
+            ),
+            width
+        )
+    };
+
+    let hashes = |source: &str| {
+        let doc = Doc::parse(source).expect("parses");
+        let schematic = Schematic::read(&doc).expect("reads");
+        let path = SheetPath::root(schematic.uuid.as_ref().expect("uuid"));
+        Snapshot::take("s", "t", &path, &doc, &schematic)
+            .expect("snapshots")
+            .objects
+            .iter()
+            .map(|object| (object.geometry.to_string(), object.data.to_string()))
+            .collect::<Vec<_>>()
+    };
+
+    assert_ne!(
+        hashes(&justified("")),
+        hashes(&justified("\n\t\t\t\t(justify left bottom)")),
+        "a justification change moves the text about its anchor"
+    );
+    assert_ne!(
+        hashes(&sized("50.8")),
+        hashes(&sized("76.2")),
+        "a resized box is a changed box"
+    );
+}

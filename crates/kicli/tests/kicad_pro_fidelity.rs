@@ -136,10 +136,20 @@ fn kicad_pro_fidelity_report() {
     }
     lines.push(String::new());
 
-    let notes = manifest.join("../../research/notes");
-    std::fs::create_dir_all(&notes).expect("notes directory");
-    std::fs::write(notes.join("kicad-pro-fidelity.md"), lines.join("\n"))
-        .expect("report is written");
+    // The committed note records a measurement over KiCad's whole corpus. A run
+    // without the corpus measures the fixtures alone, and writing that over the
+    // note replaces forty files of evidence with four. Two lanes hit this in one
+    // milestone. The report goes to the build directory, and only a run that
+    // actually has the corpus offers to refresh the note.
+    let report = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("kicad-pro-fidelity.md");
+    std::fs::write(&report, lines.join("\n")).expect("report is written");
+    println!("wrote {}", report.display());
+    if cfg!(feature = "corpus") {
+        println!(
+            "the corpus was measured: copy that file over research/notes/kicad-pro-fidelity.md \
+             to refresh the note"
+        );
+    }
 
     for (label, count) in &counts {
         println!("{label}: {count}");

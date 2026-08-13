@@ -713,6 +713,10 @@ fn push_fields(
         let mut geometry = Encoding::new("field");
         geometry.point("offset", offset);
         geometry.number("angle", field.angle.0.into());
+        // Justification decides where the text sits about its anchor, so a
+        // change to it moves the text without moving the anchor. A snapshot
+        // blind to it reports a justify command as no change at all.
+        geometry.text("justify", &field.justify.join(" "));
 
         let mut data = Encoding::new("field");
         data.text("name", &field.name);
@@ -834,6 +838,10 @@ fn text_object(text: &TextItem) -> SnapshotObject {
     let mut geometry = Encoding::new(kind.token());
     geometry.point("at", text.at);
     geometry.number("angle", text.angle.0.into());
+    if let Some((width, height)) = text.size {
+        geometry.number("width", width.0.into());
+        geometry.number("height", height.0.into());
+    }
 
     let mut data = Encoding::new(kind.token());
     data.text("text", &text.text);
