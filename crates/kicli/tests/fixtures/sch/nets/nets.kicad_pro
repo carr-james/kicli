@@ -9,16 +9,13 @@
     "filename": "nets.kicad_pro",
     "version": 3
   },
-  "net_settings": {
-    "bus_aliases": [
-      {
-        "members": [
-          "D0",
-          "D1"
-        ],
-        "name": "DATA"
-      }
-    ]
+  "schematic": {
+    "bus_aliases": {
+      "DATA": [
+        "D0",
+        "D1"
+      ]
+    }
   },
   "sheets": [
     [
