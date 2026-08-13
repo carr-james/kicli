@@ -11,6 +11,7 @@
 #![warn(clippy::pedantic)]
 
 mod corpus;
+mod text_metrics;
 
 use std::process::{Command, ExitCode};
 
@@ -77,6 +78,7 @@ fn main() -> ExitCode {
     match task.as_deref() {
         Some("check") => run_check(),
         Some("corpus") => corpus::run(std::env::args().any(|a| a == "--verify")),
+        Some("text-metrics") => text_metrics::run(std::env::args().any(|a| a == "--verify")),
         Some(other) => {
             eprintln!("xtask: unknown task '{other}'.");
             usage();
@@ -96,6 +98,7 @@ fn usage() {
     eprintln!("tasks:");
     eprintln!("  check    Run every quality gate.");
     eprintln!("  corpus   Fetch KiCad's demo files into target/. --verify checks them.");
+    eprintln!("  text-metrics  Derive the glyph advance table. --verify checks it.");
 }
 
 /// Run every gate. Report a summary. Fail if any gate failed.
