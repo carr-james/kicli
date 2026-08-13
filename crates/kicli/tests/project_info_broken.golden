@@ -1,0 +1,18 @@
+project broken
+  file       broken.kicad_pro
+  root       broken.kicad_sch
+  kicad-cli  not found
+  faults     1, which project check names one by one
+
+sheets 3
+  page 1  symbols 0  power 0  file broken.kicad_sch  path /00000000-0000-4000-8000-070000000000
+  page 3  symbols 0  power 0  name future  file future.kicad_sch  path /00000000-0000-4000-8000-070000000000/00000000-0000-4000-8000-07b000000001
+  page 4  symbols 0  power 0  name commented  file commented.kicad_sch  path /00000000-0000-4000-8000-070000000000/00000000-0000-4000-8000-07c000000001
+
+files 3
+  broken.kicad_sch  stamp 20260306  layout normal  canonical yes
+  future.kicad_sch  stamp 20260803  layout normal  canonical yes
+  commented.kicad_sch  stamp 20260306  layout normal  canonical no
+
+not covered
+  net count: kicli does not extract nets in this build

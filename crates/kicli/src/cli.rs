@@ -7,7 +7,10 @@
 
 mod args;
 mod exit;
+mod locate;
 mod output;
+mod project;
+mod tools;
 
 pub use args::{Cli, Command, Global, OutputFormat, ProjectVerb};
 pub use exit::ExitCode;
@@ -51,7 +54,7 @@ where
         reporter.note("--variant is accepted and has no effect in this version.");
     }
 
-    match dispatch(&parsed) {
+    match dispatch(&parsed, &reporter) {
         Ok(report) => {
             reporter.result(&report);
             ExitCode::Success
@@ -61,23 +64,17 @@ where
 }
 
 /// Send one parsed command to the code that answers it.
-fn dispatch(parsed: &Cli) -> Result<Report, Failure> {
+fn dispatch(parsed: &Cli, reporter: &Reporter) -> Result<Report, Failure> {
     match parsed.command {
-        Command::Project { verb } => Err(Failure::new(
+        Command::Project {
+            verb: ProjectVerb::Info,
+        } => project::info(&parsed.global, reporter),
+        Command::Project {
+            verb: ProjectVerb::Check,
+        } => Err(Failure::new(
             ExitCode::Operation,
-            format!(
-                "project {} is not available in this build.",
-                verb_name(verb)
-            ),
+            "project check is not available in this build.".to_owned(),
         )),
-    }
-}
-
-/// The name of a `project` verb, as written on the command line.
-const fn verb_name(verb: ProjectVerb) -> &'static str {
-    match verb {
-        ProjectVerb::Info => "info",
-        ProjectVerb::Check => "check",
     }
 }
 

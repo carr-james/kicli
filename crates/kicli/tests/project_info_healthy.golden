@@ -1,0 +1,15 @@
+project healthy
+  file       healthy.kicad_pro
+  root       healthy.kicad_sch
+  kicad-cli  not found
+
+sheets 2
+  page 1  symbols 0  power 0  file healthy.kicad_sch  path /00000000-0000-4000-8000-050000000000
+  page 2  symbols 0  power 0  name stage  file stage.kicad_sch  path /00000000-0000-4000-8000-050000000000/00000000-0000-4000-8000-05a000000001
+
+files 2
+  healthy.kicad_sch  stamp 20260306  layout normal  canonical yes
+  stage.kicad_sch  stamp 20260306  layout normal  canonical yes
+
+not covered
+  net count: kicli does not extract nets in this build
