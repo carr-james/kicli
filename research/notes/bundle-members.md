@@ -70,20 +70,43 @@ and `UART_TRG.RX` on one net. `demos/video` does the same at scale:
 `VRAM[0..31]` and `DQ[0..31]` are wired together on the root sheet, and
 `VRAM31` and `DQ31` are one net.
 
-Four probes failed to reproduce it, and each is recorded here so the next
-attempt does not repeat them:
+Five probes failed to reproduce it, and each is recorded here so the next
+attempt does not repeat them. Each has a root sheet wiring the ports of two
+children together:
 
-1. two vectors, `AA[0..3]` and `BB[0..3]`, wired together on the root, with
-   `AA1` and `BB1` on the two children — two nets;
+1. two vectors, `AA[0..3]` and `BB[0..3]`, with `AA1` and `BB1` on the two
+   children — two nets;
 2. the same with bus entries joining each named wire to its bundle — two nets;
 3. two groups, `AA{P Q}` and `BB{P Q}`, with `AA.P` and `BB.P` — two nets;
-4. the same with bus entries — two nets.
+4. the same with bus entries — two nets;
+5. probe 1 with a label `AA[0..3]` on the root's bundle — `AA1` moved to the
+   root's sheet path, so the propagation did reach the like-named child, and
+   `BB1` did not move at all.
 
-So the correspondence is neither by position in the member list nor by the
-member's own name, under the conditions tried. Until it is measured, kicli
-joins members only where the names agree, and three demo hierarchies —
-`royalblue54L_feather`, `video` and `vme-wren` — differ from KiCad by the
-nets that cross from one bundle name to another.
+Probe 5 is the informative one: the propagation happens, and it stops at the
+bundle whose name differs.
+
+KiCad's own answer is in `CONNECTION_GRAPH::matchBusMember`
+(`eeschema/connection_graph.cpp`), which is worth quoting for whoever picks
+this up:
+
+```cpp
+if( aBusConnection->Type() == CONNECTION_TYPE::BUS )
+    // Vector bus: compare against index, because we allow the name to be different
+    ... bus_member->VectorIndex() == aSearch->VectorIndex()
+else
+    // Group bus ... compare names, because for bus groups we expect the naming
+    // to be consistent across all usages
+    ... bus_member->LocalName() == aSearch->LocalName()
+```
+
+So the correspondence is by **vector index** between two vectors and by
+**local member name** between two groups. What the probes have not found is
+the condition under which `propagateToNeighbors` carries one bundle's
+connection onto another bundle of a different name. Until that is measured,
+kicli joins members only where the names agree, and three demo hierarchies —
+`royalblue54L_feather`, `video` and `vme-wren` — differ from KiCad by exactly
+the nets that cross from one bundle name to another.
 
 ## Reproduction
 
