@@ -13,10 +13,11 @@ use std::collections::BTreeMap;
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 
-use kicli::geometry::font::{DEFAULT_PEN_WIDTH, bold_pen_width, clamp_pen_width, string_extents};
-use kicli::geometry::{Iu, Size};
+use kicli::geometry::font::{DEFAULT_PEN_WIDTH, string_extents};
+use kicli::geometry::text::{HorizontalJustify, TextStyle, VerticalJustify, text_box};
+use kicli::geometry::{Angle, Iu, Point, Size};
 use kicli::model::{Item, Schematic};
-use kicli_sexpr::{Doc, NodeId};
+use kicli_sexpr::Doc;
 
 /// How far the port may differ from KiCad's own measurement.
 ///
@@ -46,76 +47,67 @@ fn oracle_path() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/text_extents.expected")
 }
 
-/// Every line of every text item on the calibration sheet, in file order.
-fn calibration_lines() -> Vec<Line> {
+/// One text item of the calibration sheet.
+struct CalibrationItem {
+    /// The text, which may hold line breaks.
+    text: String,
+    /// Where the item is drawn from.
+    at: Point,
+    /// How far the item is turned.
+    angle: Angle,
+    /// Everything else the box depends on.
+    style: TextStyle,
+}
+
+impl CalibrationItem {
+    /// The pen KiCad draws this item with.
+    fn pen(&self) -> Iu {
+        self.style.pen_width(DEFAULT_PEN_WIDTH)
+    }
+
+    /// The item split into the lines KiCad measures one by one.
+    fn lines(&self) -> Vec<Line> {
+        self.text
+            .split('\n')
+            .map(|line| Line {
+                text: line.to_owned(),
+                size: self.style.size,
+                pen: self.pen(),
+            })
+            .collect()
+    }
+}
+
+/// Every text item of the calibration sheet, in file order.
+fn calibration_items() -> Vec<CalibrationItem> {
     let source = std::fs::read_to_string(fixture("calibration.kicad_sch"))
         .expect("the calibration sheet is readable");
     let doc = Doc::parse(&source).expect("the calibration sheet parses");
     let schematic = Schematic::read(&doc).expect("the calibration sheet reads");
 
-    let mut lines = Vec::new();
-    for item in &schematic.items {
-        let Item::Text(text) = item else {
-            continue;
-        };
-        let (size, bold) = effects_of(&doc, text.node);
-        let pen = if bold {
-            bold_pen_width(size.x)
-        } else {
-            DEFAULT_PEN_WIDTH
-        };
-        let pen = clamp_pen_width(pen, size);
-        for line in text.text.split('\n') {
-            lines.push(Line {
-                text: line.to_owned(),
-                size,
-                pen,
-            });
-        }
-    }
-    assert!(!lines.is_empty(), "the calibration sheet has no text");
-    lines
+    let items: Vec<CalibrationItem> = schematic
+        .items
+        .iter()
+        .filter_map(|item| match item {
+            Item::Text(text) => Some(CalibrationItem {
+                text: text.text.clone(),
+                at: text.at,
+                angle: text.angle,
+                style: TextStyle::read(&doc, text.node),
+            }),
+            _ => None,
+        })
+        .collect();
+    assert!(!items.is_empty(), "the calibration sheet has no text");
+    items
 }
 
-/// The size and boldness of a text item, read from its `effects`.
-fn effects_of(doc: &Doc, node: NodeId) -> (Size, bool) {
-    let mut size = Size::new(12_700, 12_700);
-    let mut bold = false;
-    for &child in doc.children(node) {
-        if !doc.head_is(child, "effects") {
-            continue;
-        }
-        for &effect in doc.children(child) {
-            if !doc.head_is(effect, "font") {
-                continue;
-            }
-            for &setting in doc.children(effect) {
-                if doc.head_is(setting, "size") {
-                    let values = doc.children(setting);
-                    let read = |index: usize| {
-                        values
-                            .get(index)
-                            .and_then(|&id| doc.atom_as_iu(id))
-                            .map(Iu)
-                            .unwrap_or_default()
-                    };
-                    // KiCad writes the size as height then width.
-                    size = Size {
-                        x: read(2),
-                        y: read(1),
-                    };
-                }
-                if doc.head_is(setting, "bold") {
-                    bold = doc
-                        .children(setting)
-                        .get(1)
-                        .and_then(|&id| doc.atom_text(id))
-                        != Some("no");
-                }
-            }
-        }
-    }
-    (size, bold)
+/// Every line of every text item on the calibration sheet, in file order.
+fn calibration_lines() -> Vec<Line> {
+    calibration_items()
+        .iter()
+        .flat_map(CalibrationItem::lines)
+        .collect()
 }
 
 /// Read the committed measurements.
@@ -195,6 +187,172 @@ fn unescape(text: &str) -> String {
         }
     }
     out
+}
+
+#[test]
+fn text_boxes_match_kicad_extents() {
+    let oracle = read_oracle(
+        &std::fs::read_to_string(oracle_path()).expect("the committed measurements are readable"),
+    );
+    let items = calibration_items();
+    let width_of = |line: &Line| {
+        *oracle
+            .get(line)
+            .unwrap_or_else(|| panic!("KiCad measured no {:?}", line.text))
+    };
+
+    let mut multiline = 0;
+    let mut bold = 0;
+    let mut italic = 0;
+    let mut overbar = 0;
+
+    for item in &items {
+        let lines = item.lines();
+        // A box is as wide as its widest line, which is how KiCad merges them.
+        let widest = lines
+            .iter()
+            .map(width_of)
+            .max()
+            .expect("the item has a line");
+        let boxed = text_box(&item.text, item.at, item.angle, &item.style);
+        assert!(
+            (boxed.bounds().width().0 - widest.0).abs() <= TOLERANCE,
+            "{:?}: kicli boxes {} wide, KiCad measures {widest}",
+            item.text,
+            boxed.bounds().width()
+        );
+
+        // Every line adds its own height, so a box is never shorter than its
+        // text.
+        assert!(boxed.bounds().height() >= item.style.size.y);
+        if lines.len() > 1 {
+            multiline += 1;
+            let single = text_box(&lines[0].text, item.at, item.angle, &item.style);
+            assert!(
+                boxed.bounds().height() > single.bounds().height(),
+                "{:?} is not taller than its first line",
+                item.text
+            );
+        }
+        if item.style.bold {
+            bold += 1;
+        }
+        if item.style.italic {
+            italic += 1;
+        }
+        if item.text.contains("~{") {
+            overbar += 1;
+            let plain = item.text.replace("~{", "").replace('}', "");
+            let bare = text_box(&plain, item.at, item.angle, &item.style);
+            assert!(
+                boxed.bounds().height() > bare.bounds().height(),
+                "{:?} leaves no room for its overbar",
+                item.text
+            );
+        }
+    }
+
+    assert!(multiline > 0 && bold > 0 && italic > 0 && overbar > 0);
+    println!(
+        "text boxes: {} items, {multiline} multi-line, {bold} bold, {italic} italic, {overbar} overbarred",
+        items.len()
+    );
+}
+
+#[test]
+fn each_justification_puts_the_box_on_its_own_side_of_the_anchor() {
+    let anchor = Point::new(100_000, 100_000);
+    let boxed = |horizontal, vertical| {
+        let style = TextStyle {
+            horizontal,
+            vertical,
+            ..TextStyle::default()
+        };
+        text_box("Ay", anchor, Angle(0), &style)
+    };
+
+    for vertical in [
+        VerticalJustify::Top,
+        VerticalJustify::Centre,
+        VerticalJustify::Bottom,
+    ] {
+        // Left starts at the anchor, right ends at it, centre straddles it.
+        assert_eq!(
+            boxed(HorizontalJustify::Left, vertical).bounds().start().x,
+            anchor.x
+        );
+        assert_eq!(
+            boxed(HorizontalJustify::Right, vertical).bounds().end().x,
+            anchor.x
+        );
+        let centred = boxed(HorizontalJustify::Centre, vertical);
+        assert!((centred.bounds().centre().x.0 - anchor.x.0).abs() <= 1);
+    }
+
+    for horizontal in [
+        HorizontalJustify::Left,
+        HorizontalJustify::Centre,
+        HorizontalJustify::Right,
+    ] {
+        // Top hangs below the anchor, bottom stands above it, centre straddles.
+        let top = boxed(horizontal, VerticalJustify::Top);
+        let bottom = boxed(horizontal, VerticalJustify::Bottom);
+        let centred = boxed(horizontal, VerticalJustify::Centre);
+        assert!(top.bounds().end().y > anchor.y);
+        assert!(bottom.bounds().start().y < anchor.y);
+        assert!(top.bounds().start().y > bottom.bounds().start().y);
+        assert!((centred.bounds().centre().y.0 - anchor.y.0).abs() <= 1);
+    }
+
+    // A mirrored text swaps the two horizontal cases, which is what a board
+    // does to text on its back.
+    let mirrored = |horizontal| {
+        let style = TextStyle {
+            horizontal,
+            mirrored: true,
+            ..TextStyle::default()
+        };
+        text_box("Ay", anchor, Angle(0), &style)
+    };
+    assert_eq!(mirrored(HorizontalJustify::Left).bounds().end().x, anchor.x);
+    assert_eq!(
+        mirrored(HorizontalJustify::Right).bounds().start().x,
+        anchor.x
+    );
+}
+
+#[test]
+fn a_turned_box_is_the_unturned_box_turned_about_the_draw_position() {
+    let anchor = Point::new(100_000, 50_000);
+    let style = TextStyle {
+        horizontal: HorizontalJustify::Left,
+        vertical: VerticalJustify::Bottom,
+        ..TextStyle::default()
+    };
+
+    let flat = text_box("Ay", anchor, Angle(0), &style);
+    for angle in [90, 180, 270] {
+        let turned = text_box("Ay", anchor, Angle(angle), &style);
+        assert_eq!(
+            turned.bounds(),
+            flat.bounds(),
+            "the box itself is not turned"
+        );
+        let expected = flat
+            .bounds()
+            .corners()
+            .map(|corner| corner.rotated(anchor, Angle(angle)));
+        assert_eq!(turned.corners(), expected);
+        assert_eq!(
+            turned.centre(),
+            flat.bounds().centre().rotated(anchor, Angle(angle))
+        );
+    }
+
+    // At 90 degrees the page-aligned box has the sides the other way round.
+    let upright = text_box("Ay", anchor, Angle(90), &style);
+    assert_eq!(upright.axis_aligned().width(), flat.bounds().height());
+    assert_eq!(upright.axis_aligned().height(), flat.bounds().width());
 }
 
 #[test]

@@ -7,9 +7,11 @@
 
 pub mod font;
 pub mod pins;
+pub mod text;
 pub mod transform;
 
 pub use pins::{ResolvedPin, resolve_pins};
+pub use text::{TextBox, TextStyle, text_box};
 pub use transform::Transform;
 
 use std::fmt;
@@ -118,11 +120,256 @@ impl Point {
     pub fn is_on_grid(self) -> bool {
         self.x.is_on_grid() && self.y.is_on_grid()
     }
+
+    /// The point turned about another point.
+    ///
+    /// A positive angle turns anticlockwise on screen, because Y grows
+    /// downwards. The four right angles are exact integer swaps, as they are in
+    /// KiCad's own `RotatePoint` (`libs/kimath/src/trigo.cpp:295-330`). Any
+    /// other angle goes through a sine and a cosine, and is rounded back to
+    /// internal units; a schematic item never takes one.
+    #[must_use]
+    pub fn rotated(self, pivot: Self, angle: Angle) -> Self {
+        let (dx, dy) = (self.x.0 - pivot.x.0, self.y.0 - pivot.y.0);
+        let (x, y) = match angle.0.rem_euclid(360) {
+            0 => (dx, dy),
+            90 => (dy, -dx),
+            180 => (-dx, -dy),
+            270 => (-dy, dx),
+            other => {
+                let radians = f64::from(other).to_radians();
+                let (sine, cosine) = radians.sin_cos();
+                let (dx, dy) = (f64::from(dx), f64::from(dy));
+                // A rotated coordinate stays on the page, so the narrowing is
+                // safe and the rounding is the same one KiCad applies.
+                #[allow(clippy::cast_possible_truncation)]
+                {
+                    (
+                        (dy * sine + dx * cosine).round() as i32,
+                        (dy * cosine - dx * sine).round() as i32,
+                    )
+                }
+            }
+        };
+        Self {
+            x: Iu(pivot.x.0 + x),
+            y: Iu(pivot.y.0 + y),
+        }
+    }
 }
 
 impl fmt::Display for Point {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{},{}", self.x, self.y)
+    }
+}
+
+impl std::ops::Add for Point {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Self {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
+}
+
+impl std::ops::Sub for Point {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Self {
+            x: self.x - other.x,
+            y: self.y - other.y,
+        }
+    }
+}
+
+/// An axis-aligned box in schematic space.
+///
+/// The corners are ordered: `start` is the top-left and `end` the
+/// bottom-right, because Y grows downwards. Every constructor normalises, so a
+/// box never has a negative side.
+///
+/// # Examples
+///
+/// ```
+/// use kicli::geometry::{Iu, Point, Rect};
+/// let rect = Rect::new(Point::new(10, 20), Point::new(0, 0));
+/// assert_eq!(rect.start(), Point::new(0, 0));
+/// assert_eq!(rect.width(), Iu(10));
+/// ```
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Rect {
+    /// The corner with the smaller coordinates.
+    start: Point,
+    /// The corner with the larger coordinates.
+    end: Point,
+}
+
+impl Rect {
+    /// The box spanned by two opposite corners, in any order.
+    #[must_use]
+    pub fn new(one: Point, other: Point) -> Self {
+        Self {
+            start: Point {
+                x: one.x.min(other.x),
+                y: one.y.min(other.y),
+            },
+            end: Point {
+                x: one.x.max(other.x),
+                y: one.y.max(other.y),
+            },
+        }
+    }
+
+    /// The box at a corner with a size, which may be negative on either axis.
+    #[must_use]
+    pub fn from_origin(origin: Point, size: Size) -> Self {
+        Self::new(
+            origin,
+            Point {
+                x: origin.x + size.x,
+                y: origin.y + size.y,
+            },
+        )
+    }
+
+    /// The box around a single point, which has no size.
+    #[must_use]
+    pub fn around(point: Point) -> Self {
+        Self {
+            start: point,
+            end: point,
+        }
+    }
+
+    /// The corner with the smaller coordinates.
+    #[must_use]
+    pub fn start(self) -> Point {
+        self.start
+    }
+
+    /// The corner with the larger coordinates.
+    #[must_use]
+    pub fn end(self) -> Point {
+        self.end
+    }
+
+    /// How wide the box is.
+    #[must_use]
+    pub fn width(self) -> Iu {
+        self.end.x - self.start.x
+    }
+
+    /// How tall the box is.
+    #[must_use]
+    pub fn height(self) -> Iu {
+        self.end.y - self.start.y
+    }
+
+    /// The two sides together.
+    #[must_use]
+    pub fn size(self) -> Size {
+        Size {
+            x: self.width(),
+            y: self.height(),
+        }
+    }
+
+    /// The middle of the box.
+    ///
+    /// An odd side leaves the centre half a unit out. The result is rounded
+    /// towards the start corner, which is what integer division does.
+    #[must_use]
+    pub fn centre(self) -> Point {
+        Point {
+            x: Iu(self.start.x.0 + self.width().0 / 2),
+            y: Iu(self.start.y.0 + self.height().0 / 2),
+        }
+    }
+
+    /// The smallest box holding both.
+    #[must_use]
+    pub fn union(self, other: Self) -> Self {
+        Self {
+            start: Point {
+                x: self.start.x.min(other.start.x),
+                y: self.start.y.min(other.start.y),
+            },
+            end: Point {
+                x: self.end.x.max(other.end.x),
+                y: self.end.y.max(other.end.y),
+            },
+        }
+    }
+
+    /// The box moved by an offset.
+    #[must_use]
+    pub fn offset(self, by: Point) -> Self {
+        Self {
+            start: self.start + by,
+            end: self.end + by,
+        }
+    }
+
+    /// The box grown by the same amount on all four sides.
+    #[must_use]
+    pub fn inflate(self, by: Iu) -> Self {
+        Self::new(
+            Point {
+                x: self.start.x - by,
+                y: self.start.y - by,
+            },
+            Point {
+                x: self.end.x + by,
+                y: self.end.y + by,
+            },
+        )
+    }
+
+    /// Is the point inside the box, edges included?
+    #[must_use]
+    pub fn contains(self, point: Point) -> bool {
+        point.x >= self.start.x
+            && point.x <= self.end.x
+            && point.y >= self.start.y
+            && point.y <= self.end.y
+    }
+
+    /// The four corners, from the start corner, clockwise on screen.
+    #[must_use]
+    pub fn corners(self) -> [Point; 4] {
+        [
+            self.start,
+            Point {
+                x: self.end.x,
+                y: self.start.y,
+            },
+            self.end,
+            Point {
+                x: self.start.x,
+                y: self.end.y,
+            },
+        ]
+    }
+
+    /// The box under a symbol orientation.
+    ///
+    /// Only the two corners are transformed, then the result is normalised.
+    /// That is correct for the eight orientations a symbol can take and for
+    /// nothing else, which is exactly what KiCad relies on in
+    /// `TRANSFORM::TransformCoordinate` (`libs/kimath/src/transform.cpp:50-56`).
+    #[must_use]
+    pub fn transformed(self, transform: Transform) -> Self {
+        Self::new(transform.apply(self.start), transform.apply(self.end))
+    }
+}
+
+impl fmt::Display for Rect {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}..{}", self.start, self.end)
     }
 }
 
