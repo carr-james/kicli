@@ -16,6 +16,27 @@ mod names;
 use crate::model::hierarchy::Hierarchy;
 use crate::model::items::{Refdes, SheetPath, Uuid};
 
+/// The merge rules, named, in the order the extractor applies them.
+///
+/// A rule joins items into one net. The specification and the research record
+/// carry the same six names beside the evidence for each, and a test holds the
+/// three lists together, so a rule cannot be changed in one place only.
+///
+/// # Examples
+///
+/// ```
+/// use kicli::connectivity::MERGE_RULES;
+/// assert_eq!(MERGE_RULES[0], "shared point");
+/// ```
+pub const MERGE_RULES: [&str; 6] = [
+    "shared point",
+    "junction",
+    "label on a segment",
+    "name",
+    "power pin",
+    "bundle member",
+];
+
 /// Which merge rules to apply.
 ///
 /// Every set includes the geometric rules. The rest are switches, so that a
@@ -72,6 +93,14 @@ pub struct NetPin {
     pub symbol: Uuid,
     /// Is this a pin of a power symbol? A netlist leaves those out.
     pub power: bool,
+    /// Does the symbol reach the board?
+    ///
+    /// `(on_board no)` marks a symbol that is drawn but not built, such as a
+    /// test point or a fitting option. The drawing still joins its pins, and
+    /// kicli still lists them, but a netlist leaves them out. `(dnp yes)` is
+    /// a different thing and does not remove a pin: an unfitted part still
+    /// has a footprint.
+    pub on_board: bool,
 }
 
 impl NetPin {
@@ -96,6 +125,10 @@ pub struct Net {
     /// need it to read ERC output and the editor.
     pub kicad_name: String,
     /// The pins of the net, sorted by reference designator then pin number.
+    ///
+    /// One pin number appears once per reference designator. A pin that a
+    /// library puts in unit 0 is drawn by every unit of the symbol, so two
+    /// units may carry the same pin onto one net; the net lists it once.
     pub pins: Vec<NetPin>,
     /// The sheet paths the net is drawn on, sorted.
     pub sheets: Vec<SheetPath>,

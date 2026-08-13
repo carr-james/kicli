@@ -26,7 +26,8 @@ fn fixtures() -> PathBuf {
 
 /// The partition kicli reads out of a hierarchy.
 ///
-/// Power symbols are left out, because a netlist leaves them out.
+/// Power symbols are left out, because a netlist leaves them out, and so are
+/// symbols that do not reach the board.
 fn kicli_partition(root: &Path) -> Partition {
     let hierarchy = Hierarchy::load(root).expect("the hierarchy loads");
     partition_of(&extract(&hierarchy))
@@ -38,7 +39,7 @@ fn partition_of(nets: &Nets) -> Partition {
         .map(|net| {
             net.pins
                 .iter()
-                .filter(|pin| !pin.power)
+                .filter(|pin| !pin.power && pin.on_board)
                 .map(NetPin::label)
                 .collect::<Vec<String>>()
         })
@@ -221,12 +222,14 @@ mod corpus {
         }
     }
 
-    // 22 of 35 hierarchies of KiCad's demo corpus match exactly. The rest
-    // differ in a handful of nets each, and the differences are real defects
-    // rather than a fault in this comparison: see D1 in tasks/M2.md for what is
-    // known about them. The test is kept whole and does not run, so that fixing
-    // a defect is a matter of deleting one attribute and reading the report.
-    #[ignore = "22 of 35 corpus hierarchies match; the rest are open defects, see D1 in tasks/M2.md"]
+    // 32 of 35 hierarchies of KiCad's demo corpus match exactly. The three
+    // that do not — RoyalBlue54L-Feather, video and vme-wren — differ only
+    // where a net crosses from one bundle name to another, which
+    // research/notes/bundle-members.md records as measured but not yet
+    // reproduced. The test is kept whole and does not run, so that closing
+    // that last rule is a matter of deleting one attribute and reading the
+    // report.
+    #[ignore = "32 of 35 corpus hierarchies match; the rest need the bundle-to-bundle rule"]
     #[test]
     fn netlist_partition_matches_kicad_corpus() {
         let Some(tool) = kicad_cli() else {
