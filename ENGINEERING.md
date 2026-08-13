@@ -78,7 +78,9 @@ plain function can remove.
 - **Golden-file tests**: fixtures in `tests/fixtures/` (purpose-built, per
   Constitution; KiCad's corpus fetched by xtask stays in target/, now to keep
   the repository small rather than for licence reasons). Assert exact output;
-  update goldens only in a dedicated commit that says why.
+  update goldens only in a dedicated commit that says why. Fixture expectations
+  are verified against KiCad (oracle records), never hand-asserted — a fixture
+  written from the same assumption as the code tests nothing.
 - **Integration tests** (few): `tests/` running the compiled binary end-to-end
   (`assert_cmd`), including the kicad-cli paths, skipped gracefully when
   kicad-cli is absent.

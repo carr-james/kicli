@@ -26,6 +26,9 @@ CLI tool giving LLM agents eyes and hands in KiCad 10 projects. Rust.
   the milestone is complete only when the check passes on the merged result in
   the main checkout. The merged check is the orchestrator's job and is never
   skipped.
+- Corpus-gated and environment-gated checks do not run in lane worktrees; the
+  orchestrator runs the full check, corpus included, at every lane merge — not
+  only at milestone end.
 - The BLOCKED rule applies inside lanes: a subagent that hits a governing-
   document conflict parks it and reports to the orchestrator; the orchestrator
   parks it for James.
