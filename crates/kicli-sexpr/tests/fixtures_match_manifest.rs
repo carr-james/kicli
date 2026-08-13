@@ -94,7 +94,10 @@ fn fixtures_match_manifest() {
     found.sort();
 
     let recorded: Vec<String> = records.keys().cloned().collect();
-    assert_eq!(found, recorded, "every fixture is recorded, and the reverse");
+    assert_eq!(
+        found, recorded,
+        "every fixture is recorded, and the reverse"
+    );
 
     for (relative, record) in &records {
         let bytes = std::fs::read(root.join(relative)).expect("fixture is readable");
