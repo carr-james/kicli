@@ -799,6 +799,14 @@ fn read_sheet_pages(doc: &Doc, node: NodeId) -> Vec<SheetPage> {
     pages
 }
 
+/// Read every `property` child of a list as a field.
+///
+/// A library symbol's defaults are read the same way as a placement's, so the
+/// library reader shares this rather than keeping a second copy.
+pub(crate) fn read_fields_of(doc: &Doc, node: NodeId, version: FormatVersion) -> Vec<Field> {
+    read_fields(doc, node, version)
+}
+
 /// Read every `property` child as a field.
 fn read_fields(doc: &Doc, node: NodeId, version: FormatVersion) -> Vec<Field> {
     let mut fields = Vec::new();

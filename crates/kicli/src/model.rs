@@ -13,6 +13,7 @@
 pub mod config;
 pub mod hierarchy;
 pub mod items;
+pub mod library;
 pub mod project;
 pub mod version;
 pub mod write;
@@ -24,6 +25,7 @@ pub use items::{
     ReadError, Refdes, Schematic, SheetItem, SheetPath, SheetPin, Symbol, SymbolPlacement,
     TextItem, Uuid,
 };
+pub use library::{LibraryPin, LibrarySymbol, LibraryUnit, Shape, definition_of, read_library};
 pub use project::{BusAlias, Project, ProjectError, read_project};
 pub use version::{FormatVersion, MAX_SCHEMATIC_VERSION, PropertyOrder, pin_text};
 pub use write::{WriteOptions, WritePlan, WriteRefusal, format_version, plan_write};
