@@ -28,6 +28,12 @@ serde_json = { version = "1", features = ["preserve_order"] }
 # kicli.toml. Hand-parsing TOML would be a bug farm: the file has quoted table
 # names for per-rule settings, and unknown keys must be reported precisely.
 toml = "1"
+# The command surface. kubectl-style noun-verb with stable help and exit codes
+# is what clap is for, and hand-rolling it for thirty verbs is not a good use of
+# the dependency budget.
+clap = { version = "4", features = ["derive"] }
+# Snapshot hashes. SHA-256 truncated to 16 hex characters, per the spec.
+sha2 = "0.10"
 thiserror = "2"
 
 [dev-dependencies]

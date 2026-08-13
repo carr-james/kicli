@@ -6,3 +6,6 @@
 //! always knows whether it covers one sheet or the whole project. Renders live
 //! in [`crate::render`] and are pictures; the views here are what an agent
 //! acts on.
+
+pub mod delta;
+pub mod snapshot;
