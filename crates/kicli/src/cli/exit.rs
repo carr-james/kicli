@@ -5,6 +5,8 @@
 //! that knew one would be free to disagree with this one, and an agent that
 //! looked the number up would be misled.
 
+use crate::kicad::CliFailure;
+
 /// What a kicli run reports to whoever started it.
 ///
 /// Findings are data, not failure. A command that reports problems in a project
@@ -94,6 +96,36 @@ impl ExitCode {
     #[must_use]
     pub const fn is_success(self) -> bool {
         matches!(self, Self::Success)
+    }
+
+    /// The code a failed `kicad-cli` call reports.
+    ///
+    /// The [`kicad`](crate::kicad) module reads `kicad-cli`'s own exit code and
+    /// says what it means. This turns that reading into a row of kicli's table.
+    /// A raw `kicad-cli` code never arrives here, so none can pass through.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kicli::cli::ExitCode;
+    /// use kicli::kicad::{Discovery, KicadCli};
+    ///
+    /// let nowhere = Discovery {
+    ///     environment: Some("/nonexistent/kicad-cli".to_owned()),
+    ///     configured: None,
+    /// };
+    /// let failure = KicadCli::locate(&nowhere).expect_err("nothing is there");
+    /// assert_eq!(ExitCode::for_tool_failure(&failure), ExitCode::Tool);
+    /// ```
+    #[must_use]
+    pub const fn for_tool_failure(failure: &CliFailure) -> Self {
+        match failure {
+            CliFailure::NotFound { .. }
+            | CliFailure::NotUsable { .. }
+            | CliFailure::WrongVersion { .. } => Self::Tool,
+            CliFailure::BadInputFile { .. } => Self::File,
+            CliFailure::Failed { .. } => Self::Operation,
+        }
     }
 }
 
