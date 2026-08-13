@@ -1,9 +1,9 @@
 # cargo-deny configuration.
 #
-# kicli is MIT OR Apache-2.0. Every dependency must carry a licence a
-# permissive binary can redistribute. MPL-2.0 and GPL are excluded, because
-# they impose obligations this project does not accept. The allowlist below is
-# the enforcement.
+# kicli is MIT OR Apache-2.0. Every dependency that ends up in the binary must
+# carry a licence a permissive binary can redistribute. MPL-2.0 and GPL are
+# excluded, because they impose obligations this project does not accept. The
+# allowlist below is the enforcement.
 
 [graph]
 all-features = true

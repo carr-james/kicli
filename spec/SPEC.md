@@ -107,8 +107,9 @@ Coordinates are `int32` internal units of **100 nm** (`SCH_IU_PER_MM = 1e4`).
 kicli's geometry is integer IU end to end; millimetres are a presentation unit
 at the CLI boundary only. 50 mil = 1.27 mm = **12700 IU**. Numbers are emitted
 by formatting the integer as fixed-point with 4 fractional digits and stripping
-trailing zeros and any trailing `.` — provably identical to KiCad's `{:.10g}`
-output for all `int32` inputs, with no float formatting anywhere.
+trailing zeros and any trailing `.`. This is identical to KiCad's `{:.10g}`
+output for every one of the 4,294,967,296 `int32` inputs — checked exhaustively,
+not argued — with no float formatting anywhere.
 
 ### 5.3 The two round-trip properties (C1, Q1)
 
@@ -116,8 +117,11 @@ Refines M1's "lossless CST": kicli uses a **token-preserving syntax tree plus an
 exact re-emitter**, not a whitespace CST. KiCad emits a flat token stream and
 then runs `KICAD_FORMAT::Prettify` over the whole buffer, so there is no
 whitespace to preserve; a port of that function reproduces **115/115** canonical
-demo schematics, 6/6 `.kicad_pcb` and a shipped `.kicad_sym` exactly from a
-whitespace-stripped token stream (`sexpr-strategy.md` §2.2).
+demo schematics, **19/19** `.kicad_pcb`, and the shipped `Device.kicad_sym`
+exactly from a whitespace-stripped token stream. Boards only reproduce once
+`pcb upgrade` has run over them: one demo board still carried
+`(generator_version "9.0")` and packed sibling lists as `)(`, which KiCad 9 wrote
+and KiCad 10 does not.
 
 | Id | Property | Status |
 |---|---|---|
@@ -149,7 +153,35 @@ are `NORMAL` (schematics, boards, symbol libs), `COMPACT_TEXT_PROPERTIES`
 the input is a fixed point (`sexpr-strategy.md` §2.4). Editing one field in a
 `CompactSave` user's schematic must not reformat their whole file.
 
-### 5.5 Reference designators live in `instances` (`sch-format.md` §3.6)
+### 5.5 The project file is read-only in v1
+
+`.kicad_pro` is JSON, not an s-expression, so §5.3's properties do not carry
+over to it. kicli **reads** it — bus aliases moved there in KiCad 10, and ERC
+severities live there (§14.3) — and **does not write it** in v1. Nothing in v1
+needs to: bus aliases are read-only through M8, and ERC severities are
+relabel-only.
+
+Measured over 37 project files (one fixture plus KiCad's demos): **34 round-trip
+byte-identically** through an order-preserving JSON reader. Key order and
+indentation always match. The other 3 differ in exactly one way — KiCad prints
+the full decimal expansion of a double where a shortest-round-trip printer emits
+fewer digits:
+
+```
+kicad: "board_outline_line_width": 0.049999999999999996,
+other: "board_outline_line_width": 0.05,
+```
+
+**The values are identical doubles. Only the text differs.**
+
+When a write path is first needed, it is built the same way the s-expression
+side is: **preserve the source text of every value kicli did not modify**, and
+print the values kicli does write with a formatter that matches KiCad's. Byte
+identity then falls out, rather than being traded away. kicli does not adopt
+"reformat and flag it": a file that opens cleanly with one number reading
+differently is the failure this tool exists to prevent.
+
+### 5.6 Reference designators live in `instances` (`sch-format.md` §3.6)
 
 `(property "Reference" …)` on a symbol is the cached value for the currently
 loaded sheet path; the truth is `instances → project → path → reference`, and a
@@ -167,7 +199,7 @@ handle    = (sheetPath, itemUuid)
 `(lib_name "…")` redirects the `lib_symbols` cache key away from `lib_id`; code
 that resolves embedded symbols by `lib_id` alone is wrong (`sch-format.md` §3.4).
 
-### 5.6 Scope confirmations (Q7)
+### 5.7 Scope confirmations (Q7)
 
 - **Schematic variants** (`20250922`, `20260306`): round-trip preservation only,
   no variant-aware editing in v1. `sch view` must not present a
@@ -822,8 +854,15 @@ Constitution §8 and §10 require — the **exit-code table including the
 
 PCB routing; undo/transactions; spatial queries; SPICE; MCP server; CI; symbol
 creation; KiCad version migration (kicli never upgrades a file, §5.1);
-multi-user concerns; variant-aware editing (§5.6); `lib migrate-envvars` (§10);
-library-nickname renaming (§10); bus routing and cross-sheet routing (§9).
+multi-user concerns; variant-aware editing (§5.7); `lib migrate-envvars` (§10);
+library-nickname renaming (§10); bus routing and cross-sheet routing (§9);
+writing `.kicad_pro` (§5.5).
+
+**Post-v1 backlog, optional and local-only:** a coverage-guided fuzz harness for
+the parser. It needs a nightly toolchain, and the repository pins stable. The
+property it would defend — arbitrary bytes produce an error or a tree, never a
+panic — is already held by property tests on stable. A fuzzer would add
+coverage-guided search and a persistent corpus. It is never a merge gate.
 
 ## 18. Fixtures and test corpora (C21, D18, Constitution §11)
 
