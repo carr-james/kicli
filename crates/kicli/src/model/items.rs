@@ -49,6 +49,12 @@ impl LibId {
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SheetPath(pub String);
 
+impl std::fmt::Display for SheetPath {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
 impl SheetPath {
     /// The path of the root sheet of a hierarchy.
     #[must_use]
@@ -294,6 +300,19 @@ pub struct SheetPin {
     pub node: NodeId,
 }
 
+/// Where one placement of a sheet sits in the page order.
+#[derive(Clone, Debug)]
+pub struct SheetPage {
+    /// The project the path belongs to.
+    pub project: String,
+    /// The path of the **parent** sheet. A sheet item's own uuid is not part of
+    /// it, unlike a symbol's placement path.
+    pub path: SheetPath,
+    /// The page number, as written. It is text: pages are numbered `1`, `2` and
+    /// also `A4` in some projects.
+    pub page: String,
+}
+
 /// A sheet item: a reference from this file to a child file.
 #[derive(Clone, Debug)]
 pub struct SheetItem {
@@ -307,6 +326,8 @@ pub struct SheetItem {
     pub fields: Vec<Field>,
     /// The sheet's pins.
     pub pins: Vec<SheetPin>,
+    /// One entry per placement of this sheet, giving its page number.
+    pub pages: Vec<SheetPage>,
     /// The `sheet` list this was read from.
     pub node: NodeId,
 }
@@ -740,8 +761,42 @@ fn read_sheet(doc: &Doc, node: NodeId, uuid: Option<Uuid>, version: FormatVersio
         size,
         fields: read_fields(doc, node, version),
         pins,
+        pages: read_sheet_pages(doc, node),
         node,
     })
+}
+
+/// Read a sheet item's page number, one per placement of the sheet.
+fn read_sheet_pages(doc: &Doc, node: NodeId) -> Vec<SheetPage> {
+    let mut pages = Vec::new();
+    for &child in doc.children(node) {
+        if !doc.head_is(child, "instances") {
+            continue;
+        }
+        for &project_node in doc.children(child) {
+            if !doc.head_is(project_node, "project") {
+                continue;
+            }
+            let project = first_atom(doc, project_node)
+                .and_then(|id| doc.atom_as_str(id))
+                .unwrap_or_default();
+            for &path_node in doc.children(project_node) {
+                if !doc.head_is(path_node, "path") {
+                    continue;
+                }
+                let Some(path) = first_atom(doc, path_node).and_then(|id| doc.atom_as_str(id))
+                else {
+                    continue;
+                };
+                pages.push(SheetPage {
+                    project: project.clone(),
+                    path: SheetPath(path),
+                    page: child_atom_string(doc, path_node, "page").unwrap_or_default(),
+                });
+            }
+        }
+    }
+    pages
 }
 
 /// Read every `property` child as a field.

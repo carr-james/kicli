@@ -10,11 +10,13 @@
 //! file's version stamp changes about its tokens, what kicli will and will not
 //! write, and the project file that holds bus aliases.
 
+pub mod hierarchy;
 pub mod items;
 pub mod project;
 pub mod version;
 pub mod write;
 
+pub use hierarchy::{Hierarchy, LoadError, LoadedFile, Placement, Problem};
 pub use items::{
     Field, Item, Label, LabelKind, LibId, Line, LineKind, Mirror, PinInstance, PointItem,
     ReadError, Refdes, Schematic, SheetItem, SheetPath, SheetPin, Symbol, SymbolPlacement,
