@@ -311,12 +311,53 @@ impl Graph {
     }
 
     /// Rule 1: items that share a point exactly are one conductor.
+    ///
+    /// A bus entry is the exception. It carries one member of a bundle, so it
+    /// joins the wire at its wire end and joins nothing else at its bus end:
+    /// not the bus, not a junction on the bus, not a bus label there, and not
+    /// another bus entry (`SCH_BUS_WIRE_ENTRY::ConnectionPropagatesTo`). Two
+    /// entries into one point of a bus carry two different members, so
+    /// joining them would short two nets together.
     fn merge_shared_points(&mut self) {
-        for group in self.by_point().into_values() {
-            for pair in group.windows(2) {
+        for ((sheet, point), group) in self.by_point() {
+            let entries: Vec<usize> = group
+                .iter()
+                .copied()
+                .filter(|&node| matches!(self.nodes[node].kind, NodeKind::BusEntry))
+                .collect();
+            if entries.is_empty() {
+                for pair in group.windows(2) {
+                    self.union(pair[0], pair[1]);
+                }
+                continue;
+            }
+
+            let others: Vec<usize> = group
+                .iter()
+                .copied()
+                .filter(|&node| !matches!(self.nodes[node].kind, NodeKind::BusEntry))
+                .collect();
+            for pair in others.windows(2) {
                 self.union(pair[0], pair[1]);
             }
+            let bundled = self.bus_through(sheet, point);
+            let partner = others
+                .iter()
+                .copied()
+                .find(|&node| !(bundled && matches!(self.nodes[node].kind, NodeKind::Junction)));
+            if let Some(partner) = partner {
+                for entry in entries {
+                    self.union(entry, partner);
+                }
+            }
         }
+    }
+
+    /// Does a bundle pass through this point of this placement?
+    fn bus_through(&self, sheet: usize, point: Point) -> bool {
+        self.lines_through(sheet, point)
+            .into_iter()
+            .any(|line| self.nodes[line].carrier == Carrier::Bus)
     }
 
     /// Rule 2: a junction joins every line that passes through it.

@@ -112,6 +112,25 @@ impl Probe {
         ));
     }
 
+    /// Draw a bundle between two points.
+    fn bus(&mut self, from: (&str, &str), to: (&str, &str)) {
+        let uuid = self.uuid();
+        self.items.push(format!(
+            "(bus (pts (xy {} {}) (xy {} {})) (stroke (width 0) (type default)) (uuid \"{uuid}\"))",
+            from.0, from.1, to.0, to.1
+        ));
+    }
+
+    /// Draw a bus entry: a stub from a wire end to a bundle.
+    fn bus_entry(&mut self, at: (&str, &str), size: (&str, &str)) {
+        let uuid = self.uuid();
+        self.items.push(format!(
+            "(bus_entry (at {} {}) (size {} {}) (stroke (width 0) (type default))\n\
+             (uuid \"{uuid}\"))",
+            at.0, at.1, size.0, size.1
+        ));
+    }
+
     /// Draw a label of any of the three kinds.
     fn label_of_kind(&mut self, head: &str, shape: &str, text: &str, at: (&str, &str)) {
         let uuid = self.uuid();
@@ -466,6 +485,40 @@ fn two_labels_join_when_their_net_names_are_equal() {
     assert!(found.contains(&net(&["R3.1"])));
     assert!(found.contains(&net(&["R4.1"])));
     assert!(found.contains(&net(&["R5.1", "R6.1"])));
+}
+
+#[test]
+fn two_bus_entries_that_meet_do_not_join() {
+    let mut probe = Probe::new("bus-entries");
+
+    // Two entries whose bus ends land on one point of a bundle.
+    probe.bus(("127", "25.4"), ("127", "76.2"));
+    probe.label_of_kind("label", "", "AN[0..7]", ("127", "25.4"));
+    probe.bus_entry(("124.46", "48.26"), ("2.54", "2.54"));
+    probe.bus_entry(("124.46", "53.34"), ("2.54", "-2.54"));
+    probe.wire(("99.06", "48.26"), ("124.46", "48.26"));
+    probe.wire(("99.06", "53.34"), ("124.46", "53.34"));
+    probe.label_of_kind("label", "", "AN0", ("101.6", "48.26"));
+    probe.label_of_kind("label", "", "AN2", ("101.6", "53.34"));
+    probe.place("R", "R1", ("99.06", "52.07"), &["1", "2"]);
+    probe.place("R", "R2", ("99.06", "57.15"), &["1", "2"]);
+
+    // The same two entries, meeting where no bundle passes.
+    probe.bus_entry(("124.46", "111.76"), ("2.54", "2.54"));
+    probe.bus_entry(("124.46", "116.84"), ("2.54", "-2.54"));
+    probe.wire(("99.06", "111.76"), ("124.46", "111.76"));
+    probe.wire(("99.06", "116.84"), ("124.46", "116.84"));
+    probe.label_of_kind("label", "", "BB0", ("101.6", "111.76"));
+    probe.label_of_kind("label", "", "BB2", ("101.6", "116.84"));
+    probe.place("R", "R3", ("99.06", "115.57"), &["1", "2"]);
+    probe.place("R", "R4", ("99.06", "120.65"), &["1", "2"]);
+
+    let found = probe.partition();
+    // Each member keeps its own net, on the bundle and off it.
+    assert!(found.contains(&net(&["R1.1"])));
+    assert!(found.contains(&net(&["R2.1"])));
+    assert!(found.contains(&net(&["R3.1"])));
+    assert!(found.contains(&net(&["R4.1"])));
 }
 
 #[test]
