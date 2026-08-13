@@ -5,6 +5,7 @@
 //! The module knows nothing about the command surface, files on disk, or
 //! `kicad-cli`.
 
+pub mod font;
 pub mod pins;
 pub mod transform;
 
@@ -62,6 +63,30 @@ impl Iu {
     }
 }
 
+impl std::ops::Add for Iu {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Self(self.0 + other.0)
+    }
+}
+
+impl std::ops::Sub for Iu {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Self(self.0 - other.0)
+    }
+}
+
+impl std::ops::Neg for Iu {
+    type Output = Self;
+
+    fn neg(self) -> Self {
+        Self(-self.0)
+    }
+}
+
 impl fmt::Display for Iu {
     /// Write the value the way KiCad writes it.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -98,6 +123,49 @@ impl Point {
 impl fmt::Display for Point {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{},{}", self.x, self.y)
+    }
+}
+
+/// A width and a height in internal units.
+///
+/// A size is not a point: adding two sizes is meaningful and adding two points
+/// is not. Text carries its size as a pair of internal units, one per axis,
+/// because KiCad lets the two differ.
+///
+/// # Examples
+///
+/// ```
+/// use kicli::geometry::{Iu, Size};
+/// let size = Size::new(12_700, 12_700);
+/// assert_eq!(size.x, Iu(12_700));
+/// ```
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Size {
+    /// The width.
+    pub x: Iu,
+    /// The height.
+    pub y: Iu,
+}
+
+impl Size {
+    /// A size from raw internal units.
+    #[must_use]
+    pub const fn new(x: i32, y: i32) -> Self {
+        Self { x: Iu(x), y: Iu(y) }
+    }
+
+    /// The smaller of the two sides, ignoring sign.
+    ///
+    /// KiCad derives a pen width from this side.
+    #[must_use]
+    pub fn smaller_side(self) -> Iu {
+        Iu(self.x.0.abs().min(self.y.0.abs()))
+    }
+}
+
+impl fmt::Display for Size {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}x{}", self.x, self.y)
     }
 }
 
