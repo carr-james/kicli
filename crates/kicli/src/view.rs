@@ -7,5 +7,9 @@
 //! in [`crate::render`] and are pictures; the views here are what an agent
 //! acts on.
 
+pub mod connectivity;
 pub mod delta;
+pub mod layout;
 pub mod snapshot;
+
+pub use connectivity::ViewOptions;
