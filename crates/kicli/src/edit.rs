@@ -13,3 +13,4 @@ pub mod label;
 pub mod mark;
 pub mod net;
 pub mod symbol;
+pub mod text;
