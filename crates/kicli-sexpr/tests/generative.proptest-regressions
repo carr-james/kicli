@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 629a81886ef8192e066aea75fcdb1dbfb65c72901e23699ba7ff0d27f11b5fbd # shrinks to source = "(((\"backslash \\\\ then quote \\\"\" \"backslash \\\\ then quote \\\"\" \"quote \\\" inside\") #PWR01))"

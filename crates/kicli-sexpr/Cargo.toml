@@ -19,3 +19,5 @@ thiserror = "2"
 corpus = []
 
 [dev-dependencies]
+# Property tests are the load-bearing test layer for this crate.
+proptest = "1"

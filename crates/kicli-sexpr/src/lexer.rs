@@ -199,6 +199,20 @@ mod tests {
     }
 
     #[test]
+    fn a_bare_hash_atom_is_not_representable() {
+        // `#` opens a comment when it is the first non-blank on a line. A bare
+        // atom starting with `#` therefore reads back as a comment as soon as
+        // the layout puts it at the start of a line. KiCad avoids this by
+        // quoting every user string, and kicli refuses to write such a file
+        // rather than corrupt it quietly.
+        let inline = "(a #PWR01)";
+        assert_eq!(kinds(inline)[2], TokenKind::Bare);
+
+        let wrapped = "(a\n\t#PWR01)";
+        assert_eq!(kinds(wrapped)[2], TokenKind::Comment);
+    }
+
+    #[test]
     fn an_unterminated_string_is_an_error() {
         assert_eq!(lex("(a \"b"), Err(SexprError::UnterminatedString(3)));
     }

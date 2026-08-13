@@ -139,6 +139,28 @@ impl Doc {
             .any(|node| matches!(node, Node::Comment { .. }))
     }
 
+    /// Bare atoms that start with `#`, which cannot be written safely.
+    ///
+    /// `#` opens a comment when it is the first non-blank character on a line.
+    /// Laying the file out can move such an atom to the start of a line, where
+    /// reading it back yields a comment and swallows the rest of the line.
+    /// KiCad never writes one, because it quotes every user string. A caller
+    /// holding one must refuse to write rather than corrupt the file.
+    #[must_use]
+    pub fn unrepresentable_atoms(&self) -> Vec<NodeId> {
+        self.node_ids()
+            .filter(|&id| {
+                matches!(
+                    self.nodes[id.index()],
+                    Node::Atom {
+                        kind: AtomKind::Bare,
+                        ..
+                    }
+                ) && self.atom_text(id).is_some_and(|t| t.starts_with('#'))
+            })
+            .collect()
+    }
+
     /// The outermost list, which is the file's single s-expression.
     #[must_use]
     pub fn root(&self) -> Option<NodeId> {
@@ -480,6 +502,15 @@ mod tests {
         let doc = Doc::parse("# note\n(a b)\n").expect("parses");
         assert!(doc.has_comments());
         assert_eq!(doc.emit(), "(a b)\n");
+    }
+
+    #[test]
+    fn a_bare_hash_atom_is_reported_as_unrepresentable() {
+        let doc = Doc::parse("(a #PWR01)").expect("parses");
+        assert_eq!(doc.unrepresentable_atoms().len(), 1);
+
+        let quoted = Doc::parse("(a \"#PWR01\")").expect("parses");
+        assert!(quoted.unrepresentable_atoms().is_empty());
     }
 
     #[test]
