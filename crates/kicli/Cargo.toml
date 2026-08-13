@@ -25,6 +25,9 @@ kicli-sexpr = { path = "../kicli-sexpr", version = "0.0.0" }
 # preserve_order keeps object keys in file order, which is what makes a
 # round-trip comparison meaningful.
 serde_json = { version = "1", features = ["preserve_order"] }
+# kicli.toml. Hand-parsing TOML would be a bug farm: the file has quoted table
+# names for per-rule settings, and unknown keys must be reported precisely.
+toml = "1"
 thiserror = "2"
 
 [dev-dependencies]
