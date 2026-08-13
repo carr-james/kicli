@@ -1,0 +1,14 @@
+{
+  "erc": {
+    "rule_severities": {
+      "endpoint_off_grid": "error",
+      "pin_not_connected": "warning"
+    }
+  },
+  "meta": {
+    "filename": "broken.kicad_pro",
+    "version": 3
+  },
+  "net_settings": {},
+  "sheets": []
+}

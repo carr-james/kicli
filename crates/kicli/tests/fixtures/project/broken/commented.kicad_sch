@@ -1,0 +1,9 @@
+# KiCad's lexer accepts this line and drops it on save.
+(kicad_sch
+	(version 20260306)
+	(generator "eeschema")
+	(generator_version "10.0")
+	(uuid "00000000-0000-4000-8000-090000000000")
+	(paper "A4")
+	(lib_symbols)
+)

@@ -31,8 +31,10 @@ fn fixtures() -> Vec<Fixture> {
                 "normal" => FormatMode::Normal,
                 "compact" => FormatMode::CompactTextProperties,
                 "library-table" => FormatMode::LibraryTable,
-                // The project file is JSON, not an s-expression.
-                "json" => return None,
+                // The project file is JSON, not an s-expression, and an
+                // oracle is KiCad's answer about a fixture rather than a
+                // schematic of its own.
+                "json" | "oracle" => return None,
                 other => panic!("unknown mode {other}"),
             };
             Some(Fixture {

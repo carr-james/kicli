@@ -16,7 +16,8 @@ use std::path::{Path, PathBuf};
 struct Record {
     version: String,
     mode: String,
-    canonical: bool,
+    /// `None` when canonicality does not apply, as it does not to an oracle.
+    canonical: Option<bool>,
     provenance: String,
 }
 
@@ -32,9 +33,10 @@ fn read_manifest(root: &Path) -> BTreeMap<String, Record> {
         let fields: Vec<&str> = line.split_whitespace().collect();
         assert_eq!(fields.len(), 5, "record needs five fields: {line}");
         let canonical = match fields[3] {
-            "yes" => true,
-            "no" => false,
-            other => panic!("canonical is yes or no, not {other}: {line}"),
+            "yes" => Some(true),
+            "no" => Some(false),
+            "-" => None,
+            other => panic!("canonical is yes, no or -, not {other}: {line}"),
         };
         records.insert(
             fields[0].to_owned(),
@@ -103,7 +105,7 @@ fn fixtures_match_manifest() {
         let bytes = std::fs::read(root.join(relative)).expect("fixture is readable");
         let text = String::from_utf8(bytes.clone()).expect("fixture is UTF-8");
 
-        if record.canonical {
+        if record.canonical == Some(true) {
             assert!(
                 text.ends_with('\n') && !text.ends_with("\n\n"),
                 "{relative} is canonical, so it ends in exactly one newline"
@@ -121,7 +123,7 @@ fn fixtures_match_manifest() {
         assert!(
             matches!(
                 record.mode.as_str(),
-                "normal" | "compact" | "library-table" | "json"
+                "normal" | "compact" | "library-table" | "json" | "oracle"
             ),
             "{relative} has a known mode, not {}",
             record.mode

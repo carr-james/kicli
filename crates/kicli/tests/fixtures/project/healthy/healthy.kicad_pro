@@ -1,0 +1,24 @@
+{
+  "erc": {
+    "rule_severities": {
+      "endpoint_off_grid": "error",
+      "pin_not_connected": "warning"
+    }
+  },
+  "meta": {
+    "filename": "healthy.kicad_pro",
+    "version": 3
+  },
+  "net_settings": {
+    "bus_aliases": [
+      {
+        "members": [
+          "A0",
+          "A1"
+        ],
+        "name": "ADDR"
+      }
+    ]
+  },
+  "sheets": []
+}

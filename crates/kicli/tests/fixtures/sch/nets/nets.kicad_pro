@@ -1,0 +1,37 @@
+{
+  "board": {},
+  "erc": {
+    "rule_severities": {
+      "pin_not_connected": "warning"
+    }
+  },
+  "meta": {
+    "filename": "nets.kicad_pro",
+    "version": 3
+  },
+  "net_settings": {
+    "bus_aliases": [
+      {
+        "members": [
+          "D0",
+          "D1"
+        ],
+        "name": "DATA"
+      }
+    ]
+  },
+  "sheets": [
+    [
+      "00000000-0000-4000-8000-030000000000",
+      "Root"
+    ],
+    [
+      "00000000-0000-4000-8000-03a000000001",
+      "channel_a"
+    ],
+    [
+      "00000000-0000-4000-8000-03b000000001",
+      "channel_b"
+    ]
+  ]
+}

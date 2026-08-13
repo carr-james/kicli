@@ -1,0 +1,638 @@
+{
+    "$schema": "https://schemas.kicad.org/erc.v1.json",
+    "coordinate_units": "mm",
+    "date": "2026-08-13T10:28:15",
+    "ignored_checks": [
+        {
+            "description": "Global label only appears once in the schematic",
+            "key": "single_global_label"
+        },
+        {
+            "description": "Four connection points are joined together",
+            "key": "four_way_junction"
+        },
+        {
+            "description": "SPICE model issue",
+            "key": "simulation_model_issue"
+        },
+        {
+            "description": "Assigned footprint doesn't match footprint filters",
+            "key": "footprint_filter"
+        }
+    ],
+    "included_severities": [
+        "error",
+        "warning",
+        "exclusion"
+    ],
+    "kicad_version": "10.0.5",
+    "sheets": [
+        {
+            "path": "/",
+            "uuid_path": "/00000000-0000-4000-8000-020000000000",
+            "violations": [
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A1 Pin 1 [Passive, Line]",
+                            "pos": {
+                                "x": 0.3048,
+                                "y": 0.3556
+                            },
+                            "uuid": "00000000-0000-4000-8000-020000000065"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A5 Pin 1 [Passive, Line]",
+                            "pos": {
+                                "x": 0.3048,
+                                "y": 0.7874
+                            },
+                            "uuid": "00000000-0000-4000-8000-0200000001f5"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A1 Pin 4 [Passive, Line]",
+                            "pos": {
+                                "x": 0.3429,
+                                "y": 0.4572
+                            },
+                            "uuid": "00000000-0000-4000-8000-020000000068"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A5 Pin 4 [Passive, Line]",
+                            "pos": {
+                                "x": 0.3429,
+                                "y": 0.6858
+                            },
+                            "uuid": "00000000-0000-4000-8000-0200000001f8"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A1 Pin 3 [Passive, Line]",
+                            "pos": {
+                                "x": 0.3937,
+                                "y": 0.3048
+                            },
+                            "uuid": "00000000-0000-4000-8000-020000000067"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A5 Pin 3 [Passive, Line]",
+                            "pos": {
+                                "x": 0.3937,
+                                "y": 0.8382
+                            },
+                            "uuid": "00000000-0000-4000-8000-0200000001f7"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A1 Pin 2 [Passive, Line]",
+                            "pos": {
+                                "x": 0.4572,
+                                "y": 0.4064
+                            },
+                            "uuid": "00000000-0000-4000-8000-020000000066"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A5 Pin 2 [Passive, Line]",
+                            "pos": {
+                                "x": 0.4572,
+                                "y": 0.7366
+                            },
+                            "uuid": "00000000-0000-4000-8000-0200000001f6"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A2 Pin 3 [Passive, Line]",
+                            "pos": {
+                                "x": 0.6858,
+                                "y": 0.3683
+                            },
+                            "uuid": "00000000-0000-4000-8000-0200000000cb"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A6 Pin 2 [Passive, Line]",
+                            "pos": {
+                                "x": 0.6858,
+                                "y": 0.7874
+                            },
+                            "uuid": "00000000-0000-4000-8000-02000000025a"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A2 Pin 1 [Passive, Line]",
+                            "pos": {
+                                "x": 0.7366,
+                                "y": 0.4572
+                            },
+                            "uuid": "00000000-0000-4000-8000-0200000000c9"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A6 Pin 3 [Passive, Line]",
+                            "pos": {
+                                "x": 0.7493,
+                                "y": 0.6858
+                            },
+                            "uuid": "00000000-0000-4000-8000-02000000025b"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A2 Pin 2 [Passive, Line]",
+                            "pos": {
+                                "x": 0.7874,
+                                "y": 0.3048
+                            },
+                            "uuid": "00000000-0000-4000-8000-0200000000ca"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A6 Pin 4 [Passive, Line]",
+                            "pos": {
+                                "x": 0.8001,
+                                "y": 0.8382
+                            },
+                            "uuid": "00000000-0000-4000-8000-02000000025c"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A2 Pin 4 [Passive, Line]",
+                            "pos": {
+                                "x": 0.8382,
+                                "y": 0.4191
+                            },
+                            "uuid": "00000000-0000-4000-8000-0200000000cc"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A6 Pin 1 [Passive, Line]",
+                            "pos": {
+                                "x": 0.8382,
+                                "y": 0.7366
+                            },
+                            "uuid": "00000000-0000-4000-8000-020000000259"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A3 Pin 2 [Passive, Line]",
+                            "pos": {
+                                "x": 1.0668,
+                                "y": 0.3556
+                            },
+                            "uuid": "00000000-0000-4000-8000-02000000012e"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A7 Pin 3 [Passive, Line]",
+                            "pos": {
+                                "x": 1.0668,
+                                "y": 0.7747
+                            },
+                            "uuid": "00000000-0000-4000-8000-0200000002bf"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A7 Pin 1 [Passive, Line]",
+                            "pos": {
+                                "x": 1.1176,
+                                "y": 0.6858
+                            },
+                            "uuid": "00000000-0000-4000-8000-0200000002bd"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A3 Pin 3 [Passive, Line]",
+                            "pos": {
+                                "x": 1.1303,
+                                "y": 0.4572
+                            },
+                            "uuid": "00000000-0000-4000-8000-02000000012f"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A7 Pin 2 [Passive, Line]",
+                            "pos": {
+                                "x": 1.1684,
+                                "y": 0.8382
+                            },
+                            "uuid": "00000000-0000-4000-8000-0200000002be"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A3 Pin 4 [Passive, Line]",
+                            "pos": {
+                                "x": 1.1811,
+                                "y": 0.3048
+                            },
+                            "uuid": "00000000-0000-4000-8000-020000000130"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A3 Pin 1 [Passive, Line]",
+                            "pos": {
+                                "x": 1.2192,
+                                "y": 0.4064
+                            },
+                            "uuid": "00000000-0000-4000-8000-02000000012d"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A7 Pin 4 [Passive, Line]",
+                            "pos": {
+                                "x": 1.2192,
+                                "y": 0.7239
+                            },
+                            "uuid": "00000000-0000-4000-8000-0200000002c0"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A4 Pin 4 [Passive, Line]",
+                            "pos": {
+                                "x": 1.4478,
+                                "y": 0.3429
+                            },
+                            "uuid": "00000000-0000-4000-8000-020000000194"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A8 Pin 4 [Passive, Line]",
+                            "pos": {
+                                "x": 1.4478,
+                                "y": 0.8001
+                            },
+                            "uuid": "00000000-0000-4000-8000-020000000324"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A4 Pin 2 [Passive, Line]",
+                            "pos": {
+                                "x": 1.4986,
+                                "y": 0.4572
+                            },
+                            "uuid": "00000000-0000-4000-8000-020000000192"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A8 Pin 2 [Passive, Line]",
+                            "pos": {
+                                "x": 1.4986,
+                                "y": 0.6858
+                            },
+                            "uuid": "00000000-0000-4000-8000-020000000322"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A4 Pin 1 [Passive, Line]",
+                            "pos": {
+                                "x": 1.5494,
+                                "y": 0.3048
+                            },
+                            "uuid": "00000000-0000-4000-8000-020000000191"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A8 Pin 1 [Passive, Line]",
+                            "pos": {
+                                "x": 1.5494,
+                                "y": 0.8382
+                            },
+                            "uuid": "00000000-0000-4000-8000-020000000321"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A4 Pin 3 [Passive, Line]",
+                            "pos": {
+                                "x": 1.6002,
+                                "y": 0.3937
+                            },
+                            "uuid": "00000000-0000-4000-8000-020000000193"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Symbol A8 Pin 3 [Passive, Line]",
+                            "pos": {
+                                "x": 1.6002,
+                                "y": 0.7493
+                            },
+                            "uuid": "00000000-0000-4000-8000-020000000323"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "The current configuration does not include the symbol library 'Test'",
+                    "items": [
+                        {
+                            "description": "Symbol A1 [ASYM]",
+                            "pos": {
+                                "x": 0.381,
+                                "y": 0.381
+                            },
+                            "uuid": "00000000-0000-4000-8000-020000000064"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                },
+                {
+                    "description": "The current configuration does not include the symbol library 'Test'",
+                    "items": [
+                        {
+                            "description": "Symbol A5 [ASYM]",
+                            "pos": {
+                                "x": 0.381,
+                                "y": 0.762
+                            },
+                            "uuid": "00000000-0000-4000-8000-0200000001f4"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                },
+                {
+                    "description": "The current configuration does not include the symbol library 'Test'",
+                    "items": [
+                        {
+                            "description": "Symbol A2 [ASYM]",
+                            "pos": {
+                                "x": 0.762,
+                                "y": 0.381
+                            },
+                            "uuid": "00000000-0000-4000-8000-0200000000c8"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                },
+                {
+                    "description": "The current configuration does not include the symbol library 'Test'",
+                    "items": [
+                        {
+                            "description": "Symbol A6 [ASYM]",
+                            "pos": {
+                                "x": 0.762,
+                                "y": 0.762
+                            },
+                            "uuid": "00000000-0000-4000-8000-020000000258"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                },
+                {
+                    "description": "The current configuration does not include the symbol library 'Test'",
+                    "items": [
+                        {
+                            "description": "Symbol A3 [ASYM]",
+                            "pos": {
+                                "x": 1.143,
+                                "y": 0.381
+                            },
+                            "uuid": "00000000-0000-4000-8000-02000000012c"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                },
+                {
+                    "description": "The current configuration does not include the symbol library 'Test'",
+                    "items": [
+                        {
+                            "description": "Symbol A7 [ASYM]",
+                            "pos": {
+                                "x": 1.143,
+                                "y": 0.762
+                            },
+                            "uuid": "00000000-0000-4000-8000-0200000002bc"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                },
+                {
+                    "description": "The current configuration does not include the symbol library 'Test'",
+                    "items": [
+                        {
+                            "description": "Symbol A4 [ASYM]",
+                            "pos": {
+                                "x": 1.524,
+                                "y": 0.381
+                            },
+                            "uuid": "00000000-0000-4000-8000-020000000190"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                },
+                {
+                    "description": "The current configuration does not include the symbol library 'Test'",
+                    "items": [
+                        {
+                            "description": "Symbol A8 [ASYM]",
+                            "pos": {
+                                "x": 1.524,
+                                "y": 0.762
+                            },
+                            "uuid": "00000000-0000-4000-8000-020000000320"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_issues"
+                }
+            ]
+        }
+    ],
+    "source": "asymmetric.kicad_sch"
+}

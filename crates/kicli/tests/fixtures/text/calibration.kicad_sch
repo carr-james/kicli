@@ -1,0 +1,10169 @@
+(kicad_sch
+	(version 20260306)
+	(generator "eeschema")
+	(generator_version "10.0")
+	(uuid "00000000-0000-4000-8000-0a0000000000")
+	(paper "User" 420 3048)
+	(lib_symbols)
+	(text "!"
+		(exclude_from_sim no)
+		(at 12.7 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000001")
+	)
+	(text "\""
+		(exclude_from_sim no)
+		(at 17.78 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000002")
+	)
+	(text "#"
+		(exclude_from_sim no)
+		(at 22.86 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000003")
+	)
+	(text "$"
+		(exclude_from_sim no)
+		(at 27.94 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000004")
+	)
+	(text "%"
+		(exclude_from_sim no)
+		(at 33.02 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000005")
+	)
+	(text "&"
+		(exclude_from_sim no)
+		(at 38.1 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000006")
+	)
+	(text "'"
+		(exclude_from_sim no)
+		(at 43.18 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000007")
+	)
+	(text "("
+		(exclude_from_sim no)
+		(at 48.26 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000008")
+	)
+	(text ")"
+		(exclude_from_sim no)
+		(at 53.34 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000009")
+	)
+	(text "*"
+		(exclude_from_sim no)
+		(at 58.42 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000000a")
+	)
+	(text "+"
+		(exclude_from_sim no)
+		(at 63.5 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000000b")
+	)
+	(text ","
+		(exclude_from_sim no)
+		(at 68.58 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000000c")
+	)
+	(text "-"
+		(exclude_from_sim no)
+		(at 73.66 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000000d")
+	)
+	(text "."
+		(exclude_from_sim no)
+		(at 78.74 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000000e")
+	)
+	(text "/"
+		(exclude_from_sim no)
+		(at 83.82 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000000f")
+	)
+	(text "0"
+		(exclude_from_sim no)
+		(at 88.9 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000010")
+	)
+	(text "1"
+		(exclude_from_sim no)
+		(at 93.98 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000011")
+	)
+	(text "2"
+		(exclude_from_sim no)
+		(at 99.06 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000012")
+	)
+	(text "3"
+		(exclude_from_sim no)
+		(at 104.14 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000013")
+	)
+	(text "4"
+		(exclude_from_sim no)
+		(at 109.22 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000014")
+	)
+	(text "5"
+		(exclude_from_sim no)
+		(at 114.3 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000015")
+	)
+	(text "6"
+		(exclude_from_sim no)
+		(at 119.38 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000016")
+	)
+	(text "7"
+		(exclude_from_sim no)
+		(at 124.46 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000017")
+	)
+	(text "8"
+		(exclude_from_sim no)
+		(at 129.54 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000018")
+	)
+	(text "9"
+		(exclude_from_sim no)
+		(at 134.62 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000019")
+	)
+	(text ":"
+		(exclude_from_sim no)
+		(at 139.7 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000001a")
+	)
+	(text ";"
+		(exclude_from_sim no)
+		(at 144.78 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000001b")
+	)
+	(text "<"
+		(exclude_from_sim no)
+		(at 149.86 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000001c")
+	)
+	(text "="
+		(exclude_from_sim no)
+		(at 154.94 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000001d")
+	)
+	(text ">"
+		(exclude_from_sim no)
+		(at 160.02 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000001e")
+	)
+	(text "?"
+		(exclude_from_sim no)
+		(at 165.1 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000001f")
+	)
+	(text "@"
+		(exclude_from_sim no)
+		(at 170.18 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000020")
+	)
+	(text "A"
+		(exclude_from_sim no)
+		(at 175.26 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000021")
+	)
+	(text "B"
+		(exclude_from_sim no)
+		(at 180.34 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000022")
+	)
+	(text "C"
+		(exclude_from_sim no)
+		(at 185.42 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000023")
+	)
+	(text "D"
+		(exclude_from_sim no)
+		(at 190.5 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000024")
+	)
+	(text "E"
+		(exclude_from_sim no)
+		(at 195.58 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000025")
+	)
+	(text "F"
+		(exclude_from_sim no)
+		(at 200.66 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000026")
+	)
+	(text "G"
+		(exclude_from_sim no)
+		(at 205.74 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000027")
+	)
+	(text "H"
+		(exclude_from_sim no)
+		(at 210.82 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000028")
+	)
+	(text "I"
+		(exclude_from_sim no)
+		(at 215.9 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000029")
+	)
+	(text "J"
+		(exclude_from_sim no)
+		(at 220.98 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000002a")
+	)
+	(text "K"
+		(exclude_from_sim no)
+		(at 226.06 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000002b")
+	)
+	(text "L"
+		(exclude_from_sim no)
+		(at 231.14 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000002c")
+	)
+	(text "M"
+		(exclude_from_sim no)
+		(at 236.22 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000002d")
+	)
+	(text "N"
+		(exclude_from_sim no)
+		(at 241.3 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000002e")
+	)
+	(text "O"
+		(exclude_from_sim no)
+		(at 246.38 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000002f")
+	)
+	(text "P"
+		(exclude_from_sim no)
+		(at 251.46 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000030")
+	)
+	(text "Q"
+		(exclude_from_sim no)
+		(at 256.54 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000031")
+	)
+	(text "R"
+		(exclude_from_sim no)
+		(at 261.62 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000032")
+	)
+	(text "S"
+		(exclude_from_sim no)
+		(at 266.7 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000033")
+	)
+	(text "T"
+		(exclude_from_sim no)
+		(at 271.78 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000034")
+	)
+	(text "U"
+		(exclude_from_sim no)
+		(at 276.86 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000035")
+	)
+	(text "V"
+		(exclude_from_sim no)
+		(at 281.94 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000036")
+	)
+	(text "W"
+		(exclude_from_sim no)
+		(at 287.02 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000037")
+	)
+	(text "X"
+		(exclude_from_sim no)
+		(at 292.1 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000038")
+	)
+	(text "Y"
+		(exclude_from_sim no)
+		(at 297.18 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000039")
+	)
+	(text "Z"
+		(exclude_from_sim no)
+		(at 302.26 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000003a")
+	)
+	(text "["
+		(exclude_from_sim no)
+		(at 307.34 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000003b")
+	)
+	(text "\\"
+		(exclude_from_sim no)
+		(at 312.42 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000003c")
+	)
+	(text "]"
+		(exclude_from_sim no)
+		(at 317.5 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000003d")
+	)
+	(text "^"
+		(exclude_from_sim no)
+		(at 322.58 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000003e")
+	)
+	(text "_"
+		(exclude_from_sim no)
+		(at 327.66 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000003f")
+	)
+	(text "`"
+		(exclude_from_sim no)
+		(at 332.74 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000040")
+	)
+	(text "a"
+		(exclude_from_sim no)
+		(at 337.82 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000041")
+	)
+	(text "b"
+		(exclude_from_sim no)
+		(at 342.9 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000042")
+	)
+	(text "c"
+		(exclude_from_sim no)
+		(at 347.98 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000043")
+	)
+	(text "d"
+		(exclude_from_sim no)
+		(at 353.06 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000044")
+	)
+	(text "e"
+		(exclude_from_sim no)
+		(at 358.14 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000045")
+	)
+	(text "f"
+		(exclude_from_sim no)
+		(at 363.22 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000046")
+	)
+	(text "g"
+		(exclude_from_sim no)
+		(at 368.3 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000047")
+	)
+	(text "h"
+		(exclude_from_sim no)
+		(at 373.38 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000048")
+	)
+	(text "i"
+		(exclude_from_sim no)
+		(at 378.46 12.7 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000049")
+	)
+	(text "j"
+		(exclude_from_sim no)
+		(at 12.7 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000004a")
+	)
+	(text "k"
+		(exclude_from_sim no)
+		(at 17.78 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000004b")
+	)
+	(text "l"
+		(exclude_from_sim no)
+		(at 22.86 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000004c")
+	)
+	(text "m"
+		(exclude_from_sim no)
+		(at 27.94 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000004d")
+	)
+	(text "n"
+		(exclude_from_sim no)
+		(at 33.02 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000004e")
+	)
+	(text "o"
+		(exclude_from_sim no)
+		(at 38.1 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000004f")
+	)
+	(text "p"
+		(exclude_from_sim no)
+		(at 43.18 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000050")
+	)
+	(text "q"
+		(exclude_from_sim no)
+		(at 48.26 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000051")
+	)
+	(text "r"
+		(exclude_from_sim no)
+		(at 53.34 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000052")
+	)
+	(text "s"
+		(exclude_from_sim no)
+		(at 58.42 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000053")
+	)
+	(text "t"
+		(exclude_from_sim no)
+		(at 63.5 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000054")
+	)
+	(text "u"
+		(exclude_from_sim no)
+		(at 68.58 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000055")
+	)
+	(text "v"
+		(exclude_from_sim no)
+		(at 73.66 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000056")
+	)
+	(text "w"
+		(exclude_from_sim no)
+		(at 78.74 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000057")
+	)
+	(text "x"
+		(exclude_from_sim no)
+		(at 83.82 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000058")
+	)
+	(text "y"
+		(exclude_from_sim no)
+		(at 88.9 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000059")
+	)
+	(text "z"
+		(exclude_from_sim no)
+		(at 93.98 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000005a")
+	)
+	(text "{"
+		(exclude_from_sim no)
+		(at 99.06 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000005b")
+	)
+	(text "|"
+		(exclude_from_sim no)
+		(at 104.14 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000005c")
+	)
+	(text "}"
+		(exclude_from_sim no)
+		(at 109.22 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000005d")
+	)
+	(text "~"
+		(exclude_from_sim no)
+		(at 114.3 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000005e")
+	)
+	(text "!"
+		(exclude_from_sim no)
+		(at 119.38 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000005f")
+	)
+	(text "\""
+		(exclude_from_sim no)
+		(at 124.46 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000060")
+	)
+	(text "#"
+		(exclude_from_sim no)
+		(at 129.54 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000061")
+	)
+	(text "$"
+		(exclude_from_sim no)
+		(at 134.62 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000062")
+	)
+	(text "%"
+		(exclude_from_sim no)
+		(at 139.7 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000063")
+	)
+	(text "&"
+		(exclude_from_sim no)
+		(at 144.78 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000064")
+	)
+	(text "'"
+		(exclude_from_sim no)
+		(at 149.86 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000065")
+	)
+	(text "("
+		(exclude_from_sim no)
+		(at 154.94 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000066")
+	)
+	(text ")"
+		(exclude_from_sim no)
+		(at 160.02 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000067")
+	)
+	(text "*"
+		(exclude_from_sim no)
+		(at 165.1 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000068")
+	)
+	(text "+"
+		(exclude_from_sim no)
+		(at 170.18 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000069")
+	)
+	(text ","
+		(exclude_from_sim no)
+		(at 175.26 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000006a")
+	)
+	(text "-"
+		(exclude_from_sim no)
+		(at 180.34 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000006b")
+	)
+	(text "."
+		(exclude_from_sim no)
+		(at 185.42 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000006c")
+	)
+	(text "/"
+		(exclude_from_sim no)
+		(at 190.5 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000006d")
+	)
+	(text "0"
+		(exclude_from_sim no)
+		(at 195.58 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000006e")
+	)
+	(text "1"
+		(exclude_from_sim no)
+		(at 200.66 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000006f")
+	)
+	(text "2"
+		(exclude_from_sim no)
+		(at 205.74 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000070")
+	)
+	(text "3"
+		(exclude_from_sim no)
+		(at 210.82 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000071")
+	)
+	(text "4"
+		(exclude_from_sim no)
+		(at 215.9 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000072")
+	)
+	(text "5"
+		(exclude_from_sim no)
+		(at 220.98 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000073")
+	)
+	(text "6"
+		(exclude_from_sim no)
+		(at 226.06 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000074")
+	)
+	(text "7"
+		(exclude_from_sim no)
+		(at 231.14 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000075")
+	)
+	(text "8"
+		(exclude_from_sim no)
+		(at 236.22 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000076")
+	)
+	(text "9"
+		(exclude_from_sim no)
+		(at 241.3 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000077")
+	)
+	(text ":"
+		(exclude_from_sim no)
+		(at 246.38 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000078")
+	)
+	(text ";"
+		(exclude_from_sim no)
+		(at 251.46 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000079")
+	)
+	(text "<"
+		(exclude_from_sim no)
+		(at 256.54 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000007a")
+	)
+	(text "="
+		(exclude_from_sim no)
+		(at 261.62 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000007b")
+	)
+	(text ">"
+		(exclude_from_sim no)
+		(at 266.7 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000007c")
+	)
+	(text "?"
+		(exclude_from_sim no)
+		(at 271.78 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000007d")
+	)
+	(text "@"
+		(exclude_from_sim no)
+		(at 276.86 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000007e")
+	)
+	(text "A"
+		(exclude_from_sim no)
+		(at 281.94 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000007f")
+	)
+	(text "B"
+		(exclude_from_sim no)
+		(at 287.02 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000080")
+	)
+	(text "C"
+		(exclude_from_sim no)
+		(at 292.1 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000081")
+	)
+	(text "D"
+		(exclude_from_sim no)
+		(at 297.18 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000082")
+	)
+	(text "E"
+		(exclude_from_sim no)
+		(at 302.26 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000083")
+	)
+	(text "F"
+		(exclude_from_sim no)
+		(at 307.34 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000084")
+	)
+	(text "G"
+		(exclude_from_sim no)
+		(at 312.42 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000085")
+	)
+	(text "H"
+		(exclude_from_sim no)
+		(at 317.5 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000086")
+	)
+	(text "I"
+		(exclude_from_sim no)
+		(at 322.58 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000087")
+	)
+	(text "J"
+		(exclude_from_sim no)
+		(at 327.66 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000088")
+	)
+	(text "K"
+		(exclude_from_sim no)
+		(at 332.74 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000089")
+	)
+	(text "L"
+		(exclude_from_sim no)
+		(at 337.82 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000008a")
+	)
+	(text "M"
+		(exclude_from_sim no)
+		(at 342.9 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000008b")
+	)
+	(text "N"
+		(exclude_from_sim no)
+		(at 347.98 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000008c")
+	)
+	(text "O"
+		(exclude_from_sim no)
+		(at 353.06 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000008d")
+	)
+	(text "P"
+		(exclude_from_sim no)
+		(at 358.14 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000008e")
+	)
+	(text "Q"
+		(exclude_from_sim no)
+		(at 363.22 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000008f")
+	)
+	(text "R"
+		(exclude_from_sim no)
+		(at 368.3 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000090")
+	)
+	(text "S"
+		(exclude_from_sim no)
+		(at 373.38 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000091")
+	)
+	(text "T"
+		(exclude_from_sim no)
+		(at 378.46 20.32 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000092")
+	)
+	(text "U"
+		(exclude_from_sim no)
+		(at 12.7 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000093")
+	)
+	(text "V"
+		(exclude_from_sim no)
+		(at 17.78 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000094")
+	)
+	(text "W"
+		(exclude_from_sim no)
+		(at 22.86 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000095")
+	)
+	(text "X"
+		(exclude_from_sim no)
+		(at 27.94 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000096")
+	)
+	(text "Y"
+		(exclude_from_sim no)
+		(at 33.02 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000097")
+	)
+	(text "Z"
+		(exclude_from_sim no)
+		(at 38.1 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000098")
+	)
+	(text "["
+		(exclude_from_sim no)
+		(at 43.18 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000099")
+	)
+	(text "\\"
+		(exclude_from_sim no)
+		(at 48.26 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000009a")
+	)
+	(text "]"
+		(exclude_from_sim no)
+		(at 53.34 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000009b")
+	)
+	(text "^"
+		(exclude_from_sim no)
+		(at 58.42 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000009c")
+	)
+	(text "_"
+		(exclude_from_sim no)
+		(at 63.5 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000009d")
+	)
+	(text "`"
+		(exclude_from_sim no)
+		(at 68.58 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000009e")
+	)
+	(text "a"
+		(exclude_from_sim no)
+		(at 73.66 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000009f")
+	)
+	(text "b"
+		(exclude_from_sim no)
+		(at 78.74 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000a0")
+	)
+	(text "c"
+		(exclude_from_sim no)
+		(at 83.82 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000a1")
+	)
+	(text "d"
+		(exclude_from_sim no)
+		(at 88.9 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000a2")
+	)
+	(text "e"
+		(exclude_from_sim no)
+		(at 93.98 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000a3")
+	)
+	(text "f"
+		(exclude_from_sim no)
+		(at 99.06 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000a4")
+	)
+	(text "g"
+		(exclude_from_sim no)
+		(at 104.14 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000a5")
+	)
+	(text "h"
+		(exclude_from_sim no)
+		(at 109.22 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000a6")
+	)
+	(text "i"
+		(exclude_from_sim no)
+		(at 114.3 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000a7")
+	)
+	(text "j"
+		(exclude_from_sim no)
+		(at 119.38 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000a8")
+	)
+	(text "k"
+		(exclude_from_sim no)
+		(at 124.46 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000a9")
+	)
+	(text "l"
+		(exclude_from_sim no)
+		(at 129.54 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000aa")
+	)
+	(text "m"
+		(exclude_from_sim no)
+		(at 134.62 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000ab")
+	)
+	(text "n"
+		(exclude_from_sim no)
+		(at 139.7 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000ac")
+	)
+	(text "o"
+		(exclude_from_sim no)
+		(at 144.78 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000ad")
+	)
+	(text "p"
+		(exclude_from_sim no)
+		(at 149.86 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000ae")
+	)
+	(text "q"
+		(exclude_from_sim no)
+		(at 154.94 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000af")
+	)
+	(text "r"
+		(exclude_from_sim no)
+		(at 160.02 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000b0")
+	)
+	(text "s"
+		(exclude_from_sim no)
+		(at 165.1 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000b1")
+	)
+	(text "t"
+		(exclude_from_sim no)
+		(at 170.18 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000b2")
+	)
+	(text "u"
+		(exclude_from_sim no)
+		(at 175.26 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000b3")
+	)
+	(text "v"
+		(exclude_from_sim no)
+		(at 180.34 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000b4")
+	)
+	(text "w"
+		(exclude_from_sim no)
+		(at 185.42 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000b5")
+	)
+	(text "x"
+		(exclude_from_sim no)
+		(at 190.5 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000b6")
+	)
+	(text "y"
+		(exclude_from_sim no)
+		(at 195.58 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000b7")
+	)
+	(text "z"
+		(exclude_from_sim no)
+		(at 200.66 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000b8")
+	)
+	(text "{"
+		(exclude_from_sim no)
+		(at 205.74 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000b9")
+	)
+	(text "|"
+		(exclude_from_sim no)
+		(at 210.82 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000ba")
+	)
+	(text "}"
+		(exclude_from_sim no)
+		(at 215.9 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000bb")
+	)
+	(text "~"
+		(exclude_from_sim no)
+		(at 220.98 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000bc")
+	)
+	(text "!"
+		(exclude_from_sim no)
+		(at 226.06 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000bd")
+	)
+	(text "\""
+		(exclude_from_sim no)
+		(at 231.14 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000be")
+	)
+	(text "#"
+		(exclude_from_sim no)
+		(at 236.22 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000bf")
+	)
+	(text "$"
+		(exclude_from_sim no)
+		(at 241.3 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000c0")
+	)
+	(text "%"
+		(exclude_from_sim no)
+		(at 246.38 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000c1")
+	)
+	(text "&"
+		(exclude_from_sim no)
+		(at 251.46 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000c2")
+	)
+	(text "'"
+		(exclude_from_sim no)
+		(at 256.54 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000c3")
+	)
+	(text "("
+		(exclude_from_sim no)
+		(at 261.62 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000c4")
+	)
+	(text ")"
+		(exclude_from_sim no)
+		(at 266.7 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000c5")
+	)
+	(text "*"
+		(exclude_from_sim no)
+		(at 271.78 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000c6")
+	)
+	(text "+"
+		(exclude_from_sim no)
+		(at 276.86 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000c7")
+	)
+	(text ","
+		(exclude_from_sim no)
+		(at 281.94 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000c8")
+	)
+	(text "-"
+		(exclude_from_sim no)
+		(at 287.02 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000c9")
+	)
+	(text "."
+		(exclude_from_sim no)
+		(at 292.1 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000ca")
+	)
+	(text "/"
+		(exclude_from_sim no)
+		(at 297.18 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000cb")
+	)
+	(text "0"
+		(exclude_from_sim no)
+		(at 302.26 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000cc")
+	)
+	(text "1"
+		(exclude_from_sim no)
+		(at 307.34 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000cd")
+	)
+	(text "2"
+		(exclude_from_sim no)
+		(at 312.42 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000ce")
+	)
+	(text "3"
+		(exclude_from_sim no)
+		(at 317.5 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000cf")
+	)
+	(text "4"
+		(exclude_from_sim no)
+		(at 322.58 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000d0")
+	)
+	(text "5"
+		(exclude_from_sim no)
+		(at 327.66 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000d1")
+	)
+	(text "6"
+		(exclude_from_sim no)
+		(at 332.74 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000d2")
+	)
+	(text "7"
+		(exclude_from_sim no)
+		(at 337.82 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000d3")
+	)
+	(text "8"
+		(exclude_from_sim no)
+		(at 342.9 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000d4")
+	)
+	(text "9"
+		(exclude_from_sim no)
+		(at 347.98 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000d5")
+	)
+	(text ":"
+		(exclude_from_sim no)
+		(at 353.06 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000d6")
+	)
+	(text ";"
+		(exclude_from_sim no)
+		(at 358.14 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000d7")
+	)
+	(text "<"
+		(exclude_from_sim no)
+		(at 363.22 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000d8")
+	)
+	(text "="
+		(exclude_from_sim no)
+		(at 368.3 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000d9")
+	)
+	(text ">"
+		(exclude_from_sim no)
+		(at 373.38 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000da")
+	)
+	(text "?"
+		(exclude_from_sim no)
+		(at 378.46 27.94 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000db")
+	)
+	(text "@"
+		(exclude_from_sim no)
+		(at 12.7 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000dc")
+	)
+	(text "A"
+		(exclude_from_sim no)
+		(at 17.78 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000dd")
+	)
+	(text "B"
+		(exclude_from_sim no)
+		(at 22.86 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000de")
+	)
+	(text "C"
+		(exclude_from_sim no)
+		(at 27.94 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000df")
+	)
+	(text "D"
+		(exclude_from_sim no)
+		(at 33.02 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000e0")
+	)
+	(text "E"
+		(exclude_from_sim no)
+		(at 38.1 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000e1")
+	)
+	(text "F"
+		(exclude_from_sim no)
+		(at 43.18 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000e2")
+	)
+	(text "G"
+		(exclude_from_sim no)
+		(at 48.26 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000e3")
+	)
+	(text "H"
+		(exclude_from_sim no)
+		(at 53.34 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000e4")
+	)
+	(text "I"
+		(exclude_from_sim no)
+		(at 58.42 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000e5")
+	)
+	(text "J"
+		(exclude_from_sim no)
+		(at 63.5 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000e6")
+	)
+	(text "K"
+		(exclude_from_sim no)
+		(at 68.58 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000e7")
+	)
+	(text "L"
+		(exclude_from_sim no)
+		(at 73.66 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000e8")
+	)
+	(text "M"
+		(exclude_from_sim no)
+		(at 78.74 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000e9")
+	)
+	(text "N"
+		(exclude_from_sim no)
+		(at 83.82 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000ea")
+	)
+	(text "O"
+		(exclude_from_sim no)
+		(at 88.9 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000eb")
+	)
+	(text "P"
+		(exclude_from_sim no)
+		(at 93.98 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000ec")
+	)
+	(text "Q"
+		(exclude_from_sim no)
+		(at 99.06 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000ed")
+	)
+	(text "R"
+		(exclude_from_sim no)
+		(at 104.14 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000ee")
+	)
+	(text "S"
+		(exclude_from_sim no)
+		(at 109.22 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000ef")
+	)
+	(text "T"
+		(exclude_from_sim no)
+		(at 114.3 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000f0")
+	)
+	(text "U"
+		(exclude_from_sim no)
+		(at 119.38 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000f1")
+	)
+	(text "V"
+		(exclude_from_sim no)
+		(at 124.46 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000f2")
+	)
+	(text "W"
+		(exclude_from_sim no)
+		(at 129.54 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000f3")
+	)
+	(text "X"
+		(exclude_from_sim no)
+		(at 134.62 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000f4")
+	)
+	(text "Y"
+		(exclude_from_sim no)
+		(at 139.7 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000f5")
+	)
+	(text "Z"
+		(exclude_from_sim no)
+		(at 144.78 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000f6")
+	)
+	(text "["
+		(exclude_from_sim no)
+		(at 149.86 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000f7")
+	)
+	(text "\\"
+		(exclude_from_sim no)
+		(at 154.94 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000f8")
+	)
+	(text "]"
+		(exclude_from_sim no)
+		(at 160.02 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000f9")
+	)
+	(text "^"
+		(exclude_from_sim no)
+		(at 165.1 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000fa")
+	)
+	(text "_"
+		(exclude_from_sim no)
+		(at 170.18 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000fb")
+	)
+	(text "`"
+		(exclude_from_sim no)
+		(at 175.26 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000fc")
+	)
+	(text "a"
+		(exclude_from_sim no)
+		(at 180.34 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000fd")
+	)
+	(text "b"
+		(exclude_from_sim no)
+		(at 185.42 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000fe")
+	)
+	(text "c"
+		(exclude_from_sim no)
+		(at 190.5 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000000ff")
+	)
+	(text "d"
+		(exclude_from_sim no)
+		(at 195.58 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000100")
+	)
+	(text "e"
+		(exclude_from_sim no)
+		(at 200.66 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000101")
+	)
+	(text "f"
+		(exclude_from_sim no)
+		(at 205.74 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000102")
+	)
+	(text "g"
+		(exclude_from_sim no)
+		(at 210.82 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000103")
+	)
+	(text "h"
+		(exclude_from_sim no)
+		(at 215.9 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000104")
+	)
+	(text "i"
+		(exclude_from_sim no)
+		(at 220.98 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000105")
+	)
+	(text "j"
+		(exclude_from_sim no)
+		(at 226.06 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000106")
+	)
+	(text "k"
+		(exclude_from_sim no)
+		(at 231.14 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000107")
+	)
+	(text "l"
+		(exclude_from_sim no)
+		(at 236.22 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000108")
+	)
+	(text "m"
+		(exclude_from_sim no)
+		(at 241.3 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000109")
+	)
+	(text "n"
+		(exclude_from_sim no)
+		(at 246.38 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000010a")
+	)
+	(text "o"
+		(exclude_from_sim no)
+		(at 251.46 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000010b")
+	)
+	(text "p"
+		(exclude_from_sim no)
+		(at 256.54 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000010c")
+	)
+	(text "q"
+		(exclude_from_sim no)
+		(at 261.62 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000010d")
+	)
+	(text "r"
+		(exclude_from_sim no)
+		(at 266.7 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000010e")
+	)
+	(text "s"
+		(exclude_from_sim no)
+		(at 271.78 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000010f")
+	)
+	(text "t"
+		(exclude_from_sim no)
+		(at 276.86 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000110")
+	)
+	(text "u"
+		(exclude_from_sim no)
+		(at 281.94 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000111")
+	)
+	(text "v"
+		(exclude_from_sim no)
+		(at 287.02 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000112")
+	)
+	(text "w"
+		(exclude_from_sim no)
+		(at 292.1 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000113")
+	)
+	(text "x"
+		(exclude_from_sim no)
+		(at 297.18 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000114")
+	)
+	(text "y"
+		(exclude_from_sim no)
+		(at 302.26 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000115")
+	)
+	(text "z"
+		(exclude_from_sim no)
+		(at 307.34 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000116")
+	)
+	(text "{"
+		(exclude_from_sim no)
+		(at 312.42 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000117")
+	)
+	(text "|"
+		(exclude_from_sim no)
+		(at 317.5 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000118")
+	)
+	(text "}"
+		(exclude_from_sim no)
+		(at 322.58 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000119")
+	)
+	(text "~"
+		(exclude_from_sim no)
+		(at 327.66 35.56 0)
+		(effects
+			(font
+				(size 0.635 0.635)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000011a")
+	)
+	(text "!"
+		(exclude_from_sim no)
+		(at 332.74 35.56 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000011b")
+	)
+	(text "\""
+		(exclude_from_sim no)
+		(at 337.82 35.56 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000011c")
+	)
+	(text "#"
+		(exclude_from_sim no)
+		(at 342.9 35.56 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000011d")
+	)
+	(text "$"
+		(exclude_from_sim no)
+		(at 347.98 35.56 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000011e")
+	)
+	(text "%"
+		(exclude_from_sim no)
+		(at 353.06 35.56 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000011f")
+	)
+	(text "&"
+		(exclude_from_sim no)
+		(at 358.14 35.56 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000120")
+	)
+	(text "'"
+		(exclude_from_sim no)
+		(at 363.22 35.56 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000121")
+	)
+	(text "("
+		(exclude_from_sim no)
+		(at 368.3 35.56 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000122")
+	)
+	(text ")"
+		(exclude_from_sim no)
+		(at 373.38 35.56 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000123")
+	)
+	(text "*"
+		(exclude_from_sim no)
+		(at 378.46 35.56 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000124")
+	)
+	(text "+"
+		(exclude_from_sim no)
+		(at 12.7 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000125")
+	)
+	(text ","
+		(exclude_from_sim no)
+		(at 17.78 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000126")
+	)
+	(text "-"
+		(exclude_from_sim no)
+		(at 22.86 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000127")
+	)
+	(text "."
+		(exclude_from_sim no)
+		(at 27.94 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000128")
+	)
+	(text "/"
+		(exclude_from_sim no)
+		(at 33.02 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000129")
+	)
+	(text "0"
+		(exclude_from_sim no)
+		(at 38.1 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000012a")
+	)
+	(text "1"
+		(exclude_from_sim no)
+		(at 43.18 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000012b")
+	)
+	(text "2"
+		(exclude_from_sim no)
+		(at 48.26 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000012c")
+	)
+	(text "3"
+		(exclude_from_sim no)
+		(at 53.34 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000012d")
+	)
+	(text "4"
+		(exclude_from_sim no)
+		(at 58.42 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000012e")
+	)
+	(text "5"
+		(exclude_from_sim no)
+		(at 63.5 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000012f")
+	)
+	(text "6"
+		(exclude_from_sim no)
+		(at 68.58 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000130")
+	)
+	(text "7"
+		(exclude_from_sim no)
+		(at 73.66 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000131")
+	)
+	(text "8"
+		(exclude_from_sim no)
+		(at 78.74 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000132")
+	)
+	(text "9"
+		(exclude_from_sim no)
+		(at 83.82 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000133")
+	)
+	(text ":"
+		(exclude_from_sim no)
+		(at 88.9 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000134")
+	)
+	(text ";"
+		(exclude_from_sim no)
+		(at 93.98 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000135")
+	)
+	(text "<"
+		(exclude_from_sim no)
+		(at 99.06 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000136")
+	)
+	(text "="
+		(exclude_from_sim no)
+		(at 104.14 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000137")
+	)
+	(text ">"
+		(exclude_from_sim no)
+		(at 109.22 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000138")
+	)
+	(text "?"
+		(exclude_from_sim no)
+		(at 114.3 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000139")
+	)
+	(text "@"
+		(exclude_from_sim no)
+		(at 119.38 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000013a")
+	)
+	(text "A"
+		(exclude_from_sim no)
+		(at 124.46 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000013b")
+	)
+	(text "B"
+		(exclude_from_sim no)
+		(at 129.54 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000013c")
+	)
+	(text "C"
+		(exclude_from_sim no)
+		(at 134.62 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000013d")
+	)
+	(text "D"
+		(exclude_from_sim no)
+		(at 139.7 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000013e")
+	)
+	(text "E"
+		(exclude_from_sim no)
+		(at 144.78 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000013f")
+	)
+	(text "F"
+		(exclude_from_sim no)
+		(at 149.86 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000140")
+	)
+	(text "G"
+		(exclude_from_sim no)
+		(at 154.94 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000141")
+	)
+	(text "H"
+		(exclude_from_sim no)
+		(at 160.02 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000142")
+	)
+	(text "I"
+		(exclude_from_sim no)
+		(at 165.1 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000143")
+	)
+	(text "J"
+		(exclude_from_sim no)
+		(at 170.18 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000144")
+	)
+	(text "K"
+		(exclude_from_sim no)
+		(at 175.26 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000145")
+	)
+	(text "L"
+		(exclude_from_sim no)
+		(at 180.34 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000146")
+	)
+	(text "M"
+		(exclude_from_sim no)
+		(at 185.42 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000147")
+	)
+	(text "N"
+		(exclude_from_sim no)
+		(at 190.5 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000148")
+	)
+	(text "O"
+		(exclude_from_sim no)
+		(at 195.58 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000149")
+	)
+	(text "P"
+		(exclude_from_sim no)
+		(at 200.66 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000014a")
+	)
+	(text "Q"
+		(exclude_from_sim no)
+		(at 205.74 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000014b")
+	)
+	(text "R"
+		(exclude_from_sim no)
+		(at 210.82 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000014c")
+	)
+	(text "S"
+		(exclude_from_sim no)
+		(at 215.9 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000014d")
+	)
+	(text "T"
+		(exclude_from_sim no)
+		(at 220.98 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000014e")
+	)
+	(text "U"
+		(exclude_from_sim no)
+		(at 226.06 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000014f")
+	)
+	(text "V"
+		(exclude_from_sim no)
+		(at 231.14 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000150")
+	)
+	(text "W"
+		(exclude_from_sim no)
+		(at 236.22 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000151")
+	)
+	(text "X"
+		(exclude_from_sim no)
+		(at 241.3 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000152")
+	)
+	(text "Y"
+		(exclude_from_sim no)
+		(at 246.38 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000153")
+	)
+	(text "Z"
+		(exclude_from_sim no)
+		(at 251.46 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000154")
+	)
+	(text "["
+		(exclude_from_sim no)
+		(at 256.54 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000155")
+	)
+	(text "\\"
+		(exclude_from_sim no)
+		(at 261.62 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000156")
+	)
+	(text "]"
+		(exclude_from_sim no)
+		(at 266.7 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000157")
+	)
+	(text "^"
+		(exclude_from_sim no)
+		(at 271.78 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000158")
+	)
+	(text "_"
+		(exclude_from_sim no)
+		(at 276.86 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000159")
+	)
+	(text "`"
+		(exclude_from_sim no)
+		(at 281.94 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000015a")
+	)
+	(text "a"
+		(exclude_from_sim no)
+		(at 287.02 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000015b")
+	)
+	(text "b"
+		(exclude_from_sim no)
+		(at 292.1 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000015c")
+	)
+	(text "c"
+		(exclude_from_sim no)
+		(at 297.18 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000015d")
+	)
+	(text "d"
+		(exclude_from_sim no)
+		(at 302.26 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000015e")
+	)
+	(text "e"
+		(exclude_from_sim no)
+		(at 307.34 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000015f")
+	)
+	(text "f"
+		(exclude_from_sim no)
+		(at 312.42 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000160")
+	)
+	(text "g"
+		(exclude_from_sim no)
+		(at 317.5 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000161")
+	)
+	(text "h"
+		(exclude_from_sim no)
+		(at 322.58 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000162")
+	)
+	(text "i"
+		(exclude_from_sim no)
+		(at 327.66 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000163")
+	)
+	(text "j"
+		(exclude_from_sim no)
+		(at 332.74 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000164")
+	)
+	(text "k"
+		(exclude_from_sim no)
+		(at 337.82 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000165")
+	)
+	(text "l"
+		(exclude_from_sim no)
+		(at 342.9 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000166")
+	)
+	(text "m"
+		(exclude_from_sim no)
+		(at 347.98 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000167")
+	)
+	(text "n"
+		(exclude_from_sim no)
+		(at 353.06 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000168")
+	)
+	(text "o"
+		(exclude_from_sim no)
+		(at 358.14 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000169")
+	)
+	(text "p"
+		(exclude_from_sim no)
+		(at 363.22 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000016a")
+	)
+	(text "q"
+		(exclude_from_sim no)
+		(at 368.3 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000016b")
+	)
+	(text "r"
+		(exclude_from_sim no)
+		(at 373.38 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000016c")
+	)
+	(text "s"
+		(exclude_from_sim no)
+		(at 378.46 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000016d")
+	)
+	(text "t"
+		(exclude_from_sim no)
+		(at 12.7 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000016e")
+	)
+	(text "u"
+		(exclude_from_sim no)
+		(at 17.78 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000016f")
+	)
+	(text "v"
+		(exclude_from_sim no)
+		(at 22.86 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000170")
+	)
+	(text "w"
+		(exclude_from_sim no)
+		(at 27.94 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000171")
+	)
+	(text "x"
+		(exclude_from_sim no)
+		(at 33.02 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000172")
+	)
+	(text "y"
+		(exclude_from_sim no)
+		(at 38.1 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000173")
+	)
+	(text "z"
+		(exclude_from_sim no)
+		(at 43.18 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000174")
+	)
+	(text "{"
+		(exclude_from_sim no)
+		(at 48.26 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000175")
+	)
+	(text "|"
+		(exclude_from_sim no)
+		(at 53.34 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000176")
+	)
+	(text "}"
+		(exclude_from_sim no)
+		(at 58.42 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000177")
+	)
+	(text "~"
+		(exclude_from_sim no)
+		(at 63.5 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000178")
+	)
+	(text "!"
+		(exclude_from_sim no)
+		(at 68.58 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000179")
+	)
+	(text "\""
+		(exclude_from_sim no)
+		(at 73.66 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000017a")
+	)
+	(text "#"
+		(exclude_from_sim no)
+		(at 78.74 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000017b")
+	)
+	(text "$"
+		(exclude_from_sim no)
+		(at 83.82 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000017c")
+	)
+	(text "%"
+		(exclude_from_sim no)
+		(at 88.9 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000017d")
+	)
+	(text "&"
+		(exclude_from_sim no)
+		(at 93.98 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000017e")
+	)
+	(text "'"
+		(exclude_from_sim no)
+		(at 99.06 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000017f")
+	)
+	(text "("
+		(exclude_from_sim no)
+		(at 104.14 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000180")
+	)
+	(text ")"
+		(exclude_from_sim no)
+		(at 109.22 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000181")
+	)
+	(text "*"
+		(exclude_from_sim no)
+		(at 114.3 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000182")
+	)
+	(text "+"
+		(exclude_from_sim no)
+		(at 119.38 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000183")
+	)
+	(text ","
+		(exclude_from_sim no)
+		(at 124.46 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000184")
+	)
+	(text "-"
+		(exclude_from_sim no)
+		(at 129.54 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000185")
+	)
+	(text "."
+		(exclude_from_sim no)
+		(at 134.62 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000186")
+	)
+	(text "/"
+		(exclude_from_sim no)
+		(at 139.7 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000187")
+	)
+	(text "0"
+		(exclude_from_sim no)
+		(at 144.78 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000188")
+	)
+	(text "1"
+		(exclude_from_sim no)
+		(at 149.86 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000189")
+	)
+	(text "2"
+		(exclude_from_sim no)
+		(at 154.94 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000018a")
+	)
+	(text "3"
+		(exclude_from_sim no)
+		(at 160.02 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000018b")
+	)
+	(text "4"
+		(exclude_from_sim no)
+		(at 165.1 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000018c")
+	)
+	(text "5"
+		(exclude_from_sim no)
+		(at 170.18 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000018d")
+	)
+	(text "6"
+		(exclude_from_sim no)
+		(at 175.26 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000018e")
+	)
+	(text "7"
+		(exclude_from_sim no)
+		(at 180.34 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000018f")
+	)
+	(text "8"
+		(exclude_from_sim no)
+		(at 185.42 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000190")
+	)
+	(text "9"
+		(exclude_from_sim no)
+		(at 190.5 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000191")
+	)
+	(text ":"
+		(exclude_from_sim no)
+		(at 195.58 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000192")
+	)
+	(text ";"
+		(exclude_from_sim no)
+		(at 200.66 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000193")
+	)
+	(text "<"
+		(exclude_from_sim no)
+		(at 205.74 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000194")
+	)
+	(text "="
+		(exclude_from_sim no)
+		(at 210.82 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000195")
+	)
+	(text ">"
+		(exclude_from_sim no)
+		(at 215.9 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000196")
+	)
+	(text "?"
+		(exclude_from_sim no)
+		(at 220.98 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000197")
+	)
+	(text "@"
+		(exclude_from_sim no)
+		(at 226.06 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000198")
+	)
+	(text "A"
+		(exclude_from_sim no)
+		(at 231.14 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000199")
+	)
+	(text "B"
+		(exclude_from_sim no)
+		(at 236.22 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000019a")
+	)
+	(text "C"
+		(exclude_from_sim no)
+		(at 241.3 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000019b")
+	)
+	(text "D"
+		(exclude_from_sim no)
+		(at 246.38 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000019c")
+	)
+	(text "E"
+		(exclude_from_sim no)
+		(at 251.46 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000019d")
+	)
+	(text "F"
+		(exclude_from_sim no)
+		(at 256.54 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000019e")
+	)
+	(text "G"
+		(exclude_from_sim no)
+		(at 261.62 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000019f")
+	)
+	(text "H"
+		(exclude_from_sim no)
+		(at 266.7 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001a0")
+	)
+	(text "I"
+		(exclude_from_sim no)
+		(at 271.78 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001a1")
+	)
+	(text "J"
+		(exclude_from_sim no)
+		(at 276.86 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001a2")
+	)
+	(text "K"
+		(exclude_from_sim no)
+		(at 281.94 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001a3")
+	)
+	(text "L"
+		(exclude_from_sim no)
+		(at 287.02 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001a4")
+	)
+	(text "M"
+		(exclude_from_sim no)
+		(at 292.1 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001a5")
+	)
+	(text "N"
+		(exclude_from_sim no)
+		(at 297.18 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001a6")
+	)
+	(text "O"
+		(exclude_from_sim no)
+		(at 302.26 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001a7")
+	)
+	(text "P"
+		(exclude_from_sim no)
+		(at 307.34 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001a8")
+	)
+	(text "Q"
+		(exclude_from_sim no)
+		(at 312.42 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001a9")
+	)
+	(text "R"
+		(exclude_from_sim no)
+		(at 317.5 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001aa")
+	)
+	(text "S"
+		(exclude_from_sim no)
+		(at 322.58 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001ab")
+	)
+	(text "T"
+		(exclude_from_sim no)
+		(at 327.66 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001ac")
+	)
+	(text "U"
+		(exclude_from_sim no)
+		(at 332.74 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001ad")
+	)
+	(text "V"
+		(exclude_from_sim no)
+		(at 337.82 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001ae")
+	)
+	(text "W"
+		(exclude_from_sim no)
+		(at 342.9 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001af")
+	)
+	(text "X"
+		(exclude_from_sim no)
+		(at 347.98 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001b0")
+	)
+	(text "Y"
+		(exclude_from_sim no)
+		(at 353.06 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001b1")
+	)
+	(text "Z"
+		(exclude_from_sim no)
+		(at 358.14 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001b2")
+	)
+	(text "["
+		(exclude_from_sim no)
+		(at 363.22 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001b3")
+	)
+	(text "\\"
+		(exclude_from_sim no)
+		(at 368.3 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001b4")
+	)
+	(text "]"
+		(exclude_from_sim no)
+		(at 373.38 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001b5")
+	)
+	(text "^"
+		(exclude_from_sim no)
+		(at 378.46 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001b6")
+	)
+	(text "_"
+		(exclude_from_sim no)
+		(at 12.7 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001b7")
+	)
+	(text "`"
+		(exclude_from_sim no)
+		(at 17.78 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001b8")
+	)
+	(text "a"
+		(exclude_from_sim no)
+		(at 22.86 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001b9")
+	)
+	(text "b"
+		(exclude_from_sim no)
+		(at 27.94 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001ba")
+	)
+	(text "c"
+		(exclude_from_sim no)
+		(at 33.02 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001bb")
+	)
+	(text "d"
+		(exclude_from_sim no)
+		(at 38.1 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001bc")
+	)
+	(text "e"
+		(exclude_from_sim no)
+		(at 43.18 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001bd")
+	)
+	(text "f"
+		(exclude_from_sim no)
+		(at 48.26 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001be")
+	)
+	(text "g"
+		(exclude_from_sim no)
+		(at 53.34 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001bf")
+	)
+	(text "h"
+		(exclude_from_sim no)
+		(at 58.42 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001c0")
+	)
+	(text "i"
+		(exclude_from_sim no)
+		(at 63.5 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001c1")
+	)
+	(text "j"
+		(exclude_from_sim no)
+		(at 68.58 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001c2")
+	)
+	(text "k"
+		(exclude_from_sim no)
+		(at 73.66 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001c3")
+	)
+	(text "l"
+		(exclude_from_sim no)
+		(at 78.74 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001c4")
+	)
+	(text "m"
+		(exclude_from_sim no)
+		(at 83.82 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001c5")
+	)
+	(text "n"
+		(exclude_from_sim no)
+		(at 88.9 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001c6")
+	)
+	(text "o"
+		(exclude_from_sim no)
+		(at 93.98 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001c7")
+	)
+	(text "p"
+		(exclude_from_sim no)
+		(at 99.06 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001c8")
+	)
+	(text "q"
+		(exclude_from_sim no)
+		(at 104.14 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001c9")
+	)
+	(text "r"
+		(exclude_from_sim no)
+		(at 109.22 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001ca")
+	)
+	(text "s"
+		(exclude_from_sim no)
+		(at 114.3 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001cb")
+	)
+	(text "t"
+		(exclude_from_sim no)
+		(at 119.38 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001cc")
+	)
+	(text "u"
+		(exclude_from_sim no)
+		(at 124.46 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001cd")
+	)
+	(text "v"
+		(exclude_from_sim no)
+		(at 129.54 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001ce")
+	)
+	(text "w"
+		(exclude_from_sim no)
+		(at 134.62 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001cf")
+	)
+	(text "x"
+		(exclude_from_sim no)
+		(at 139.7 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001d0")
+	)
+	(text "y"
+		(exclude_from_sim no)
+		(at 144.78 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001d1")
+	)
+	(text "z"
+		(exclude_from_sim no)
+		(at 149.86 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001d2")
+	)
+	(text "{"
+		(exclude_from_sim no)
+		(at 154.94 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001d3")
+	)
+	(text "|"
+		(exclude_from_sim no)
+		(at 160.02 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001d4")
+	)
+	(text "}"
+		(exclude_from_sim no)
+		(at 165.1 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001d5")
+	)
+	(text "~"
+		(exclude_from_sim no)
+		(at 170.18 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001d6")
+	)
+	(text "!"
+		(exclude_from_sim no)
+		(at 175.26 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001d7")
+	)
+	(text "\""
+		(exclude_from_sim no)
+		(at 180.34 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001d8")
+	)
+	(text "#"
+		(exclude_from_sim no)
+		(at 185.42 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001d9")
+	)
+	(text "$"
+		(exclude_from_sim no)
+		(at 190.5 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001da")
+	)
+	(text "%"
+		(exclude_from_sim no)
+		(at 195.58 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001db")
+	)
+	(text "&"
+		(exclude_from_sim no)
+		(at 200.66 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001dc")
+	)
+	(text "'"
+		(exclude_from_sim no)
+		(at 205.74 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001dd")
+	)
+	(text "("
+		(exclude_from_sim no)
+		(at 210.82 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001de")
+	)
+	(text ")"
+		(exclude_from_sim no)
+		(at 215.9 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001df")
+	)
+	(text "*"
+		(exclude_from_sim no)
+		(at 220.98 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001e0")
+	)
+	(text "+"
+		(exclude_from_sim no)
+		(at 226.06 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001e1")
+	)
+	(text ","
+		(exclude_from_sim no)
+		(at 231.14 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001e2")
+	)
+	(text "-"
+		(exclude_from_sim no)
+		(at 236.22 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001e3")
+	)
+	(text "."
+		(exclude_from_sim no)
+		(at 241.3 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001e4")
+	)
+	(text "/"
+		(exclude_from_sim no)
+		(at 246.38 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001e5")
+	)
+	(text "0"
+		(exclude_from_sim no)
+		(at 251.46 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001e6")
+	)
+	(text "1"
+		(exclude_from_sim no)
+		(at 256.54 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001e7")
+	)
+	(text "2"
+		(exclude_from_sim no)
+		(at 261.62 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001e8")
+	)
+	(text "3"
+		(exclude_from_sim no)
+		(at 266.7 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001e9")
+	)
+	(text "4"
+		(exclude_from_sim no)
+		(at 271.78 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001ea")
+	)
+	(text "5"
+		(exclude_from_sim no)
+		(at 276.86 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001eb")
+	)
+	(text "6"
+		(exclude_from_sim no)
+		(at 281.94 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001ec")
+	)
+	(text "7"
+		(exclude_from_sim no)
+		(at 287.02 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001ed")
+	)
+	(text "8"
+		(exclude_from_sim no)
+		(at 292.1 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001ee")
+	)
+	(text "9"
+		(exclude_from_sim no)
+		(at 297.18 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001ef")
+	)
+	(text ":"
+		(exclude_from_sim no)
+		(at 302.26 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001f0")
+	)
+	(text ";"
+		(exclude_from_sim no)
+		(at 307.34 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001f1")
+	)
+	(text "<"
+		(exclude_from_sim no)
+		(at 312.42 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001f2")
+	)
+	(text "="
+		(exclude_from_sim no)
+		(at 317.5 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001f3")
+	)
+	(text ">"
+		(exclude_from_sim no)
+		(at 322.58 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001f4")
+	)
+	(text "?"
+		(exclude_from_sim no)
+		(at 327.66 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001f5")
+	)
+	(text "@"
+		(exclude_from_sim no)
+		(at 332.74 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001f6")
+	)
+	(text "A"
+		(exclude_from_sim no)
+		(at 337.82 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001f7")
+	)
+	(text "B"
+		(exclude_from_sim no)
+		(at 342.9 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001f8")
+	)
+	(text "C"
+		(exclude_from_sim no)
+		(at 347.98 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001f9")
+	)
+	(text "D"
+		(exclude_from_sim no)
+		(at 353.06 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001fa")
+	)
+	(text "E"
+		(exclude_from_sim no)
+		(at 358.14 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001fb")
+	)
+	(text "F"
+		(exclude_from_sim no)
+		(at 363.22 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001fc")
+	)
+	(text "G"
+		(exclude_from_sim no)
+		(at 368.3 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001fd")
+	)
+	(text "H"
+		(exclude_from_sim no)
+		(at 373.38 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001fe")
+	)
+	(text "I"
+		(exclude_from_sim no)
+		(at 378.46 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000001ff")
+	)
+	(text "J"
+		(exclude_from_sim no)
+		(at 12.7 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000200")
+	)
+	(text "K"
+		(exclude_from_sim no)
+		(at 17.78 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000201")
+	)
+	(text "L"
+		(exclude_from_sim no)
+		(at 22.86 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000202")
+	)
+	(text "M"
+		(exclude_from_sim no)
+		(at 27.94 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000203")
+	)
+	(text "N"
+		(exclude_from_sim no)
+		(at 33.02 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000204")
+	)
+	(text "O"
+		(exclude_from_sim no)
+		(at 38.1 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000205")
+	)
+	(text "P"
+		(exclude_from_sim no)
+		(at 43.18 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000206")
+	)
+	(text "Q"
+		(exclude_from_sim no)
+		(at 48.26 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000207")
+	)
+	(text "R"
+		(exclude_from_sim no)
+		(at 53.34 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000208")
+	)
+	(text "S"
+		(exclude_from_sim no)
+		(at 58.42 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000209")
+	)
+	(text "T"
+		(exclude_from_sim no)
+		(at 63.5 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000020a")
+	)
+	(text "U"
+		(exclude_from_sim no)
+		(at 68.58 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000020b")
+	)
+	(text "V"
+		(exclude_from_sim no)
+		(at 73.66 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000020c")
+	)
+	(text "W"
+		(exclude_from_sim no)
+		(at 78.74 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000020d")
+	)
+	(text "X"
+		(exclude_from_sim no)
+		(at 83.82 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000020e")
+	)
+	(text "Y"
+		(exclude_from_sim no)
+		(at 88.9 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000020f")
+	)
+	(text "Z"
+		(exclude_from_sim no)
+		(at 93.98 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000210")
+	)
+	(text "["
+		(exclude_from_sim no)
+		(at 99.06 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000211")
+	)
+	(text "\\"
+		(exclude_from_sim no)
+		(at 104.14 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000212")
+	)
+	(text "]"
+		(exclude_from_sim no)
+		(at 109.22 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000213")
+	)
+	(text "^"
+		(exclude_from_sim no)
+		(at 114.3 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000214")
+	)
+	(text "_"
+		(exclude_from_sim no)
+		(at 119.38 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000215")
+	)
+	(text "`"
+		(exclude_from_sim no)
+		(at 124.46 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000216")
+	)
+	(text "a"
+		(exclude_from_sim no)
+		(at 129.54 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000217")
+	)
+	(text "b"
+		(exclude_from_sim no)
+		(at 134.62 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000218")
+	)
+	(text "c"
+		(exclude_from_sim no)
+		(at 139.7 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000219")
+	)
+	(text "d"
+		(exclude_from_sim no)
+		(at 144.78 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000021a")
+	)
+	(text "e"
+		(exclude_from_sim no)
+		(at 149.86 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000021b")
+	)
+	(text "f"
+		(exclude_from_sim no)
+		(at 154.94 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000021c")
+	)
+	(text "g"
+		(exclude_from_sim no)
+		(at 160.02 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000021d")
+	)
+	(text "h"
+		(exclude_from_sim no)
+		(at 165.1 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000021e")
+	)
+	(text "i"
+		(exclude_from_sim no)
+		(at 170.18 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000021f")
+	)
+	(text "j"
+		(exclude_from_sim no)
+		(at 175.26 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000220")
+	)
+	(text "k"
+		(exclude_from_sim no)
+		(at 180.34 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000221")
+	)
+	(text "l"
+		(exclude_from_sim no)
+		(at 185.42 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000222")
+	)
+	(text "m"
+		(exclude_from_sim no)
+		(at 190.5 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000223")
+	)
+	(text "n"
+		(exclude_from_sim no)
+		(at 195.58 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000224")
+	)
+	(text "o"
+		(exclude_from_sim no)
+		(at 200.66 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000225")
+	)
+	(text "p"
+		(exclude_from_sim no)
+		(at 205.74 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000226")
+	)
+	(text "q"
+		(exclude_from_sim no)
+		(at 210.82 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000227")
+	)
+	(text "r"
+		(exclude_from_sim no)
+		(at 215.9 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000228")
+	)
+	(text "s"
+		(exclude_from_sim no)
+		(at 220.98 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000229")
+	)
+	(text "t"
+		(exclude_from_sim no)
+		(at 226.06 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000022a")
+	)
+	(text "u"
+		(exclude_from_sim no)
+		(at 231.14 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000022b")
+	)
+	(text "v"
+		(exclude_from_sim no)
+		(at 236.22 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000022c")
+	)
+	(text "w"
+		(exclude_from_sim no)
+		(at 241.3 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000022d")
+	)
+	(text "x"
+		(exclude_from_sim no)
+		(at 246.38 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000022e")
+	)
+	(text "y"
+		(exclude_from_sim no)
+		(at 251.46 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000022f")
+	)
+	(text "z"
+		(exclude_from_sim no)
+		(at 256.54 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000230")
+	)
+	(text "{"
+		(exclude_from_sim no)
+		(at 261.62 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000231")
+	)
+	(text "|"
+		(exclude_from_sim no)
+		(at 266.7 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000232")
+	)
+	(text "}"
+		(exclude_from_sim no)
+		(at 271.78 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000233")
+	)
+	(text "~"
+		(exclude_from_sim no)
+		(at 276.86 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000234")
+	)
+	(text "!"
+		(exclude_from_sim no)
+		(at 281.94 66.04 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000235")
+	)
+	(text "\""
+		(exclude_from_sim no)
+		(at 287.02 66.04 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000236")
+	)
+	(text "#"
+		(exclude_from_sim no)
+		(at 292.1 66.04 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000237")
+	)
+	(text "$"
+		(exclude_from_sim no)
+		(at 297.18 66.04 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000238")
+	)
+	(text "%"
+		(exclude_from_sim no)
+		(at 302.26 66.04 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000239")
+	)
+	(text "&"
+		(exclude_from_sim no)
+		(at 307.34 66.04 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000023a")
+	)
+	(text "'"
+		(exclude_from_sim no)
+		(at 312.42 66.04 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000023b")
+	)
+	(text "("
+		(exclude_from_sim no)
+		(at 317.5 66.04 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000023c")
+	)
+	(text ")"
+		(exclude_from_sim no)
+		(at 322.58 66.04 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000023d")
+	)
+	(text "*"
+		(exclude_from_sim no)
+		(at 327.66 66.04 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000023e")
+	)
+	(text "+"
+		(exclude_from_sim no)
+		(at 332.74 66.04 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000023f")
+	)
+	(text ","
+		(exclude_from_sim no)
+		(at 337.82 66.04 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000240")
+	)
+	(text "-"
+		(exclude_from_sim no)
+		(at 342.9 66.04 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000241")
+	)
+	(text "."
+		(exclude_from_sim no)
+		(at 347.98 66.04 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000242")
+	)
+	(text "/"
+		(exclude_from_sim no)
+		(at 353.06 66.04 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000243")
+	)
+	(text "0"
+		(exclude_from_sim no)
+		(at 358.14 66.04 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000244")
+	)
+	(text "1"
+		(exclude_from_sim no)
+		(at 363.22 66.04 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000245")
+	)
+	(text "2"
+		(exclude_from_sim no)
+		(at 368.3 66.04 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000246")
+	)
+	(text "3"
+		(exclude_from_sim no)
+		(at 373.38 66.04 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000247")
+	)
+	(text "4"
+		(exclude_from_sim no)
+		(at 378.46 66.04 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000248")
+	)
+	(text "5"
+		(exclude_from_sim no)
+		(at 12.7 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000249")
+	)
+	(text "6"
+		(exclude_from_sim no)
+		(at 17.78 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000024a")
+	)
+	(text "7"
+		(exclude_from_sim no)
+		(at 22.86 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000024b")
+	)
+	(text "8"
+		(exclude_from_sim no)
+		(at 27.94 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000024c")
+	)
+	(text "9"
+		(exclude_from_sim no)
+		(at 33.02 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000024d")
+	)
+	(text ":"
+		(exclude_from_sim no)
+		(at 38.1 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000024e")
+	)
+	(text ";"
+		(exclude_from_sim no)
+		(at 43.18 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000024f")
+	)
+	(text "<"
+		(exclude_from_sim no)
+		(at 48.26 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000250")
+	)
+	(text "="
+		(exclude_from_sim no)
+		(at 53.34 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000251")
+	)
+	(text ">"
+		(exclude_from_sim no)
+		(at 58.42 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000252")
+	)
+	(text "?"
+		(exclude_from_sim no)
+		(at 63.5 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000253")
+	)
+	(text "@"
+		(exclude_from_sim no)
+		(at 68.58 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000254")
+	)
+	(text "A"
+		(exclude_from_sim no)
+		(at 73.66 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000255")
+	)
+	(text "B"
+		(exclude_from_sim no)
+		(at 78.74 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000256")
+	)
+	(text "C"
+		(exclude_from_sim no)
+		(at 83.82 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000257")
+	)
+	(text "D"
+		(exclude_from_sim no)
+		(at 88.9 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000258")
+	)
+	(text "E"
+		(exclude_from_sim no)
+		(at 93.98 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000259")
+	)
+	(text "F"
+		(exclude_from_sim no)
+		(at 99.06 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000025a")
+	)
+	(text "G"
+		(exclude_from_sim no)
+		(at 104.14 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000025b")
+	)
+	(text "H"
+		(exclude_from_sim no)
+		(at 109.22 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000025c")
+	)
+	(text "I"
+		(exclude_from_sim no)
+		(at 114.3 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000025d")
+	)
+	(text "J"
+		(exclude_from_sim no)
+		(at 119.38 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000025e")
+	)
+	(text "K"
+		(exclude_from_sim no)
+		(at 124.46 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000025f")
+	)
+	(text "L"
+		(exclude_from_sim no)
+		(at 129.54 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000260")
+	)
+	(text "M"
+		(exclude_from_sim no)
+		(at 134.62 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000261")
+	)
+	(text "N"
+		(exclude_from_sim no)
+		(at 139.7 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000262")
+	)
+	(text "O"
+		(exclude_from_sim no)
+		(at 144.78 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000263")
+	)
+	(text "P"
+		(exclude_from_sim no)
+		(at 149.86 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000264")
+	)
+	(text "Q"
+		(exclude_from_sim no)
+		(at 154.94 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000265")
+	)
+	(text "R"
+		(exclude_from_sim no)
+		(at 160.02 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000266")
+	)
+	(text "S"
+		(exclude_from_sim no)
+		(at 165.1 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000267")
+	)
+	(text "T"
+		(exclude_from_sim no)
+		(at 170.18 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000268")
+	)
+	(text "U"
+		(exclude_from_sim no)
+		(at 175.26 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000269")
+	)
+	(text "V"
+		(exclude_from_sim no)
+		(at 180.34 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000026a")
+	)
+	(text "W"
+		(exclude_from_sim no)
+		(at 185.42 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000026b")
+	)
+	(text "X"
+		(exclude_from_sim no)
+		(at 190.5 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000026c")
+	)
+	(text "Y"
+		(exclude_from_sim no)
+		(at 195.58 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000026d")
+	)
+	(text "Z"
+		(exclude_from_sim no)
+		(at 200.66 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000026e")
+	)
+	(text "["
+		(exclude_from_sim no)
+		(at 205.74 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000026f")
+	)
+	(text "\\"
+		(exclude_from_sim no)
+		(at 210.82 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000270")
+	)
+	(text "]"
+		(exclude_from_sim no)
+		(at 215.9 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000271")
+	)
+	(text "^"
+		(exclude_from_sim no)
+		(at 220.98 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000272")
+	)
+	(text "_"
+		(exclude_from_sim no)
+		(at 226.06 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000273")
+	)
+	(text "`"
+		(exclude_from_sim no)
+		(at 231.14 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000274")
+	)
+	(text "a"
+		(exclude_from_sim no)
+		(at 236.22 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000275")
+	)
+	(text "b"
+		(exclude_from_sim no)
+		(at 241.3 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000276")
+	)
+	(text "c"
+		(exclude_from_sim no)
+		(at 246.38 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000277")
+	)
+	(text "d"
+		(exclude_from_sim no)
+		(at 251.46 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000278")
+	)
+	(text "e"
+		(exclude_from_sim no)
+		(at 256.54 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000279")
+	)
+	(text "f"
+		(exclude_from_sim no)
+		(at 261.62 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000027a")
+	)
+	(text "g"
+		(exclude_from_sim no)
+		(at 266.7 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000027b")
+	)
+	(text "h"
+		(exclude_from_sim no)
+		(at 271.78 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000027c")
+	)
+	(text "i"
+		(exclude_from_sim no)
+		(at 276.86 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000027d")
+	)
+	(text "j"
+		(exclude_from_sim no)
+		(at 281.94 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000027e")
+	)
+	(text "k"
+		(exclude_from_sim no)
+		(at 287.02 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000027f")
+	)
+	(text "l"
+		(exclude_from_sim no)
+		(at 292.1 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000280")
+	)
+	(text "m"
+		(exclude_from_sim no)
+		(at 297.18 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000281")
+	)
+	(text "n"
+		(exclude_from_sim no)
+		(at 302.26 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000282")
+	)
+	(text "o"
+		(exclude_from_sim no)
+		(at 307.34 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000283")
+	)
+	(text "p"
+		(exclude_from_sim no)
+		(at 312.42 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000284")
+	)
+	(text "q"
+		(exclude_from_sim no)
+		(at 317.5 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000285")
+	)
+	(text "r"
+		(exclude_from_sim no)
+		(at 322.58 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000286")
+	)
+	(text "s"
+		(exclude_from_sim no)
+		(at 327.66 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000287")
+	)
+	(text "t"
+		(exclude_from_sim no)
+		(at 332.74 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000288")
+	)
+	(text "u"
+		(exclude_from_sim no)
+		(at 337.82 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000289")
+	)
+	(text "v"
+		(exclude_from_sim no)
+		(at 342.9 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000028a")
+	)
+	(text "w"
+		(exclude_from_sim no)
+		(at 347.98 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000028b")
+	)
+	(text "x"
+		(exclude_from_sim no)
+		(at 353.06 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000028c")
+	)
+	(text "y"
+		(exclude_from_sim no)
+		(at 358.14 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000028d")
+	)
+	(text "z"
+		(exclude_from_sim no)
+		(at 363.22 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000028e")
+	)
+	(text "{"
+		(exclude_from_sim no)
+		(at 368.3 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000028f")
+	)
+	(text "|"
+		(exclude_from_sim no)
+		(at 373.38 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000290")
+	)
+	(text "}"
+		(exclude_from_sim no)
+		(at 378.46 73.66 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000291")
+	)
+	(text "~"
+		(exclude_from_sim no)
+		(at 12.7 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000292")
+	)
+	(text "!"
+		(exclude_from_sim no)
+		(at 17.78 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000293")
+	)
+	(text "\""
+		(exclude_from_sim no)
+		(at 22.86 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000294")
+	)
+	(text "#"
+		(exclude_from_sim no)
+		(at 27.94 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000295")
+	)
+	(text "$"
+		(exclude_from_sim no)
+		(at 33.02 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000296")
+	)
+	(text "%"
+		(exclude_from_sim no)
+		(at 38.1 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000297")
+	)
+	(text "&"
+		(exclude_from_sim no)
+		(at 43.18 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000298")
+	)
+	(text "'"
+		(exclude_from_sim no)
+		(at 48.26 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000299")
+	)
+	(text "("
+		(exclude_from_sim no)
+		(at 53.34 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000029a")
+	)
+	(text ")"
+		(exclude_from_sim no)
+		(at 58.42 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000029b")
+	)
+	(text "*"
+		(exclude_from_sim no)
+		(at 63.5 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000029c")
+	)
+	(text "+"
+		(exclude_from_sim no)
+		(at 68.58 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000029d")
+	)
+	(text ","
+		(exclude_from_sim no)
+		(at 73.66 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000029e")
+	)
+	(text "-"
+		(exclude_from_sim no)
+		(at 78.74 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000029f")
+	)
+	(text "."
+		(exclude_from_sim no)
+		(at 83.82 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002a0")
+	)
+	(text "/"
+		(exclude_from_sim no)
+		(at 88.9 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002a1")
+	)
+	(text "0"
+		(exclude_from_sim no)
+		(at 93.98 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002a2")
+	)
+	(text "1"
+		(exclude_from_sim no)
+		(at 99.06 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002a3")
+	)
+	(text "2"
+		(exclude_from_sim no)
+		(at 104.14 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002a4")
+	)
+	(text "3"
+		(exclude_from_sim no)
+		(at 109.22 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002a5")
+	)
+	(text "4"
+		(exclude_from_sim no)
+		(at 114.3 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002a6")
+	)
+	(text "5"
+		(exclude_from_sim no)
+		(at 119.38 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002a7")
+	)
+	(text "6"
+		(exclude_from_sim no)
+		(at 124.46 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002a8")
+	)
+	(text "7"
+		(exclude_from_sim no)
+		(at 129.54 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002a9")
+	)
+	(text "8"
+		(exclude_from_sim no)
+		(at 134.62 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002aa")
+	)
+	(text "9"
+		(exclude_from_sim no)
+		(at 139.7 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002ab")
+	)
+	(text ":"
+		(exclude_from_sim no)
+		(at 144.78 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002ac")
+	)
+	(text ";"
+		(exclude_from_sim no)
+		(at 149.86 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002ad")
+	)
+	(text "<"
+		(exclude_from_sim no)
+		(at 154.94 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002ae")
+	)
+	(text "="
+		(exclude_from_sim no)
+		(at 160.02 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002af")
+	)
+	(text ">"
+		(exclude_from_sim no)
+		(at 165.1 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002b0")
+	)
+	(text "?"
+		(exclude_from_sim no)
+		(at 170.18 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002b1")
+	)
+	(text "@"
+		(exclude_from_sim no)
+		(at 175.26 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002b2")
+	)
+	(text "A"
+		(exclude_from_sim no)
+		(at 180.34 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002b3")
+	)
+	(text "B"
+		(exclude_from_sim no)
+		(at 185.42 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002b4")
+	)
+	(text "C"
+		(exclude_from_sim no)
+		(at 190.5 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002b5")
+	)
+	(text "D"
+		(exclude_from_sim no)
+		(at 195.58 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002b6")
+	)
+	(text "E"
+		(exclude_from_sim no)
+		(at 200.66 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002b7")
+	)
+	(text "F"
+		(exclude_from_sim no)
+		(at 205.74 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002b8")
+	)
+	(text "G"
+		(exclude_from_sim no)
+		(at 210.82 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002b9")
+	)
+	(text "H"
+		(exclude_from_sim no)
+		(at 215.9 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002ba")
+	)
+	(text "I"
+		(exclude_from_sim no)
+		(at 220.98 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002bb")
+	)
+	(text "J"
+		(exclude_from_sim no)
+		(at 226.06 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002bc")
+	)
+	(text "K"
+		(exclude_from_sim no)
+		(at 231.14 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002bd")
+	)
+	(text "L"
+		(exclude_from_sim no)
+		(at 236.22 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002be")
+	)
+	(text "M"
+		(exclude_from_sim no)
+		(at 241.3 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002bf")
+	)
+	(text "N"
+		(exclude_from_sim no)
+		(at 246.38 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002c0")
+	)
+	(text "O"
+		(exclude_from_sim no)
+		(at 251.46 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002c1")
+	)
+	(text "P"
+		(exclude_from_sim no)
+		(at 256.54 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002c2")
+	)
+	(text "Q"
+		(exclude_from_sim no)
+		(at 261.62 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002c3")
+	)
+	(text "R"
+		(exclude_from_sim no)
+		(at 266.7 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002c4")
+	)
+	(text "S"
+		(exclude_from_sim no)
+		(at 271.78 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002c5")
+	)
+	(text "T"
+		(exclude_from_sim no)
+		(at 276.86 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002c6")
+	)
+	(text "U"
+		(exclude_from_sim no)
+		(at 281.94 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002c7")
+	)
+	(text "V"
+		(exclude_from_sim no)
+		(at 287.02 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002c8")
+	)
+	(text "W"
+		(exclude_from_sim no)
+		(at 292.1 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002c9")
+	)
+	(text "X"
+		(exclude_from_sim no)
+		(at 297.18 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002ca")
+	)
+	(text "Y"
+		(exclude_from_sim no)
+		(at 302.26 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002cb")
+	)
+	(text "Z"
+		(exclude_from_sim no)
+		(at 307.34 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002cc")
+	)
+	(text "["
+		(exclude_from_sim no)
+		(at 312.42 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002cd")
+	)
+	(text "\\"
+		(exclude_from_sim no)
+		(at 317.5 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002ce")
+	)
+	(text "]"
+		(exclude_from_sim no)
+		(at 322.58 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002cf")
+	)
+	(text "^"
+		(exclude_from_sim no)
+		(at 327.66 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002d0")
+	)
+	(text "_"
+		(exclude_from_sim no)
+		(at 332.74 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002d1")
+	)
+	(text "`"
+		(exclude_from_sim no)
+		(at 337.82 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002d2")
+	)
+	(text "a"
+		(exclude_from_sim no)
+		(at 342.9 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002d3")
+	)
+	(text "b"
+		(exclude_from_sim no)
+		(at 347.98 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002d4")
+	)
+	(text "c"
+		(exclude_from_sim no)
+		(at 353.06 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002d5")
+	)
+	(text "d"
+		(exclude_from_sim no)
+		(at 358.14 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002d6")
+	)
+	(text "e"
+		(exclude_from_sim no)
+		(at 363.22 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002d7")
+	)
+	(text "f"
+		(exclude_from_sim no)
+		(at 368.3 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002d8")
+	)
+	(text "g"
+		(exclude_from_sim no)
+		(at 373.38 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002d9")
+	)
+	(text "h"
+		(exclude_from_sim no)
+		(at 378.46 81.28 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002da")
+	)
+	(text "i"
+		(exclude_from_sim no)
+		(at 12.7 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002db")
+	)
+	(text "j"
+		(exclude_from_sim no)
+		(at 17.78 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002dc")
+	)
+	(text "k"
+		(exclude_from_sim no)
+		(at 22.86 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002dd")
+	)
+	(text "l"
+		(exclude_from_sim no)
+		(at 27.94 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002de")
+	)
+	(text "m"
+		(exclude_from_sim no)
+		(at 33.02 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002df")
+	)
+	(text "n"
+		(exclude_from_sim no)
+		(at 38.1 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002e0")
+	)
+	(text "o"
+		(exclude_from_sim no)
+		(at 43.18 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002e1")
+	)
+	(text "p"
+		(exclude_from_sim no)
+		(at 48.26 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002e2")
+	)
+	(text "q"
+		(exclude_from_sim no)
+		(at 53.34 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002e3")
+	)
+	(text "r"
+		(exclude_from_sim no)
+		(at 58.42 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002e4")
+	)
+	(text "s"
+		(exclude_from_sim no)
+		(at 63.5 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002e5")
+	)
+	(text "t"
+		(exclude_from_sim no)
+		(at 68.58 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002e6")
+	)
+	(text "u"
+		(exclude_from_sim no)
+		(at 73.66 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002e7")
+	)
+	(text "v"
+		(exclude_from_sim no)
+		(at 78.74 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002e8")
+	)
+	(text "w"
+		(exclude_from_sim no)
+		(at 83.82 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002e9")
+	)
+	(text "x"
+		(exclude_from_sim no)
+		(at 88.9 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002ea")
+	)
+	(text "y"
+		(exclude_from_sim no)
+		(at 93.98 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002eb")
+	)
+	(text "z"
+		(exclude_from_sim no)
+		(at 99.06 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002ec")
+	)
+	(text "{"
+		(exclude_from_sim no)
+		(at 104.14 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002ed")
+	)
+	(text "|"
+		(exclude_from_sim no)
+		(at 109.22 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002ee")
+	)
+	(text "}"
+		(exclude_from_sim no)
+		(at 114.3 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002ef")
+	)
+	(text "~"
+		(exclude_from_sim no)
+		(at 119.38 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002f0")
+	)
+	(text "!"
+		(exclude_from_sim no)
+		(at 124.46 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002f1")
+	)
+	(text "\""
+		(exclude_from_sim no)
+		(at 129.54 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002f2")
+	)
+	(text "#"
+		(exclude_from_sim no)
+		(at 134.62 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002f3")
+	)
+	(text "$"
+		(exclude_from_sim no)
+		(at 139.7 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002f4")
+	)
+	(text "%"
+		(exclude_from_sim no)
+		(at 144.78 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002f5")
+	)
+	(text "&"
+		(exclude_from_sim no)
+		(at 149.86 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002f6")
+	)
+	(text "'"
+		(exclude_from_sim no)
+		(at 154.94 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002f7")
+	)
+	(text "("
+		(exclude_from_sim no)
+		(at 160.02 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002f8")
+	)
+	(text ")"
+		(exclude_from_sim no)
+		(at 165.1 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002f9")
+	)
+	(text "*"
+		(exclude_from_sim no)
+		(at 170.18 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002fa")
+	)
+	(text "+"
+		(exclude_from_sim no)
+		(at 175.26 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002fb")
+	)
+	(text ","
+		(exclude_from_sim no)
+		(at 180.34 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002fc")
+	)
+	(text "-"
+		(exclude_from_sim no)
+		(at 185.42 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002fd")
+	)
+	(text "."
+		(exclude_from_sim no)
+		(at 190.5 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002fe")
+	)
+	(text "/"
+		(exclude_from_sim no)
+		(at 195.58 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a00000002ff")
+	)
+	(text "0"
+		(exclude_from_sim no)
+		(at 200.66 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000300")
+	)
+	(text "1"
+		(exclude_from_sim no)
+		(at 205.74 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000301")
+	)
+	(text "2"
+		(exclude_from_sim no)
+		(at 210.82 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000302")
+	)
+	(text "3"
+		(exclude_from_sim no)
+		(at 215.9 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000303")
+	)
+	(text "4"
+		(exclude_from_sim no)
+		(at 220.98 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000304")
+	)
+	(text "5"
+		(exclude_from_sim no)
+		(at 226.06 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000305")
+	)
+	(text "6"
+		(exclude_from_sim no)
+		(at 231.14 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000306")
+	)
+	(text "7"
+		(exclude_from_sim no)
+		(at 236.22 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000307")
+	)
+	(text "8"
+		(exclude_from_sim no)
+		(at 241.3 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000308")
+	)
+	(text "9"
+		(exclude_from_sim no)
+		(at 246.38 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000309")
+	)
+	(text ":"
+		(exclude_from_sim no)
+		(at 251.46 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000030a")
+	)
+	(text ";"
+		(exclude_from_sim no)
+		(at 256.54 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000030b")
+	)
+	(text "<"
+		(exclude_from_sim no)
+		(at 261.62 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000030c")
+	)
+	(text "="
+		(exclude_from_sim no)
+		(at 266.7 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000030d")
+	)
+	(text ">"
+		(exclude_from_sim no)
+		(at 271.78 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000030e")
+	)
+	(text "?"
+		(exclude_from_sim no)
+		(at 276.86 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000030f")
+	)
+	(text "@"
+		(exclude_from_sim no)
+		(at 281.94 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000310")
+	)
+	(text "A"
+		(exclude_from_sim no)
+		(at 287.02 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000311")
+	)
+	(text "B"
+		(exclude_from_sim no)
+		(at 292.1 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000312")
+	)
+	(text "C"
+		(exclude_from_sim no)
+		(at 297.18 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000313")
+	)
+	(text "D"
+		(exclude_from_sim no)
+		(at 302.26 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000314")
+	)
+	(text "E"
+		(exclude_from_sim no)
+		(at 307.34 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000315")
+	)
+	(text "F"
+		(exclude_from_sim no)
+		(at 312.42 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000316")
+	)
+	(text "G"
+		(exclude_from_sim no)
+		(at 317.5 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000317")
+	)
+	(text "H"
+		(exclude_from_sim no)
+		(at 322.58 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000318")
+	)
+	(text "I"
+		(exclude_from_sim no)
+		(at 327.66 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000319")
+	)
+	(text "J"
+		(exclude_from_sim no)
+		(at 332.74 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000031a")
+	)
+	(text "K"
+		(exclude_from_sim no)
+		(at 337.82 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000031b")
+	)
+	(text "L"
+		(exclude_from_sim no)
+		(at 342.9 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000031c")
+	)
+	(text "M"
+		(exclude_from_sim no)
+		(at 347.98 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000031d")
+	)
+	(text "N"
+		(exclude_from_sim no)
+		(at 353.06 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000031e")
+	)
+	(text "O"
+		(exclude_from_sim no)
+		(at 358.14 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000031f")
+	)
+	(text "P"
+		(exclude_from_sim no)
+		(at 363.22 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000320")
+	)
+	(text "Q"
+		(exclude_from_sim no)
+		(at 368.3 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000321")
+	)
+	(text "R"
+		(exclude_from_sim no)
+		(at 373.38 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000322")
+	)
+	(text "S"
+		(exclude_from_sim no)
+		(at 378.46 88.9 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000323")
+	)
+	(text "T"
+		(exclude_from_sim no)
+		(at 12.7 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000324")
+	)
+	(text "U"
+		(exclude_from_sim no)
+		(at 17.78 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000325")
+	)
+	(text "V"
+		(exclude_from_sim no)
+		(at 22.86 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000326")
+	)
+	(text "W"
+		(exclude_from_sim no)
+		(at 27.94 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000327")
+	)
+	(text "X"
+		(exclude_from_sim no)
+		(at 33.02 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000328")
+	)
+	(text "Y"
+		(exclude_from_sim no)
+		(at 38.1 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000329")
+	)
+	(text "Z"
+		(exclude_from_sim no)
+		(at 43.18 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000032a")
+	)
+	(text "["
+		(exclude_from_sim no)
+		(at 48.26 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000032b")
+	)
+	(text "\\"
+		(exclude_from_sim no)
+		(at 53.34 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000032c")
+	)
+	(text "]"
+		(exclude_from_sim no)
+		(at 58.42 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000032d")
+	)
+	(text "^"
+		(exclude_from_sim no)
+		(at 63.5 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000032e")
+	)
+	(text "_"
+		(exclude_from_sim no)
+		(at 68.58 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000032f")
+	)
+	(text "`"
+		(exclude_from_sim no)
+		(at 73.66 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000330")
+	)
+	(text "a"
+		(exclude_from_sim no)
+		(at 78.74 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000331")
+	)
+	(text "b"
+		(exclude_from_sim no)
+		(at 83.82 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000332")
+	)
+	(text "c"
+		(exclude_from_sim no)
+		(at 88.9 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000333")
+	)
+	(text "d"
+		(exclude_from_sim no)
+		(at 93.98 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000334")
+	)
+	(text "e"
+		(exclude_from_sim no)
+		(at 99.06 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000335")
+	)
+	(text "f"
+		(exclude_from_sim no)
+		(at 104.14 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000336")
+	)
+	(text "g"
+		(exclude_from_sim no)
+		(at 109.22 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000337")
+	)
+	(text "h"
+		(exclude_from_sim no)
+		(at 114.3 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000338")
+	)
+	(text "i"
+		(exclude_from_sim no)
+		(at 119.38 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000339")
+	)
+	(text "j"
+		(exclude_from_sim no)
+		(at 124.46 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000033a")
+	)
+	(text "k"
+		(exclude_from_sim no)
+		(at 129.54 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000033b")
+	)
+	(text "l"
+		(exclude_from_sim no)
+		(at 134.62 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000033c")
+	)
+	(text "m"
+		(exclude_from_sim no)
+		(at 139.7 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000033d")
+	)
+	(text "n"
+		(exclude_from_sim no)
+		(at 144.78 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000033e")
+	)
+	(text "o"
+		(exclude_from_sim no)
+		(at 149.86 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000033f")
+	)
+	(text "p"
+		(exclude_from_sim no)
+		(at 154.94 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000340")
+	)
+	(text "q"
+		(exclude_from_sim no)
+		(at 160.02 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000341")
+	)
+	(text "r"
+		(exclude_from_sim no)
+		(at 165.1 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000342")
+	)
+	(text "s"
+		(exclude_from_sim no)
+		(at 170.18 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000343")
+	)
+	(text "t"
+		(exclude_from_sim no)
+		(at 175.26 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000344")
+	)
+	(text "u"
+		(exclude_from_sim no)
+		(at 180.34 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000345")
+	)
+	(text "v"
+		(exclude_from_sim no)
+		(at 185.42 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000346")
+	)
+	(text "w"
+		(exclude_from_sim no)
+		(at 190.5 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000347")
+	)
+	(text "x"
+		(exclude_from_sim no)
+		(at 195.58 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000348")
+	)
+	(text "y"
+		(exclude_from_sim no)
+		(at 200.66 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000349")
+	)
+	(text "z"
+		(exclude_from_sim no)
+		(at 205.74 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000034a")
+	)
+	(text "{"
+		(exclude_from_sim no)
+		(at 210.82 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000034b")
+	)
+	(text "|"
+		(exclude_from_sim no)
+		(at 215.9 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000034c")
+	)
+	(text "}"
+		(exclude_from_sim no)
+		(at 220.98 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000034d")
+	)
+	(text "~"
+		(exclude_from_sim no)
+		(at 226.06 96.52 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(italic yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000034e")
+	)
+	(text "AB"
+		(exclude_from_sim no)
+		(at 231.14 96.52 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000034f")
+	)
+	(text "AB"
+		(exclude_from_sim no)
+		(at 231.14 109.22 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000350")
+	)
+	(text "MM"
+		(exclude_from_sim no)
+		(at 231.14 121.92 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000351")
+	)
+	(text "MM"
+		(exclude_from_sim no)
+		(at 231.14 134.62 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000352")
+	)
+	(text "il"
+		(exclude_from_sim no)
+		(at 231.14 147.32 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000353")
+	)
+	(text "il"
+		(exclude_from_sim no)
+		(at 231.14 160.02 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000354")
+	)
+	(text "W1"
+		(exclude_from_sim no)
+		(at 231.14 172.72 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000355")
+	)
+	(text "W1"
+		(exclude_from_sim no)
+		(at 231.14 185.42 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000356")
+	)
+	(text "iiii"
+		(exclude_from_sim no)
+		(at 231.14 198.12 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000357")
+	)
+	(text "iiii"
+		(exclude_from_sim no)
+		(at 231.14 210.82 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000358")
+	)
+	(text "MMMM"
+		(exclude_from_sim no)
+		(at 231.14 223.52 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000359")
+	)
+	(text "MMMM"
+		(exclude_from_sim no)
+		(at 231.14 236.22 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000035a")
+	)
+	(text "kicli text metrics"
+		(exclude_from_sim no)
+		(at 231.14 248.92 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000035b")
+	)
+	(text "kicli text metrics"
+		(exclude_from_sim no)
+		(at 231.14 261.62 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000035c")
+	)
+	(text "line one\nline two"
+		(exclude_from_sim no)
+		(at 231.14 274.32 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000035d")
+	)
+	(text "line one\nline two"
+		(exclude_from_sim no)
+		(at 231.14 287.02 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000035e")
+	)
+	(text "line one\nline two\nline three"
+		(exclude_from_sim no)
+		(at 231.14 299.72 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a000000035f")
+	)
+	(text "line one\nline two\nline three"
+		(exclude_from_sim no)
+		(at 231.14 312.42 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000360")
+	)
+	(text "~{OVERBAR}"
+		(exclude_from_sim no)
+		(at 231.14 325.12 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000361")
+	)
+	(text "~{OVERBAR}"
+		(exclude_from_sim no)
+		(at 231.14 337.82 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000362")
+	)
+	(text "A~{B}C"
+		(exclude_from_sim no)
+		(at 231.14 350.52 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000363")
+	)
+	(text "A~{B}C"
+		(exclude_from_sim no)
+		(at 231.14 363.22 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000364")
+	)
+	(text "  leading and trailing  "
+		(exclude_from_sim no)
+		(at 231.14 375.92 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000365")
+	)
+	(text "  leading and trailing  "
+		(exclude_from_sim no)
+		(at 231.14 388.62 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000366")
+	)
+	(text "	tab"
+		(exclude_from_sim no)
+		(at 231.14 401.32 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000367")
+	)
+	(text "	tab"
+		(exclude_from_sim no)
+		(at 231.14 414.02 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "00000000-0000-4000-8000-0a0000000368")
+	)
+	(sheet_instances
+		(path "/"
+			(page "1")
+		)
+	)
+)

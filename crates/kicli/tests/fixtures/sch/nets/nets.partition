@@ -1,0 +1,39 @@
+# The net partition of nets.kicad_sch, as KiCad itself reports it.
+# Derived from nets.netlist, which kicad-cli wrote. The pin sets are the
+# gate: kicli's own partition must equal this one, net for net. KiCad's
+# name follows each set for correlation only, and is never a handle.
+#
+# Nets are ordered by descending pin count, then by the sorted pin list.
+# pins... = kicad-name
+R1.2 R100.2 R2.2 R200.2 = GND
+R10.1 R7.2 R8.1 R9.2 = Net-(R10-Pad1)
+R101.2 R14.1 R201.2 = GLOBAL_A
+R15.1 R16.2 R17.1 = Net-(R15-Pad1)
+R1.1 R2.1 = /NET_A
+R12.2 R13.1 = Net-(R12-Pad2)
+R3.2 R4.1 = Net-(R3-Pad2)
+R5.2 R6.1 = Net-(R5-Pad2)
+R10.2 = unconnected-(R10-Pad2)
+R100.1 = /CH_A_IN
+R101.1 = /channel_a/CHAN_LOCAL
+R11.1 = unconnected-(R11-Pad1)
+R11.2 = unconnected-(R11-Pad2)
+R12.1 = unconnected-(R12-Pad1)
+R13.2 = unconnected-(R13-Pad2)
+R14.2 = unconnected-(R14-Pad2)
+R15.2 = unconnected-(R15-Pad2)
+R16.1 = unconnected-(R16-Pad1)
+R17.2 = unconnected-(R17-Pad2)
+R20.1 = /D0
+R20.2 = unconnected-(R20-Pad2)
+R200.1 = /CH_B_IN
+R201.1 = /channel_b/CHAN_LOCAL
+R21.1 = /D1
+R21.2 = unconnected-(R21-Pad2)
+R3.1 = unconnected-(R3-Pad1)
+R4.2 = unconnected-(R4-Pad2)
+R5.1 = unconnected-(R5-Pad1)
+R6.2 = unconnected-(R6-Pad2)
+R7.1 = unconnected-(R7-Pad1)
+R8.2 = unconnected-(R8-Pad2)
+R9.1 = unconnected-(R9-Pad1)
