@@ -6,6 +6,6 @@ resolver = "3"
 version = "0.0.0"
 edition = "2024"
 rust-version = "1.85"
-license = "MIT OR Apache-2.0"
+license = "GPL-3.0-or-later"
 repository = "https://github.com/carr-james/kicli"
 authors = ["James Carr"]

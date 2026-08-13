@@ -1,20 +1,22 @@
 # cargo-deny configuration.
 #
-# kicli is MIT OR Apache-2.0. Every dependency that ends up in the binary must
-# carry a licence a permissive binary can redistribute. MPL-2.0 and GPL are
-# excluded, because they impose obligations this project does not accept. The
-# allowlist below is the enforcement.
+# kicli is GPL-3.0-or-later. Every dependency that ends up in the binary must
+# carry a licence that GPL-3 can absorb. Permissive licences qualify, and so
+# does MPL-2.0, which grants GPL compatibility in its own terms. AGPL does not
+# qualify: it adds a network-use obligation this project does not accept, and
+# Constitution §9 excludes it by name. The allowlist below is the enforcement.
 
 [graph]
 all-features = true
-# Intent: check dev-dependencies too, because proptest, assert_cmd and the fuzz
-# harness will be dev-dependencies.
+# Intent: check dev-dependencies too, because proptest, assert_cmd and the
+# generative harness are dev-dependencies.
 #
-# OBSERVED, cargo-deny 0.20.2: this key changes nothing. An MPL-2.0
-# dev-dependency passes `cargo deny check licenses` with the key set either way,
-# while the same crate as a normal dependency is correctly rejected. So the
-# licence gate covers the shipped artifact only. Re-verify when the first real
-# dev-dependency lands.
+# OBSERVED, cargo-deny 0.20.2: this key changes nothing. Dev-dependency edges
+# are pruned from the licence graph either way, so the licence gate covers the
+# shipped artifact only. The observation was made with an MPL-2.0 crate, which
+# the allowlist rejected as a normal dependency and passed as a dev-dependency;
+# MPL-2.0 is now allowed, so reproducing it needs a licence outside the list
+# below. The pruning behaviour is unchanged.
 exclude-dev = false
 
 [advisories]
@@ -24,7 +26,8 @@ ignore = []
 
 [licenses]
 version = 2
-# Add a licence here only with a reason in the commit message.
+# GPL-3-compatible licences only. Add one here with a reason in the commit
+# message. GPL-2.0-only is absent on purpose: it cannot be combined with GPL-3.
 allow = [
     "MIT",
     "Apache-2.0",
@@ -34,7 +37,20 @@ allow = [
     "ISC",
     "Unicode-3.0",
     "Zlib",
+    "BSL-1.0",
+    "CC0-1.0",
+    "MPL-2.0",
+    "LGPL-2.1-or-later",
+    "LGPL-3.0-or-later",
+    "GPL-2.0-or-later",
+    "GPL-3.0",
+    "GPL-3.0-or-later",
 ]
+# AGPL in every form is absent on purpose, and Constitution §9 excludes it by
+# name. cargo-deny's licences schema version 2 removed the explicit deny list
+# (cargo-deny PR 611): the allowlist is exhaustive, so anything missing from it
+# fails the gate. Adding AGPL here would therefore be the only way to admit it,
+# and that is a Constitution change, not a dependency change.
 confidence-threshold = 0.93
 # The allowlist states policy, not inventory. Entries no current dependency
 # uses are expected, so do not warn about them.
