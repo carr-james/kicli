@@ -1008,15 +1008,35 @@ library-nickname renaming (§10); bus routing and cross-sheet routing (§9);
 writing `.kicad_pro` (§5.5).
 
 **Post-v1, and larger than a backlog item: live editing through a running
-KiCad.** There is no schematic IPC API in KiCad 10.0.5 (§13), so kicli edits
-files on disk and lives with the consequence: an editor holding the same file
-does not see the change, and §14.4's best-effort probe is a warning rather than
-a fix. When KiCad ships a schematic API, a live mode drives the running instance
-instead, and the disk race stops existing rather than being managed. The `kicad`
-module (§14.1, `ENGINEERING.md`) is the seam it lands behind: it already owns
+KiCad.** kicli edits files on disk and lives with the consequence: an editor
+holding the same file does not see the change, and §14.4's best-effort probe is
+a warning rather than a fix. A live mode drives the running instance instead,
+and the disk race stops existing rather than being managed. The `kicad` module
+(§14.1, `ENGINEERING.md`) is the seam it lands behind: it already owns
 discovery, the version check and the process boundary, so a second back end
 joins it without touching a command. Nothing in v1 should make that harder,
 which is the reason the seam exists now.
+
+**The trigger is measured, not assumed** —
+`research/notes/eeschema-ipc-status.md`, 2026-08-13. eeschema already registers
+an API handler and serves the generic editor surface in 10.0.5:
+`GetOpenDocuments`, `BeginCommit`/`EndCommit`, `CreateItems`, `UpdateItems`,
+`DeleteItems`, `HitTest`. What 10.0.5 lacks is the **type vocabulary** — its
+schematic types are a line, text and the four label kinds, with no symbol,
+field, junction, sheet or pin — so the items kicli edits cannot be sent. Master,
+on the KiCad 11 line, carries thirty-odd type messages including
+`SchematicSymbol` and `SchematicField`, four schematic commands, and six job
+runners. **KiCad 11.0 is the earliest release that can carry a live mode.**
+
+What to re-check when a KiCad 11 nightly is available, in order: that the
+shipped `_eeschema.kiface` exports `GetSchematicHierarchy`,
+`GetSchematicNetlist` and `SaveDocument`; that a live `GetOpenDocuments` answers,
+which is what §14.4's probe already wants; that `GetSchematicNetlist`'s partition
+matches `kicad-cli sch export netlist`, which would give kicli a second oracle
+needing no subprocess; and that `SchematicSymbol` carries the per-sheet-path
+instance data, since a symbol on a twice-placed sheet has two references and a
+wire format that cannot say so cannot drive an edit. The note carries the full
+list and the upstream stability wording.
 
 **Post-v1 backlog, optional and local-only:** a coverage-guided fuzz harness for
 the parser. It needs a nightly toolchain, and the repository pins stable. The

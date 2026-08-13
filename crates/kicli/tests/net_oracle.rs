@@ -229,7 +229,7 @@ mod corpus {
     // reproduced. The test is kept whole and does not run, so that closing
     // that last rule is a matter of deleting one attribute and reading the
     // report.
-    #[ignore = "32 of 35 corpus hierarchies match; the rest need the bundle-to-bundle rule"]
+    #[ignore = "32 of 35 corpus hierarchies match; the rest need the two-bus-parents rule, whose trigger is recorded in research/notes/bundle-members.md"]
     #[test]
     fn netlist_partition_matches_kicad_corpus() {
         let Some(tool) = kicad_cli() else {

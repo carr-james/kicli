@@ -121,3 +121,58 @@ grep -A4 '"/ZZ9"'       probe.net   # one pin
 `cargo test --test net_probe_rules` builds that drawing and holds the rule in
 place. With `KICLI_TEST_KICAD_CLI` set it exports the netlist as well, so the
 expectation above is checked against the tool rather than remembered.
+
+## The trigger, found in KiCad's source after the probes
+
+**Added 2026-08-13 by the orchestrator, after the five probes above.** The
+probes looked for a bus wired to a bus. That is not the trigger, which is why
+none of them reproduced it.
+
+`CONNECTION_GRAPH::processSubGraphs` (`eeschema/connection_graph.cpp:2581-2588`,
+tag 10.0.5) opens with:
+
+```cpp
+// Handle buses that have been linked together somewhere by member (net) connections.
+for( CONNECTION_SUBGRAPH* subgraph : m_driver_subgraphs )
+{
+    if( subgraph->m_bus_parents.size() < 2 )
+        continue;
+```
+
+The subject is a **net**, not a bus. A net subgraph gains a bus parent at
+`:2244-2251`, where a bus's member name matches a net subgraph's driver name:
+
+```cpp
+if( connection->IsBus() && candidate->m_driver_connection->IsNet() )
+{
+    subgraph->m_bus_neighbors[member].insert( candidate );
+    candidate->m_bus_parents[member].insert( subgraph );
+}
+```
+
+So the rule is:
+
+> **One net that is a member of two or more bundles links those bundles'
+> corresponding members.** Correspondence is `matchBusMember`: by index between
+> two vectors, by local member name between two groups.
+
+That is how `UART.RX` and `UART_TRG.RX` become one net in
+`royalblue54L_feather`, and `VRAM31` and `DQ31` in `video`: a single net is a
+child of both bundles, and every matching member pair is joined behind it.
+
+The comment KiCad puts above the loop is worth keeping in mind — "This feels a
+bit hacky, perhaps this algorithm should be revisited in the future" — because
+it says the behaviour is emergent rather than designed, and a future release may
+change it. The netlist oracle is what will notice if it does.
+
+**Still not measured**: which name a net must carry to become a member-child of
+a bundle — the full member name (`UART.RX`) or the local one (`RX`) — and what
+`test_name` is built from at `:2200-2240`. That is one probe, now that the loop
+to aim it at is known: give one wire a label that is a member of two bundles of
+different names, and see whether KiCad joins their other members.
+
+**What kicli must implement** to close the last three hierarchies: track, per
+net, the bundles it is a member of; where a net has two or more, union the
+corresponding members of those bundles. The member-matching half already exists
+in the extractor for rule 6; what is missing is the bus-parent bookkeeping and
+the linking pass.
