@@ -124,52 +124,95 @@ listing 16 `#PWR0xx` entries is pure noise. They appear implicitly as net names.
 
 ### 3.2 Net construction rules (validated)
 
-Union-find over these merge relations, in order:
+Union-find over these six merge relations, in order. Every one is measured
+against KiCad 10.0.5, and every one has a note carrying its evidence, both
+directions of it, and a reproduction recipe.
 
-1. **Wire/bus endpoints** that coincide → same net.
-2. **Junction on a segment interior**: a junction merges everything that meets
-   at its point. A pin or sheet pin that merely *lies* on a wire's interior does
-   **not** merge, and two wires crossing without a junction do **not** merge —
-   that is the whole point of junction dots.
+1. **shared point** — items whose connection points coincide are one net. A
+   wire connects at its two ends and nowhere between them. A **bus entry** is
+   the exception: it carries one member of a bundle, so it joins no other bus
+   entry, no bus, no bus junction and no bus label. Two entries drawn towards
+   one point of a bundle carry two different members, and joining them shorts
+   two nets ([`notes/bus-entry-joins-nothing.md`](notes/bus-entry-joins-nothing.md)).
+2. **junction** — a junction merges everything that meets at its point, a
+   segment interior included. A pin or sheet pin that merely *lies* on a
+   wire's interior does **not** merge, two wires crossing without a junction do
+   **not** merge, and a wire endpoint on another wire's interior does not
+   merge — that is the whole point of junction dots.
 
    **Corrected 2026-08-13.** This rule previously said that a pin on a segment
    interior merges. Measured against KiCad 10.0.5 it does not: two clusters of
    `crates/kicli/tests/fixtures/sch/nets/nets.kicad_sch` are identical apart
    from a junction, and only the one with the junction takes the mid-span pin
    into the net. A control run adding a junction to the other cluster flips it
-   as well, so the junction is the whole of the difference. Evidence, both
-   directions, and the reproduction recipe are in
+   as well, so the junction is the whole of the difference. Evidence in
    [`notes/pin-on-wire-interior.md`](notes/pin-on-wire-interior.md). The 25-net
    agreement below is unaffected: no pin in `ampli_ht` sits mid-wire.
-3. **Pin at a wire endpoint** → merge.
-4. **Labels**: all local labels with the same name *on the same sheet* merge;
-   global labels merge across the whole project; hierarchical labels merge with
-   the parent's sheet pin of the same name.
-
-   A label also merges with a segment it sits on. **Added 2026-08-13**, measured
-   against KiCad 10.0.5: a label whose anchor lies on a segment interior joins
-   every segment meeting at that anchor when there are two or more, and joins
-   the single segment otherwise — but only when no pin, other label, sheet pin
-   or no-connect shares the anchor. A label and a pin together at a mid-wire
-   point form their own net and leave the wire out of it. Evidence and the
-   reproduction recipe are in
+3. **label on a segment** — a label whose anchor lies on a segment interior
+   joins every segment meeting at that anchor when there are two or more, and
+   joins the single segment otherwise — but only when no pin, other label,
+   sheet pin or no-connect shares the anchor. A label and a pin together at a
+   mid-wire point form their own net and leave the wire out of it. **Added
+   2026-08-13**; evidence in
    [`notes/label-on-wire-interior.md`](notes/label-on-wire-interior.md).
-5. **Power symbols**: all power-symbol pins whose symbol `Value` is equal merge
-   project-wide (this is what makes `GND` one net).
+4. **name** — items of equal name join, and one sheet is one namespace: a
+   local label, a hierarchical label, a global label and a power pin that
+   carry one name on one sheet are one net, whatever their kinds. A global
+   label and a power pin carry that name across the whole project as well, and
+   a hierarchical label meets the like-named pin of the sheet symbol that draws
+   its placement. Names are compared as KiCad escapes them, so `A/B` and
+   `A{slash}B` are one name and `A-B` and `A_B` are two.
+
+   **Widened 2026-08-13.** This rule previously kept each kind of label in a
+   namespace of its own, which split five nets of KiCad's own CM5 demo
+   ([`notes/one-sheet-one-namespace.md`](notes/one-sheet-one-namespace.md),
+   [`notes/escaped-net-names.md`](notes/escaped-net-names.md)).
+5. **power pin** — a pin names a net when it is a power input, either on a
+   power symbol, by the symbol's `Value`, which is what makes `GND` one net,
+   or **hidden on an ordinary symbol**, by the pin's own name, which is what
+   puts a 74-series part's invisible `VCC` on the rail. A power output names
+   nothing, which is what `PWR_FLAG` is
+   ([`notes/hidden-power-pin.md`](notes/hidden-power-pin.md)).
+6. **bundle member** — a bundle carries its members. A net named after one
+   member, on any sheet the bundle reaches, is that member, and no wire between
+   them is needed. `AN[0..7]` carries `AN0` to `AN7`; `ANALOG{A[0..5]}` carries
+   `ANALOG.A0` to `ANALOG.A5`; `I2C{SCL, SDA}` carries `I2C.SCL` and `I2C.SDA`
+   ([`notes/bundle-members.md`](notes/bundle-members.md)).
+
+   **Open.** Two bundles of different names, wired together, share their
+   members: KiCad puts `UART.RX` and `UART_TRG.RX` on one net in
+   `demos/royalblue54L_feather`, and `VRAM31` and `DQ31` on one net in
+   `demos/video`. Four probes failed to reproduce the correspondence, and they
+   are recorded in the note so the next attempt does not repeat them. This is
+   the whole of the remaining difference against the demo corpus.
+
+**What a net lists** is a separate question from what it joins:
+
+- a net lists a pin **once per reference designator**, however many units of
+  the symbol draw it, because a library may put a pin in unit 0 and every unit
+  then draws it ([`notes/pin-shared-by-two-units.md`](notes/pin-shared-by-two-units.md));
+- a net lists **no pin of a symbol marked `(on_board no)`**, and `(dnp yes)`
+  and `(in_bom no)` do not remove a pin
+  ([`notes/symbol-off-the-board.md`](notes/symbol-off-the-board.md));
+- which unit a symbol draws is the **instance record's** business, not the
+  cached `(unit …)` beside the `lib_id`
+  ([`notes/instance-unit.md`](notes/instance-unit.md)).
 
 **Validation** — `demos/complex_hierarchy/ampli_ht.kicad_sch`:
 
 ```
-rules 1-3 only                     → 37 nets
-rules 1-5 (with power-name merge)  → 25 nets
+geometry alone (rules 1-3)         → 37 nets
+every rule (with the name merges)  → 25 nets
 kicad-cli sch export netlist       → 25 nets   ✓ exact match
 ```
 
 Power nets found: `GND` (9 symbols), `HT` (3), `+12V` (2), `-VAA` (2) — i.e. the
 12-net discrepancy is exactly the 16 power symbols collapsing into 4 nets.
 
-This comparison should become a permanent test: for every fixture, kicli's net
-partition must equal `kicad-cli`'s (`kicad-cli.md` §4).
+This comparison is now a permanent test: for every fixture, kicli's net
+partition must equal `kicad-cli`'s (`kicad-cli.md` §4). Against KiCad's whole
+demo corpus, 32 of 35 hierarchies match exactly; the three that do not are the
+open half of rule 6.
 
 ### 3.3 Naming
 

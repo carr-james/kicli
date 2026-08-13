@@ -16,6 +16,27 @@ mod names;
 use crate::model::hierarchy::Hierarchy;
 use crate::model::items::{Refdes, SheetPath, Uuid};
 
+/// The merge rules, named, in the order the extractor applies them.
+///
+/// A rule joins items into one net. The specification and the research record
+/// carry the same six names beside the evidence for each, and a test holds the
+/// three lists together, so a rule cannot be changed in one place only.
+///
+/// # Examples
+///
+/// ```
+/// use kicli::connectivity::MERGE_RULES;
+/// assert_eq!(MERGE_RULES[0], "shared point");
+/// ```
+pub const MERGE_RULES: [&str; 6] = [
+    "shared point",
+    "junction",
+    "label on a segment",
+    "name",
+    "power pin",
+    "bundle member",
+];
+
 /// Which merge rules to apply.
 ///
 /// Every set includes the geometric rules. The rest are switches, so that a

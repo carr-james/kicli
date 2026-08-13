@@ -319,35 +319,56 @@ P <port>(<dir>)                              ; this sheet's own hierarchical lab
 refdes; opt-in.
 
 **Net construction** is not pure geometry (C-note, `representation.md` ⚠4).
-Union-find over, in order: (1) coincident wire/bus endpoints; (2) a **junction**
-on a segment *interior* merges what meets there — a pin or sheet pin that merely
-lies on a segment interior does **not** merge, and two wires crossing without a
-junction do **not** merge either; (3) pin at a wire endpoint; (4) labels — local
-labels merge within a sheet, global labels project-wide, hierarchical labels
-with the parent's like-named sheet pin, and a label whose anchor lies on a
-segment **interior** joins that segment when it is the only thing at that
-anchor, or joins every segment when two or more meet there; (5) **power
-symbols** — pins whose symbol `Value` matches merge project-wide. Rules 1–3
-alone give 37 nets on `ampli_ht` where KiCad reports 25; rules 1–5 give exactly
-25 (`representation.md` §3.2).
+Union-find over these six rules, in order. Every one was measured against
+KiCad, and every one has a note in `research/notes/` carrying its evidence and
+its reproduction recipe.
 
-Rules (2) and (4) were corrected on 2026-08-13, in opposite directions, both
-against KiCad itself.
+1. **shared point** — items whose connection points coincide are one
+   conductor. A wire connects at its two ends and nowhere between them. A bus
+   entry is the exception: it carries one member of a bundle, so it joins no
+   other bus entry, no bus, no bus junction and no bus label
+   (`notes/bus-entry-joins-nothing.md`).
+2. **junction** — a junction merges everything that meets at its point, a
+   segment interior included. A pin or sheet pin that merely lies on a segment
+   interior does **not** merge, two wires crossing without a junction do not
+   merge, and a wire endpoint on another wire's interior does not merge
+   (`notes/pin-on-wire-interior.md`).
+3. **label on a segment** — a label whose anchor lies on a segment interior
+   joins every segment meeting at that anchor when two or more do, and joins
+   the single segment otherwise — but only when nothing else shares the
+   anchor. A label and a pin at one mid-wire point form a net of their own and
+   leave the wire out of it, which draws as a connection and is not one
+   (`notes/label-on-wire-interior.md`). `KI-CONN-001` catches that case by the
+   same test that catches a bare mid-wire pin.
+4. **name** — items of equal name join, and one sheet is one namespace: a
+   local label, a hierarchical label, a global label and a power pin that
+   carry one name on one sheet are one net, whatever their kinds. A global
+   label and a power pin carry that name across the project as well, and a
+   hierarchical label meets the like-named pin of the sheet symbol that draws
+   its placement. Names are compared as KiCad escapes them, so `A/B` and
+   `A{slash}B` are one name, while `A-B` and `A_B` are two
+   (`notes/one-sheet-one-namespace.md`, `notes/escaped-net-names.md`).
+5. **power pin** — a pin names a net when it is a power input, either on a
+   power symbol, by the symbol's value, or hidden on an ordinary symbol, by
+   the pin's own name. A power output names nothing, which is what `PWR_FLAG`
+   is (`notes/hidden-power-pin.md`).
+6. **bundle member** — a bundle carries its members: a net named after one
+   member, on any sheet the bundle reaches, is that member, and no wire
+   between them is needed. `AN[0..7]` carries `AN0`, and `ANALOG{A[0..5]}`
+   carries `ANALOG.A0`. Two bundles of different names wired together also
+   share their members; how those correspond is **not yet measured**, and it
+   is the whole of the remaining corpus difference (`notes/bundle-members.md`).
 
-A **pin** on a segment interior does **not** merge, though the spec said it did.
-Two clusters of one fixture differ only by a junction: without it the mid-span
-pin is its own unconnected net, with it the pin joins, and a control run adding
-a junction to the first cluster flips it
-(`research/notes/pin-on-wire-interior.md`). A **wire endpoint** landing on
-another wire's interior does not merge either.
+Rules 1–3 alone give 37 nets on `ampli_ht` where KiCad reports 25; the six
+give exactly 25 (`representation.md` §3.2).
 
-A **label** on a segment interior **does** merge, which the spec did not say. It
-joins every segment when two or more meet at its anchor, and joins the one
-segment otherwise — but only when nothing else shares that anchor. A label and a
-pin at the same mid-wire point form a net of their own and leave the wire out of
-it, which draws as a connection and is not one
-(`research/notes/label-on-wire-interior.md`). `KI-CONN-001` catches that case by
-the same test that catches a bare mid-wire pin.
+**What a net lists** is a separate question from what it joins. A net lists a
+pin once per reference designator, however many units of the symbol draw it
+(`notes/pin-shared-by-two-units.md`), and it lists no pin of a symbol marked
+`(on_board no)`, which `(dnp yes)` and `(in_bom no)` do not do
+(`notes/symbol-off-the-board.md`). Which unit a symbol draws is the instance
+record's business, not the cached `(unit …)` beside the `lib_id`
+(`notes/instance-unit.md`).
 
 **Connectivity is defined as whatever KiCad 10.0.5's netlister does.** The rules
 above describe that behaviour; they do not invent it. Where a rule and KiCad
