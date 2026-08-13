@@ -44,3 +44,4 @@ project/broken/future.kicad_sch 20260803 normal no hand
 project/broken/commented.kicad_sch 20260306 normal no hand
 project/broken/broken.kicad_pro - json no hand
 text/calibration.kicad_sch 20260306 normal yes kicad-cli
+sch/item_zoo.kicad_sch 20260306 normal yes kicad-cli

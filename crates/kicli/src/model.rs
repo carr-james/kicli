@@ -10,10 +10,16 @@
 //! file's version stamp changes about its tokens, what kicli will and will not
 //! write, and the project file that holds bus aliases.
 
+pub mod items;
 pub mod project;
 pub mod version;
 pub mod write;
 
+pub use items::{
+    Field, Item, Label, LabelKind, LibId, Line, LineKind, Mirror, PinInstance, PointItem,
+    ReadError, Refdes, Schematic, SheetItem, SheetPath, SheetPin, Symbol, SymbolPlacement,
+    TextItem, Uuid,
+};
 pub use project::{BusAlias, Project, ProjectError, read_project};
 pub use version::{FormatVersion, MAX_SCHEMATIC_VERSION, PropertyOrder, pin_text};
 pub use write::{WriteOptions, WritePlan, WriteRefusal, format_version, plan_write};
