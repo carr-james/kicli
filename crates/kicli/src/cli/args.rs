@@ -72,6 +72,45 @@ pub enum Command {
         #[command(subcommand)]
         verb: ProjectVerb,
     },
+    /// Read the schematics.
+    Sch {
+        /// What to do with them.
+        #[command(subcommand)]
+        verb: SchVerb,
+    },
+}
+
+/// The verbs of the `sch` noun.
+#[derive(Clone, Copy, Debug, Subcommand)]
+pub enum SchVerb {
+    /// Print a compact view of the drawing.
+    View {
+        /// Which view to print.
+        #[arg(long, value_enum, default_value_t = ViewName::Connectivity)]
+        view: ViewName,
+
+        /// List power symbols, which are otherwise left out as noise.
+        #[arg(long)]
+        include_power: bool,
+
+        /// Add the first eight characters of each object's identifier.
+        #[arg(long)]
+        uuids: bool,
+
+        /// Report the size of the view in bytes.
+        #[arg(long)]
+        stats: bool,
+    },
+}
+
+/// The views `sch view` can print.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, ValueEnum)]
+pub enum ViewName {
+    /// What is joined to what.
+    #[default]
+    Connectivity,
+    /// Where things are drawn.
+    Layout,
 }
 
 /// The verbs of the `project` noun.

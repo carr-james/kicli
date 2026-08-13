@@ -268,6 +268,95 @@ fn write_wires(out: &mut String, file: &LoadedFile) {
     );
 }
 
+/// The same content as [`render`], as JSON.
+#[must_use]
+pub fn to_json(hierarchy: &Hierarchy, options: &ViewOptions) -> serde_json::Value {
+    let text = render(hierarchy, options);
+    let mut sheets: Vec<serde_json::Value> = Vec::new();
+
+    for line in text.lines() {
+        if let Some(rest) = line.strip_prefix("page ") {
+            let mut parts = rest.split_whitespace();
+            let paper = parts.next().unwrap_or_default();
+            let path = parts.nth(1).unwrap_or_default();
+            sheets.push(serde_json::json!({
+                "paper": paper,
+                "path": path,
+                "symbols": [],
+                "fields": [],
+                "text": [],
+                "wires": serde_json::Value::Null,
+            }));
+        } else if let Some(sheet) = sheets.last_mut() {
+            push_record(sheet, line);
+        }
+    }
+    serde_json::json!({
+        "scope": if options.sheet.is_some() { "sheet" } else { "project" },
+        "sheets": sheets,
+    })
+}
+
+/// Add one record line to the sheet object it belongs to.
+fn push_record(sheet: &mut serde_json::Value, line: &str) {
+    let mut parts = line.split_whitespace();
+    match parts.next() {
+        Some("L") => {
+            let record = serde_json::json!({
+                "reference": parts.next().unwrap_or_default(),
+                "x": parts.next().unwrap_or_default(),
+                "y": parts.next().unwrap_or_default(),
+                "angle": parts.next().unwrap_or_default(),
+                "mirror": parts.next().unwrap_or_default(),
+                "size": parts.next(),
+            });
+            if let Some(list) = sheet["symbols"].as_array_mut() {
+                list.push(record);
+            }
+        }
+        Some("F") => {
+            let record = serde_json::json!({
+                "field": parts.next().unwrap_or_default(),
+                "dx": parts.next().unwrap_or_default(),
+                "dy": parts.next().unwrap_or_default(),
+                "angle": parts.next().unwrap_or_default(),
+            });
+            if let Some(list) = sheet["fields"].as_array_mut() {
+                list.push(record);
+            }
+        }
+        Some("T") => {
+            let kind = parts.next().unwrap_or_default().to_owned();
+            let rest: Vec<&str> = parts.collect();
+            // The text itself may hold spaces, so the three trailing numbers
+            // are taken from the end and everything before them is the text.
+            let split = rest.len().saturating_sub(3);
+            let record = serde_json::json!({
+                "kind": kind,
+                "text": rest[..split].join(" "),
+                "x": rest.get(split).copied().unwrap_or_default(),
+                "y": rest.get(split + 1).copied().unwrap_or_default(),
+                "angle": rest.get(split + 2).copied().unwrap_or_default(),
+            });
+            if let Some(list) = sheet["text"].as_array_mut() {
+                list.push(record);
+            }
+        }
+        Some("W") => {
+            let numbers: Vec<u64> = line
+                .split_whitespace()
+                .filter_map(|word| word.parse().ok())
+                .collect();
+            sheet["wires"] = serde_json::json!({
+                "segments": numbers.first().copied().unwrap_or(0),
+                "junctions": numbers.get(1).copied().unwrap_or(0),
+                "crossings": numbers.get(2).copied().unwrap_or(0),
+            });
+        }
+        _ => {}
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{crosses, mm};

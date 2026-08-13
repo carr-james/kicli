@@ -12,8 +12,9 @@ mod locate;
 mod output;
 mod project;
 mod tools;
+mod view;
 
-pub use args::{Cli, Command, Global, OutputFormat, ProjectVerb};
+pub use args::{Cli, Command, Global, OutputFormat, ProjectVerb, SchVerb};
 pub use exit::ExitCode;
 pub use output::{Failure, Report, Reporter};
 
@@ -73,6 +74,15 @@ fn dispatch(parsed: &Cli, reporter: &Reporter) -> Result<Report, Failure> {
         Command::Project {
             verb: ProjectVerb::Check,
         } => check::check(&parsed.global, reporter),
+        Command::Sch {
+            verb:
+                SchVerb::View {
+                    view: which,
+                    include_power,
+                    uuids,
+                    stats,
+                },
+        } => view::view(&parsed.global, which, include_power, uuids, stats, reporter),
     }
 }
 

@@ -9,7 +9,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 
 use crate::connectivity::Nets;
-use crate::model::items::{Item, LabelKind, SheetPath, Symbol};
+use crate::model::items::{Item, LabelKind, LibId, SheetPath, Symbol};
 use crate::model::{Hierarchy, definition_of, read_library};
 
 /// What to put in a view, and what to leave out.
@@ -138,8 +138,10 @@ fn write_sheet(
                 .field("Value")
                 .map(|field| field.value.clone())
                 .unwrap_or_default(),
-            definition_of(&library, symbol)
-                .map_or_else(|| symbol.lib_id.0.clone(), |found| found.name.clone()),
+            definition_of(&library, symbol).map_or_else(
+                || symbol.lib_id.symbol_name().to_owned(),
+                |found| LibId(found.name.clone()).symbol_name().to_owned(),
+            ),
             symbol.uuid.0.clone(),
         ));
     }
@@ -236,6 +238,7 @@ fn write_nets(
     }
 
     let mut out = String::new();
+    let mut unconnected = 0;
     out.push_str("# N name[=kicad-name]: pins\n");
     for net in nets.nets() {
         let pins: Vec<String> = net
@@ -246,6 +249,13 @@ fn write_nets(
             .map(super::super::connectivity::NetPin::label)
             .collect();
         if pins.is_empty() {
+            continue;
+        }
+        // One pin joined to nothing is not a connection. KiCad names those
+        // nets `unconnected-...`, the rule check reports every one of them,
+        // and listing them here costs a fifth of the view to say nothing.
+        if pins.len() == 1 && net.kicad_name.starts_with("unconnected-") {
+            unconnected += 1;
             continue;
         }
 
@@ -274,6 +284,12 @@ fn write_nets(
         let leaves = if net.sheets.len() > 1 { "*" } else { "" };
         let _ = writeln!(out, "N {name}{leaves}{kicad}: {}", pins.join(" "));
     }
+    if unconnected > 0 {
+        let _ = writeln!(
+            out,
+            "# {unconnected} pin(s) join nothing; sch erc lists them"
+        );
+    }
     out
 }
 
@@ -288,6 +304,64 @@ pub fn listed_symbols<'a>(
         .filter(|symbol| symbol.reference_on(path).is_some())
         .filter(|symbol| include_power || !symbol.is_power())
         .count()
+}
+
+/// The same content as [`render`], as JSON.
+///
+/// The terse form is the default because this costs more than twice as many
+/// bytes for the same content. Both carry the same records, so a reader can
+/// choose by what it is doing rather than by what is available.
+#[must_use]
+pub fn to_json(hierarchy: &Hierarchy, nets: &Nets, options: &ViewOptions) -> serde_json::Value {
+    let text = render(hierarchy, nets, options);
+    let mut sheets = Vec::new();
+    let mut net_records = Vec::new();
+
+    for line in text.lines() {
+        if let Some(rest) = line.strip_prefix("sheet ") {
+            let mut parts = rest.split_whitespace();
+            let path = parts.next().unwrap_or_default();
+            let name = parts.next().unwrap_or("/");
+            sheets.push(serde_json::json!({
+                "path": path,
+                "name": name,
+                "symbols": [],
+            }));
+        } else if let Some(rest) = line.strip_prefix("S ") {
+            let mut parts = rest.split_whitespace();
+            let record = serde_json::json!({
+                "reference": parts.next().unwrap_or_default(),
+                "value": parts.next().unwrap_or_default(),
+                "library": parts.next().unwrap_or_default(),
+            });
+            if let Some(sheet) = sheets.last_mut() {
+                if let Some(list) = sheet["symbols"].as_array_mut() {
+                    list.push(record);
+                }
+            }
+        } else if let Some(rest) = line.strip_prefix("N ") {
+            let (head, pins) = rest.split_once(": ").unwrap_or((rest, ""));
+            let leaves = head.contains('*');
+            let head = head.replace('*', "");
+            let (name, kicad_name) = head
+                .split_once('=')
+                .map_or((head.clone(), head.clone()), |(name, kicad)| {
+                    (name.to_owned(), kicad.to_owned())
+                });
+            net_records.push(serde_json::json!({
+                "name": name,
+                "kicad_name": kicad_name,
+                "crosses_sheets": leaves,
+                "pins": pins.split_whitespace().collect::<Vec<_>>(),
+            }));
+        }
+    }
+
+    serde_json::json!({
+        "scope": if options.sheet.is_some() { "sheet" } else { "project" },
+        "sheets": sheets,
+        "nets": net_records,
+    })
 }
 
 #[cfg(test)]

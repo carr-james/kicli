@@ -10,6 +10,8 @@
 pub mod connectivity;
 pub mod delta;
 pub mod layout;
+pub mod scope;
 pub mod snapshot;
 
 pub use connectivity::ViewOptions;
+pub use scope::{Kind, Rendered, Scope};
