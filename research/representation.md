@@ -145,6 +145,15 @@ Union-find over these merge relations, in order:
 4. **Labels**: all local labels with the same name *on the same sheet* merge;
    global labels merge across the whole project; hierarchical labels merge with
    the parent's sheet pin of the same name.
+
+   A label also merges with a segment it sits on. **Added 2026-08-13**, measured
+   against KiCad 10.0.5: a label whose anchor lies on a segment interior joins
+   every segment meeting at that anchor when there are two or more, and joins
+   the single segment otherwise — but only when no pin, other label, sheet pin
+   or no-connect shares the anchor. A label and a pin together at a mid-wire
+   point form their own net and leave the wire out of it. Evidence and the
+   reproduction recipe are in
+   [`notes/label-on-wire-interior.md`](notes/label-on-wire-interior.md).
 5. **Power symbols**: all power-symbol pins whose symbol `Value` is equal merge
    project-wide (this is what makes `GND` one net).
 

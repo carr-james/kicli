@@ -218,6 +218,11 @@ points per occurrence before normalisation). **Knob**: `kicli.toml [rules]` key.
   reviewer, exactly like a connection. KiCad 10.0.5's netlister does not merge
   it, so the board is wired differently from the way the schematic reads. This
   is the most expensive class of schematic defect: it survives review.
+- **Also catches the label-plus-pin case**: a pin sharing a mid-wire anchor with
+  a label forms a net with the label and leaves the wire out, which draws as a
+  connection and is not one (`notes/label-on-wire-interior.md`). No extra
+  detection is needed — the pin's net is not the wire's net, which is the test
+  below.
 - **Detect**: a byproduct of the corrected extractor, needing no new geometry.
   For every pin connection point `p` and wire segment `w` where `p` lies on the
   interior of `w` (not within 1 IU of either endpoint): finding when `p` and `w`

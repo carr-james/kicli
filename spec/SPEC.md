@@ -323,16 +323,30 @@ on a segment *interior* merges what meets there — a pin or sheet pin that mere
 lies on a segment interior does **not** merge, and two wires crossing without a
 junction do **not** merge either; (3) pin at a wire endpoint; (4) labels — local
 labels merge within a sheet, global labels project-wide, hierarchical labels
-with the parent's like-named sheet pin; (5) **power symbols** — pins whose
-symbol `Value` matches merge project-wide. Rules 1–3 alone give 37 nets on
-`ampli_ht` where KiCad reports 25; rules 1–5 give exactly 25
-(`representation.md` §3.2).
+with the parent's like-named sheet pin, and a label whose anchor lies on a
+segment **interior** joins that segment when it is the only thing at that
+anchor, or joins every segment when two or more meet there; (5) **power
+symbols** — pins whose symbol `Value` matches merge project-wide. Rules 1–3
+alone give 37 nets on `ampli_ht` where KiCad reports 25; rules 1–5 give exactly
+25 (`representation.md` §3.2).
 
-Rule (2) was corrected on 2026-08-13, having previously said that a pin on a
-segment interior merges. It does not. Two clusters of one M2 fixture differ only
-by a junction: without it the mid-span pin is its own unconnected net, with it
-the pin joins, and a control run adding a junction to the first cluster flips it
-(`research/notes/pin-on-wire-interior.md`).
+Rules (2) and (4) were corrected on 2026-08-13, in opposite directions, both
+against KiCad itself.
+
+A **pin** on a segment interior does **not** merge, though the spec said it did.
+Two clusters of one fixture differ only by a junction: without it the mid-span
+pin is its own unconnected net, with it the pin joins, and a control run adding
+a junction to the first cluster flips it
+(`research/notes/pin-on-wire-interior.md`). A **wire endpoint** landing on
+another wire's interior does not merge either.
+
+A **label** on a segment interior **does** merge, which the spec did not say. It
+joins every segment when two or more meet at its anchor, and joins the one
+segment otherwise — but only when nothing else shares that anchor. A label and a
+pin at the same mid-wire point form a net of their own and leave the wire out of
+it, which draws as a connection and is not one
+(`research/notes/label-on-wire-interior.md`). `KI-CONN-001` catches that case by
+the same test that catches a bare mid-wire pin.
 
 **Connectivity is defined as whatever KiCad 10.0.5's netlister does.** The rules
 above describe that behaviour; they do not invent it. Where a rule and KiCad
