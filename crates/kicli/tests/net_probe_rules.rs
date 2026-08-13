@@ -79,6 +79,7 @@ impl Probe {
         let uuid = self.uuid();
         let pin_uuids: Vec<String> = placed.pins.iter().map(|_| self.uuid()).collect();
         let (library, reference, unit) = (placed.library, placed.reference, placed.unit);
+        let instance_unit = placed.instance_unit.unwrap_or(unit);
         let (x, y) = placed.at;
         let attributes = placed.attributes;
         let pin_list: String = placed
@@ -98,7 +99,7 @@ impl Probe {
             "(symbol (lib_id \"Probe:{library}\") (at {x} {y} 0) (unit {unit}) (body_style 1)\n\
              {attributes}\n\
              (uuid \"{uuid}\")\n{fields}{pin_list}\
-             (instances (project \"probe\" (path \"/{ROOT}\" (reference \"{reference}\") (unit {unit}))))\n)"
+             (instances (project \"probe\" (path \"/{ROOT}\" (reference \"{reference}\") (unit {instance_unit}))))\n)"
         ));
     }
 
@@ -189,7 +190,10 @@ struct Placed<'a> {
     reference: &'a str,
     at: (&'a str, &'a str),
     pins: &'a [&'a str],
+    /// The unit written beside the `lib_id`, which is only a cache.
     unit: u32,
+    /// The unit written in the instance record, which is the truth.
+    instance_unit: Option<u32>,
     value: &'a str,
     /// The attributes a symbol that is built and fitted carries.
     attributes: &'a str,
@@ -208,6 +212,7 @@ impl<'a> Placed<'a> {
             at,
             pins,
             unit: 1,
+            instance_unit: None,
             value: reference,
             attributes: "(exclude_from_sim no) (in_bom yes) (on_board yes) (in_pos_files yes) (dnp no)",
         }
@@ -461,6 +466,55 @@ fn two_labels_join_when_their_net_names_are_equal() {
     assert!(found.contains(&net(&["R3.1"])));
     assert!(found.contains(&net(&["R4.1"])));
     assert!(found.contains(&net(&["R5.1", "R6.1"])));
+}
+
+#[test]
+fn the_instance_record_says_which_unit_a_symbol_draws() {
+    let mut probe = Probe::new("instance-unit");
+    probe.define(symbol(
+        "PAIR",
+        "U",
+        false,
+        &[
+            (
+                "1_1",
+                vec![
+                    pin("passive", ("0", "3.81"), "270", "1", "A"),
+                    pin("passive", ("0", "-3.81"), "90", "2", "B"),
+                ],
+            ),
+            (
+                "2_1",
+                vec![
+                    pin("passive", ("0", "3.81"), "270", "3", "C"),
+                    pin("passive", ("0", "-3.81"), "90", "4", "D"),
+                ],
+            ),
+        ],
+    ));
+
+    // The cache beside the lib_id says unit 1; the instance says unit 2.
+    let mut disagreeing = Placed::new("PAIR", "U1", ("50.8", "50.8"), &["1", "2", "3", "4"]);
+    disagreeing.instance_unit = Some(2);
+    probe.place_symbol(&disagreeing);
+    probe.wire(("50.8", "46.99"), ("76.2", "46.99"));
+    probe.label_of_kind("label", "", "TOPNET", ("76.2", "46.99"));
+    probe.place("R", "R1", ("76.2", "50.8"), &["1", "2"]);
+
+    // The control: the two agree on unit 2.
+    let mut agreeing = Placed::new("PAIR", "U2", ("50.8", "88.9"), &["1", "2", "3", "4"]);
+    agreeing.unit = 2;
+    probe.place_symbol(&agreeing);
+    probe.wire(("50.8", "85.09"), ("76.2", "85.09"));
+    probe.label_of_kind("label", "", "CTRLNET", ("76.2", "85.09"));
+    probe.place("R", "R2", ("76.2", "88.9"), &["1", "2"]);
+
+    let found = probe.partition();
+    // Unit 2 is drawn, so the pin on the wire is pin 3 and not pin 1.
+    assert!(found.contains(&net(&["R1.1", "U1.3"])));
+    assert!(found.contains(&net(&["R2.1", "U2.3"])));
+    // Unit 1's pins are not drawn at all.
+    assert!(!found.iter().any(|pins| pins.contains(&"U1.1".to_owned())));
 }
 
 #[test]
