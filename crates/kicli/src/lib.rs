@@ -15,7 +15,9 @@
 //!
 //! # Status
 //!
-//! The modules below are empty. The crate exposes only [`version`].
+//! The crate reads: it parses schematics into typed objects, walks a sheet
+//! tree, resolves pin positions, hashes objects for a delta, and answers
+//! `project info` and `project check`. It does not yet mutate a file.
 
 // Undocumented public items and unsafe code are errors. This problem domain
 // never needs unsafe. Pedantic lints warn; allow one only with a reason beside
