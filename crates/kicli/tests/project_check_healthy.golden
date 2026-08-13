@@ -1,0 +1,9 @@
+project healthy
+  root       healthy.kicad_sch
+  kicad-cli  10.0.5
+  checked    2 file(s), 2 sheet(s)
+
+findings 0
+
+not covered
+  library resolution: lib_id values, Footprint fields, model paths and library nicknames

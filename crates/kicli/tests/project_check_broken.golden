@@ -1,0 +1,12 @@
+project broken
+  root       broken.kicad_sch
+  kicad-cli  10.0.5
+  checked    3 file(s), 3 sheet(s)
+
+findings 3
+  sheet-file-missing  broken.kicad_sch  sheet absent names absent.kicad_sch, which is not there
+  version-ceiling     future.kicad_sch  the format stamp 20260803 is above the ceiling 20260306, so kicli will not write this file
+  refuse-to-write     commented.kicad_sch  the file carries 1 comment(s), which writing would drop; pass --allow-comment-loss to write anyway
+
+not covered
+  library resolution: lib_id values, Footprint fields, model paths and library nicknames
