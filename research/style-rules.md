@@ -212,6 +212,31 @@ points per occurrence before normalisation). **Knob**: `kicli.toml [rules]` key.
 - **Note**: uses oriented boxes, not AABBs — schematic text is routinely at 90°.
 - **Knob**: `text.overlap_ratio = 0.2`, `text.overlap = "error"`.
 
+#### KI-CONN-001 — pin touches a wire but is not connected
+- **T** 1. **Why**: it looks connected and is not. A pin whose connection point
+  lands on a wire's interior with no junction there reads, on screen and to a
+  reviewer, exactly like a connection. KiCad 10.0.5's netlister does not merge
+  it, so the board is wired differently from the way the schematic reads. This
+  is the most expensive class of schematic defect: it survives review.
+- **Detect**: a byproduct of the corrected extractor, needing no new geometry.
+  For every pin connection point `p` and wire segment `w` where `p` lies on the
+  interior of `w` (not within 1 IU of either endpoint): finding when `p` and `w`
+  are in different nets after union-find. Geometric coincidence without
+  electrical merge is the whole test. Sheet pins are covered the same way.
+- **Fix hint**: `add a junction at <x>,<y>` — that is the one-item change that
+  makes the drawing mean what it looks like. The alternative, moving the symbol
+  off the wire, is a layout decision and is not suggested automatically.
+- **Overlap with ERC**: none. KiCad's 47 checks have nothing for this; the
+  netlister simply reports two nets, which is not a violation from its point of
+  view. That makes it kicli's to catch, and it is the clearest example so far of
+  what "where things are drawn" adds to electrical correctness.
+- **Evidence**: measured against KiCad 10.0.5, both directions, in
+  [`notes/pin-on-wire-interior.md`](notes/pin-on-wire-interior.md). The fixture
+  `crates/kicli/tests/fixtures/sch/nets/nets.kicad_sch` carries one cluster of
+  each kind, so the rule has a positive and a negative case from the day it is
+  written.
+- **Knob**: `connection.pin_on_wire = "error"`.
+
 #### KI-HIER-001 — sheet pin / hierarchical label mismatch
 - **T** 1. **Delegated to ERC** (`hier_label_mismatch`). Listed here only so the
   catalogue is complete; kicli reports ERC's finding and gates on it.

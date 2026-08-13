@@ -318,15 +318,31 @@ P <port>(<dir>)                              ; this sheet's own hierarchical lab
 refdes; opt-in.
 
 **Net construction** is not pure geometry (C-note, `representation.md` ⚠4).
-Union-find over, in order: (1) coincident wire/bus endpoints; (2) a pin, sheet
-pin or junction on a segment *interior* — two wires crossing without a junction
-do **not** merge; (3) pin at a wire endpoint; (4) labels — local labels merge
-within a sheet, global labels project-wide, hierarchical labels with the
-parent's like-named sheet pin; (5) **power symbols** — pins whose symbol `Value`
-matches merge project-wide. Rules 1–3 alone give 37 nets on `ampli_ht` where
-KiCad reports 25; rules 1–5 give exactly 25 (`representation.md` §3.2).
+Union-find over, in order: (1) coincident wire/bus endpoints; (2) a **junction**
+on a segment *interior* merges what meets there — a pin or sheet pin that merely
+lies on a segment interior does **not** merge, and two wires crossing without a
+junction do **not** merge either; (3) pin at a wire endpoint; (4) labels — local
+labels merge within a sheet, global labels project-wide, hierarchical labels
+with the parent's like-named sheet pin; (5) **power symbols** — pins whose
+symbol `Value` matches merge project-wide. Rules 1–3 alone give 37 nets on
+`ampli_ht` where KiCad reports 25; rules 1–5 give exactly 25
+(`representation.md` §3.2).
 
-**Test gate**: for every fixture, kicli's net partition must equal
+Rule (2) was corrected on 2026-08-13, having previously said that a pin on a
+segment interior merges. It does not. Two clusters of one M2 fixture differ only
+by a junction: without it the mid-span pin is its own unconnected net, with it
+the pin joins, and a control run adding a junction to the first cluster flips it
+(`research/notes/pin-on-wire-interior.md`).
+
+**Connectivity is defined as whatever KiCad 10.0.5's netlister does.** The rules
+above describe that behaviour; they do not invent it. Where a rule and KiCad
+disagree, KiCad is right by definition and the rule is a bug, whatever any
+document here says. This is not a licence to guess: the disagreement must be
+demonstrated against `kicad-cli` on a committed fixture, and the rule text and
+its evidence updated together.
+
+**Test gate**, which is how the paragraph above is enforced rather than merely
+stated: for every fixture, kicli's net partition must equal
 `kicad-cli sch export netlist`'s. This is an M2 gate (`kicad-cli.md` §4).
 
 **Naming** (C12, Q12 as amended). Display name priority: power-symbol value →
@@ -627,6 +643,8 @@ ERC-owned. Absence of `kicad-cli` is a structured error and exit 6 (§6.1, Q31).
 draft is retired; no reconciliation work). Tier 1 (blocking): `KI-GRID-001`
 off-grid connectable geometry, `KI-OVL-001` symbol bodies overlap,
 `KI-WIRE-001` wire crosses a symbol body, `KI-TXT-001` overlapping text,
+`KI-CONN-001` a pin touches a wire's interior with no junction, so it looks
+connected and is not (§7.1, `research/notes/pin-on-wire-interior.md`),
 `KI-HIER-001` (delegated to ERC). Tier 2 (scored): `KI-FLOW-001/002`,
 `KI-XING-001`, `KI-JCT-001`, `KI-RTE-001/002`, `KI-LBL-001/002/003`,
 `KI-TXT-002/003`, `KI-FLD-001/002`, `KI-DOC-001…004`, `KI-LAY-001…003`,

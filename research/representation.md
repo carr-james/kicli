@@ -127,9 +127,20 @@ listing 16 `#PWR0xx` entries is pure noise. They appear implicitly as net names.
 Union-find over these merge relations, in order:
 
 1. **Wire/bus endpoints** that coincide → same net.
-2. **Point on segment interior**: a pin, sheet pin, or junction lying on a wire's
-   interior merges with that wire. (Two wires crossing without a junction do
-   **not** merge — that is the whole point of junction dots.)
+2. **Junction on a segment interior**: a junction merges everything that meets
+   at its point. A pin or sheet pin that merely *lies* on a wire's interior does
+   **not** merge, and two wires crossing without a junction do **not** merge —
+   that is the whole point of junction dots.
+
+   **Corrected 2026-08-13.** This rule previously said that a pin on a segment
+   interior merges. Measured against KiCad 10.0.5 it does not: two clusters of
+   `crates/kicli/tests/fixtures/sch/nets/nets.kicad_sch` are identical apart
+   from a junction, and only the one with the junction takes the mid-span pin
+   into the net. A control run adding a junction to the other cluster flips it
+   as well, so the junction is the whole of the difference. Evidence, both
+   directions, and the reproduction recipe are in
+   [`notes/pin-on-wire-interior.md`](notes/pin-on-wire-interior.md). The 25-net
+   agreement below is unaffected: no pin in `ampli_ht` sits mid-wire.
 3. **Pin at a wire endpoint** → merge.
 4. **Labels**: all local labels with the same name *on the same sheet* merge;
    global labels merge across the whole project; hierarchical labels merge with
