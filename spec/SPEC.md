@@ -228,6 +228,7 @@ Global flags: `--output json|text` (text default), `--project <dir>`,
 kicli project info|check                    # project summary, health check
 kicli sch view                              # compact views: --view connectivity|layout|delta
 kicli sch render                            # SVG+PNG, --region, --annotate
+kicli sch watch                             # auto-refreshing preview, read-only
 kicli sch erc                               # kicad-cli wrapper, JSON findings
 kicli sch score                             # lint + weighted score, JSON findings, --gate
 kicli sch normalize                         # apply KiCad's item sort order (explicit only)
@@ -802,6 +803,31 @@ for reproducible output rather than for its licence).
 **Cache (Q24):** exported SVGs are cached under `.kicli/render/` keyed on the
 sheet's content hash (§7.3).
 
+### 12.1 `sch watch` — a preview that keeps up
+
+`kicli sch watch` serves the render of a sheet and refreshes it when the file
+changes. It is for a human sitting beside an agent: the agent edits, the picture
+follows, and nobody reloads anything by hand.
+
+**Read-only.** It renders and serves. It never writes a schematic, and it holds
+no lock on one.
+
+**Cheap by construction**, and that is a requirement rather than a preference:
+re-render through the existing `sch render` path to a static SVG, serve it from a
+trivial local HTTP listener on the loopback interface, and let the page poll or
+take server-sent events. A file-change trigger may be a timestamp poll; a
+watching crate is a dependency to justify, not to assume. No framework, no
+bundler, no websocket stack. The dependency budget of `ENGINEERING.md` applies
+with its usual force, and a heavyweight addition here would buy a convenience,
+not a capability.
+
+**The delta earns its place here.** The preview highlights what the last
+mutation touched, which is exactly what `@last-write` (§7.3) already records. A
+watcher that only redraws is a worse tool than one that says what moved.
+
+Constitution §4 is unaffected: this is a picture for a person. Nothing it draws
+feeds the score, and the agent still reads §7's views.
+
 Manifest fields `objects_in_view` and `clipped_annotations` let an agent
 self-correct without looking: zero objects means the region is wrong, non-zero
 clipped annotations means widen it.
@@ -907,6 +933,12 @@ the change and may overwrite it. Before a schematic write, kicli makes a
 **best-effort** attempt to call IPC `GetOpenDocuments` and warns if the target
 document is open in a running KiCad.
 
+**What Eeschema actually does when its open file changes underneath it is not
+yet measured**, so the warning text is written from assumption. A research note
+is owed: revert semantics, what happens with unsaved changes, and whether any
+external-change prompt appears at all. `AGENT.md`'s guidance on working beside
+an open editor, and the wording of this warning, both wait on it.
+
 Amendment (Q34): this must **never slow or break the no-KiCad-running case**.
 Concretely: attempt only when the socket path already exists; total probe budget
 `ipc.probe_timeout_ms` (default **250 ms**); **any** connection, timeout or
@@ -954,6 +986,17 @@ multi-user concerns; variant-aware editing (§5.7); `lib migrate-envvars` (§10)
 library-nickname renaming (§10); bus routing and cross-sheet routing (§9);
 writing `.kicad_pro` (§5.5).
 
+**Post-v1, and larger than a backlog item: live editing through a running
+KiCad.** There is no schematic IPC API in KiCad 10.0.5 (§13), so kicli edits
+files on disk and lives with the consequence: an editor holding the same file
+does not see the change, and §14.4's best-effort probe is a warning rather than
+a fix. When KiCad ships a schematic API, a live mode drives the running instance
+instead, and the disk race stops existing rather than being managed. The `kicad`
+module (§14.1, `ENGINEERING.md`) is the seam it lands behind: it already owns
+discovery, the version check and the process boundary, so a second back end
+joins it without touching a command. Nothing in v1 should make that harder,
+which is the reason the seam exists now.
+
 **Post-v1 backlog, optional and local-only:** a coverage-guided fuzz harness for
 the parser. It needs a nightly toolchain, and the repository pins stable. The
 property it would defend — arbitrary bytes produce an error or a tree, never a
@@ -1000,7 +1043,8 @@ fixtures sit in the tree is an engineering concern and is specified in
    calibration gates.
 5. **M5 Score** — Tier 1 then Tier 2, ERC consumption and canary, calibration
    fixtures.
-6. **M6 Render** — `kicad-cli` SVG, viewBox crop, annotation overlay, resvg.
+6. **M6 Render** — `kicad-cli` SVG, viewBox crop, annotation overlay, resvg,
+   and `sch watch` (§12.1), the auto-refreshing preview.
 7. **M7 Libraries** — `parts search`, vendoring both directions.
 8. **M8 Hierarchy** — sheet ops; instance-awareness is threaded through M2–M7 as
    a constraint and surfaced fully here.
