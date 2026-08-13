@@ -301,13 +301,20 @@ impl Doc {
     /// measure that makes "no token was lost" checkable.
     #[must_use]
     pub fn token_count(&self) -> usize {
-        self.nodes
-            .iter()
-            .map(|node| match node {
-                Node::List { .. } => 2,
+        // Counted by walking the tree rather than the arena: a removed node
+        // stays in the arena and is not a token of the file any more.
+        fn count(doc: &Doc, id: NodeId) -> usize {
+            match &doc.nodes[id.index()] {
+                Node::List { children, .. } => {
+                    2 + children
+                        .iter()
+                        .map(|&child| count(doc, child))
+                        .sum::<usize>()
+                }
                 _ => 1,
-            })
-            .sum()
+            }
+        }
+        self.top.iter().map(|&id| count(self, id)).sum()
     }
 
     /// Replace an atom's text.
@@ -322,6 +329,150 @@ impl Doc {
             Node::Atom { edited, .. } => *edited = Some(text.into()),
             _ => panic!("set_atom needs an atom"),
         }
+    }
+
+    /// Build a subtree from s-expression text, ready to be inserted.
+    ///
+    /// The text is parsed the way a file is, and every atom it makes carries
+    /// its own text rather than a span into the source, so the new nodes belong
+    /// to this document and not to the bytes it was read from.
+    ///
+    /// The subtree is not attached to anything until [`Doc::insert_child`] or
+    /// [`Doc::push_child`] puts it somewhere. An unattached subtree is never
+    /// written.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`SexprError`] when the text is not one well-formed
+    /// s-expression.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut doc = kicli_sexpr::Doc::parse("(kicad_sch\n\t(version 20260306)\n)\n")
+    ///     .expect("parses");
+    /// let root = doc.root().expect("has a root");
+    /// let junction = doc.add_fragment("(junction (at 25.4 25.4))").expect("parses");
+    /// doc.push_child(root, junction);
+    /// assert!(doc.emit().contains("(junction"));
+    /// ```
+    pub fn add_fragment(&mut self, text: &str) -> Result<NodeId, SexprError> {
+        let fragment = Self::parse(text)?;
+        let root = fragment.root().ok_or(SexprError::Empty)?;
+        Ok(self.absorb_from(&fragment, root))
+    }
+
+    /// Copy one node of another document into this one, children and all.
+    fn absorb_from(&mut self, from: &Self, id: NodeId) -> NodeId {
+        match &from.nodes[id.index()] {
+            Node::Comment { .. } => self.push_node(Node::Comment { span: 0..0 }),
+            Node::Atom { kind, .. } => {
+                let text = from.atom_text(id).unwrap_or_default().to_owned();
+                self.push_node(Node::Atom {
+                    kind: *kind,
+                    span: 0..0,
+                    edited: Some(text.into_boxed_str()),
+                })
+            }
+            Node::List { children, .. } => {
+                let copied: Vec<NodeId> = children
+                    .iter()
+                    .map(|&child| self.absorb_from(from, child))
+                    .collect();
+                let head = copied.first().copied().filter(|&first| {
+                    matches!(
+                        self.nodes[first.index()],
+                        Node::Atom {
+                            kind: AtomKind::Bare,
+                            ..
+                        }
+                    )
+                });
+                self.push_node(Node::List {
+                    head,
+                    children: copied,
+                    span: 0..0,
+                })
+            }
+        }
+    }
+
+    /// Add a node to the arena and hand back its identifier.
+    fn push_node(&mut self, node: Node) -> NodeId {
+        self.nodes.push(node);
+        NodeId(u32::try_from(self.nodes.len() - 1).unwrap_or(u32::MAX))
+    }
+
+    /// Put a subtree inside a list, at a position.
+    ///
+    /// An identifier stays valid until the node it names is removed, and
+    /// removing a node never moves another one.
+    ///
+    /// # Panics
+    ///
+    /// Panics when `parent` is not a list.
+    pub fn insert_child(&mut self, parent: NodeId, index: usize, child: NodeId) {
+        match &mut self.nodes[parent.index()] {
+            Node::List { children, .. } => {
+                let index = index.min(children.len());
+                children.insert(index, child);
+            }
+            _ => panic!("insert_child needs a list"),
+        }
+    }
+
+    /// Put a subtree at the end of a list.
+    ///
+    /// # Panics
+    ///
+    /// Panics when `parent` is not a list.
+    pub fn push_child(&mut self, parent: NodeId, child: NodeId) {
+        let end = match &self.nodes[parent.index()] {
+            Node::List { children, .. } => children.len(),
+            _ => panic!("push_child needs a list"),
+        };
+        self.insert_child(parent, end, child);
+    }
+
+    /// Take a node out of the tree.
+    ///
+    /// The node stays in the arena and is never written again. Identifiers of
+    /// other nodes are unaffected, which is what makes a handle taken before an
+    /// edit still good after it.
+    ///
+    /// Returns whether the node was found.
+    pub fn remove(&mut self, id: NodeId) -> bool {
+        if let Some(position) = self.top.iter().position(|&top| top == id) {
+            self.top.remove(position);
+            return true;
+        }
+        let Some(parent) = self.parent_of(id) else {
+            return false;
+        };
+        match &mut self.nodes[parent.index()] {
+            Node::List { children, head, .. } => {
+                children.retain(|&child| child != id);
+                if *head == Some(id) {
+                    *head = None;
+                }
+                true
+            }
+            _ => false,
+        }
+    }
+
+    /// The list a node sits in, when it sits in one.
+    #[must_use]
+    pub fn parent_of(&self, id: NodeId) -> Option<NodeId> {
+        self.nodes
+            .iter()
+            .enumerate()
+            .find_map(|(index, node)| match node {
+                Node::List { children, .. } if children.contains(&id) => {
+                    Some(NodeId(u32::try_from(index).unwrap_or(u32::MAX)))
+                }
+                _ => None,
+            })
     }
 
     /// Write the file back out.
