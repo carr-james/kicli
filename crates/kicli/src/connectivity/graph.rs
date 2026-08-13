@@ -114,6 +114,9 @@ pub(crate) struct Node {
 pub(crate) struct Sheet {
     /// The sheet path, in KiCad's uuid form.
     pub path: SheetPath,
+    /// The sheet path in the readable form KiCad prefixes a local net name
+    /// with, such as `/channel_a/`. The root sheet is `/`.
+    pub human: String,
     /// The placement this one hangs from.
     parent: Option<usize>,
     /// The sheet symbol in the parent that draws this placement.
@@ -173,8 +176,13 @@ impl Graph {
             .collect();
 
         for (index, placement) in hierarchy.placements.iter().enumerate() {
+            let human = match (placement.parent, &placement.name) {
+                (Some(above), Some(name)) => format!("{}{name}/", self.sheets[above].human),
+                _ => "/".to_owned(),
+            };
             self.sheets.push(Sheet {
                 path: placement.path.clone(),
+                human,
                 parent: placement.parent,
                 drawn_by: placement
                     .path

@@ -89,6 +89,12 @@ pub struct Net {
     pub name: String,
     /// Did kicli invent the name, because the drawing gives none?
     pub synthetic: bool,
+    /// KiCad's own name for this net.
+    ///
+    /// It is an attribute, never a handle: KiCad names an unlabelled net after
+    /// one of its pins, so renumbering that symbol renames the net. Agents
+    /// need it to read ERC output and the editor.
+    pub kicad_name: String,
     /// The pins of the net, sorted by reference designator then pin number.
     pub pins: Vec<NetPin>,
     /// The sheet paths the net is drawn on, sorted.
