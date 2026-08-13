@@ -134,22 +134,23 @@ fn the_fields_of_an_added_symbol_are_not_reported_twice() {
 }
 
 #[test]
-fn a_snapshot_read_from_a_file_names_objects_by_uuid() {
-    // The file holds hashes only, so the delta reports what it can: which
-    // object changed, and how. Old values need the design both sides came from.
+fn a_delta_against_a_saved_state_reads_like_one_against_a_design() {
+    // The file carries the display column as well as the hashes, so a
+    // comparison against a saved state says the same thing as a comparison
+    // against the design it came from. A delta that could only say "something
+    // changed" would make the implicit snapshot after every mutation useless
+    // for the one question it exists to answer.
     let before = Snapshot::parse(&snapshot("base", &base()).render()).expect("the file parses");
     let after = snapshot("current", &changed());
-    let delta = Delta::between(&before, &after);
 
+    let from_file = Delta::between(&before, &after).to_string();
+    let from_design = Delta::between(&snapshot("base", &base()), &after).to_string();
     assert_eq!(
-        delta.to_string(),
-        concat!(
-            "delta base -> current\n",
-            "- S 77777777\n",
-            "~ L R1  moved\n",
-            "+ S R42 10k Test:R\n",
-            "~ S R2.Value  edited\n",
-            "= 4 objects unchanged\n",
-        )
+        from_file, from_design,
+        "the file loses nothing a reader needs"
+    );
+    assert!(
+        from_file.contains("- S R7 4k7 Test:R"),
+        "a removed object is named, not just its identifier: {from_file}"
     );
 }

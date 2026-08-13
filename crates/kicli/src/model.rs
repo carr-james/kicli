@@ -15,6 +15,7 @@ pub mod hierarchy;
 pub mod invariant;
 pub mod items;
 pub mod library;
+pub mod mutate;
 pub mod project;
 pub mod version;
 pub mod write;
@@ -31,6 +32,7 @@ pub use items::{
     TextItem, Uuid,
 };
 pub use library::{LibraryPin, LibrarySymbol, LibraryUnit, Shape, definition_of, read_library};
+pub use mutate::{LAST_WRITE, Mutation, MutationError, Target, commit, state_before};
 pub use project::{BusAlias, Project, ProjectError, read_project};
 pub use version::{FormatVersion, MAX_SCHEMATIC_VERSION, PropertyOrder, pin_text};
 pub use write::{WriteOptions, WritePlan, WriteRefusal, format_version, plan_write};

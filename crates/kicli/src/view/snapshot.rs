@@ -157,9 +157,10 @@ impl ObjectKind {
 
 /// What a comparison prints about an object, when the design is at hand.
 ///
-/// A snapshot read from a file holds hashes only, so it has no detail. The
-/// comparison then names an object by its identifier and reports that it
-/// changed, without the old value.
+/// The detail travels with the snapshot, in the file as well as in memory, so a
+/// comparison against a file reads the same as one against a design. Without it
+/// a file-based delta can only say that an object changed, and the worked
+/// example in the specification cannot be produced from a saved state at all.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Detail {
     /// Where the object is drawn. A field and a sheet pin report the offset
@@ -319,20 +320,18 @@ impl Snapshot {
         for object in &self.objects {
             let _ = writeln!(
                 text,
-                "{} {} {} {}",
+                "{} {} {} {} {}",
                 object.key,
                 object.kind.token(),
                 object.geometry,
-                object.data
+                object.data,
+                display_column(object)
             );
         }
         text
     }
 
     /// Read a snapshot file.
-    ///
-    /// The file holds hashes only, so every object comes back without its
-    /// [`Detail`]. A comparison against it names objects by their identifiers.
     ///
     /// # Errors
     ///
@@ -426,23 +425,66 @@ fn read_object_line(line: &str, number: usize) -> Result<SnapshotObject, Snapsho
         line: number,
         reason: reason.to_owned(),
     };
-    let mut parts = line.rsplitn(4, ' ');
-    let data = parts.next().ok_or_else(|| malformed("no data hash"))?;
-    let geometry = parts.next().ok_or_else(|| malformed("no geometry hash"))?;
-    let kind = parts.next().ok_or_else(|| malformed("no kind"))?;
+    // Four fixed columns, then the display column, which runs to the end of the
+    // line because a summary holds spaces.
+    let mut parts = line.splitn(5, ' ');
     let key = parts.next().ok_or_else(|| malformed("no key"))?;
+    let kind = parts.next().ok_or_else(|| malformed("no kind"))?;
+    let geometry = parts.next().ok_or_else(|| malformed("no geometry hash"))?;
+    let data = parts.next().ok_or_else(|| malformed("no data hash"))?;
+    let display = parts.next().unwrap_or("");
 
+    let (handle, detail) = read_display_column(display, key);
     Ok(SnapshotObject {
         key: key.to_owned(),
         kind: ObjectKind::from_token(kind),
-        handle: handle_of_key(key),
+        handle,
         geometry: ContentHash::from_hex(geometry)
             .ok_or_else(|| malformed("the geometry hash is not sixteen hex characters"))?,
         data: ContentHash::from_hex(data)
             .ok_or_else(|| malformed("the data hash is not sixteen hex characters"))?,
         owner: key.split_once('.').map(|(owner, _)| owner.to_owned()),
-        detail: None,
+        detail,
     })
+}
+
+/// The display column: what a comparison prints about an object.
+///
+/// `<handle> <x,y|-> <summary...>`. It carries no identity — the key column
+/// does that — so a reader that only compares hashes can ignore it.
+fn display_column(object: &SnapshotObject) -> String {
+    let Some(detail) = &object.detail else {
+        return format!("{} -", object.handle);
+    };
+    let at = detail.at.map_or_else(
+        || "-".to_owned(),
+        |point| format!("{},{}", point.x, point.y),
+    );
+    format!("{} {at} {}", object.handle, detail.summary)
+        .trim_end()
+        .to_owned()
+}
+
+/// Read the display column back, falling back to the key when it is absent.
+fn read_display_column(display: &str, key: &str) -> (String, Option<Detail>) {
+    let mut parts = display.splitn(3, ' ');
+    let Some(handle) = parts.next().filter(|handle| !handle.is_empty()) else {
+        return (handle_of_key(key), None);
+    };
+    let at = parts.next().unwrap_or("-");
+    let summary = parts.next().unwrap_or("").to_owned();
+    let at = at.split_once(',').and_then(|(x, y)| {
+        Some(Point {
+            x: Iu::from_millimetres_text(x)?,
+            y: Iu::from_millimetres_text(y)?,
+        })
+    });
+    // A field's summary is its value, quoted, which is what an edit reports.
+    let value = summary
+        .strip_prefix('"')
+        .and_then(|rest| rest.strip_suffix('"'))
+        .map(str::to_owned);
+    (handle.to_owned(), Some(Detail { at, summary, value }))
 }
 
 /// The name to print for an object read from a file.

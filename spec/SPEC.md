@@ -395,8 +395,26 @@ like a total rewrite.
 
 ```
 snapshot <name> <sheet-path> <iso8601> kicli/<version>
-<uuid8> <kind> <h_geom16> <h_data16>
+<uuid> <kind> <h_geom16> <h_data16> <handle> <x,y|-> <summary...>
 ```
+
+**Amended 2026-08-13**, twice, both times because the format as first written
+could not do its job.
+
+The key is the **whole** identifier, not its first eight characters: eight hex
+characters do not identify. Every object of one M2 fixture shares them, so a
+comparison keyed on eight would merge unrelated objects. A delta still *prints*
+`uuid8` as a handle, which is a display choice and not an identity one.
+
+The line carries a **display column** after the two hashes: the handle, the
+position, and a short summary. Without it a comparison against a saved state can
+only say that an object changed, and the worked example below — which names a
+removed symbol and reports an old position — cannot be produced from a file at
+all. Since `@last-write` is written by every mutation and read by the next
+command, "what did my last command change?" would have been answerable only in
+the session that made the change. The column runs to the end of the line,
+because a summary holds spaces, and it carries no identity: a reader comparing
+hashes alone can ignore it.
 
 `content-hash` is **SHA-256 truncated to 16 hex chars** (Q13) over a canonical
 semantic encoding: kind, own fields in fixed order, coordinates as integer IU,
