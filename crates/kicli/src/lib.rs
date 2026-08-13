@@ -5,10 +5,15 @@
 //! service. See `spec/SPEC.md` for the specification and `CONSTITUTION.md` for
 //! the binding principles.
 //!
-//! # Module structure
+//! # Structure
 //!
-//! The modules split along the seams in `ENGINEERING.md`. Each module owns one
-//! concern. [`cli`] depends on the other modules. No module depends on [`cli`].
+//! The workspace is three crates (`ENGINEERING.md` "Structure"). `kicli-sexpr`
+//! holds the s-expression layer and knows nothing about schematics. This crate
+//! holds the schematic meaning. `xtask` holds the workspace automation.
+//!
+//! The modules below split along the seams in `ENGINEERING.md`. Each module
+//! owns one concern. [`cli`] depends on the other modules. No module depends on
+//! [`cli`].
 //!
 //! # Status
 //!
@@ -18,8 +23,6 @@
 #![deny(missing_docs)]
 #![deny(unsafe_code)]
 #![warn(clippy::pedantic)]
-
-pub mod sexpr;
 
 pub mod model;
 

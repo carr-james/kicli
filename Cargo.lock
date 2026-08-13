@@ -5,6 +5,13 @@ version = 4
 [[package]]
 name = "kicli"
 version = "0.0.0"
+dependencies = [
+ "kicli-sexpr",
+]
+
+[[package]]
+name = "kicli-sexpr"
+version = "0.0.0"
 
 [[package]]
 name = "xtask"

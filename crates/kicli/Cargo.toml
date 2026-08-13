@@ -20,5 +20,6 @@ path = "src/main.rs"
 # Every addition needs a licence on the deny.toml allowlist and a reason in the
 # commit message.
 [dependencies]
+kicli-sexpr = { path = "../kicli-sexpr", version = "0.0.0" }
 
 [dev-dependencies]

@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/kicli", "xtask"]
+members = ["crates/kicli-sexpr", "crates/kicli", "xtask"]
 resolver = "3"
 
 [workspace.package]

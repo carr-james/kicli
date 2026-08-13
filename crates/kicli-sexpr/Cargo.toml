@@ -1,0 +1,16 @@
+[package]
+name = "kicli-sexpr"
+description = "Token-preserving s-expression tree and KiCad's pretty-printer."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+# This crate keeps minimal dependencies (ENGINEERING.md "Structure"). It depends
+# on nothing of ours, and the standard library is enough for the parser and the
+# prettifier.
+[dependencies]
+
+[dev-dependencies]
