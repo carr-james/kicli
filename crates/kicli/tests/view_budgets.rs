@@ -1,10 +1,12 @@
 //! The views stay inside their byte budgets, and say what they cover.
 //!
-//! The published ceilings are set on sheets of 130 to 234 symbols, which live
-//! only in KiCad's own demo corpus. The hermetic run therefore gates a smaller
-//! ceiling **and** the compression ratio against the source file, so a change
-//! that doubles a view fails here without the corpus. The corpus run checks the
-//! published numbers.
+//! A ceiling is indexed on what drives the size of a view: its symbols and its
+//! nets. A bank of connector pins is a handful of symbols and several hundred
+//! nets, so a ceiling indexed on symbols alone says nothing about it.
+//!
+//! The hermetic run gates the fixture and the compression ratio, so a change
+//! that doubles a record fails here without the corpus. The corpus run gates
+//! the published formula over all 153 demo sheets.
 
 use kicli::connectivity::extract;
 use kicli::model::Hierarchy;
@@ -97,24 +99,68 @@ fn view_scope_switches_on_budget() {
         "one index line per placement"
     );
 
-    // A caller who asked for one sheet gets that sheet, budget or no budget.
+    // One sheet, within its budget, is that sheet.
     let child = hierarchy
         .placements
         .iter()
         .find(|placement| placement.name.is_some())
         .expect("there is a child sheet");
+    let options_for_child = ViewOptions {
+        sheet: Some(child.path.clone()),
+        ..ViewOptions::default()
+    };
     let one = scope::render(
         Kind::Connectivity,
         &hierarchy,
         &nets,
-        &ViewOptions {
-            sheet: Some(child.path.clone()),
-            ..ViewOptions::default()
-        },
-        1,
+        &options_for_child,
+        32_768,
     );
     assert_eq!(one.scope, Scope::OneSheet);
     assert!(one.text.starts_with("# scope sheet "));
+
+    // One sheet too big for the budget falls back the same way a project does.
+    // A sheet of few symbols and many nets is the case that needs it.
+    let summary = scope::render(
+        Kind::Connectivity,
+        &hierarchy,
+        &nets,
+        &options_for_child,
+        100,
+    );
+    assert_eq!(summary.scope, Scope::SheetSummary);
+    assert!(
+        summary.text.starts_with("# scope sheet-summary"),
+        "the summary says what it is: {}",
+        summary.text
+    );
+    assert_eq!(
+        summary.text.lines().filter(|l| l.starts_with("I ")).count(),
+        1,
+        "one line, for the sheet that was asked for: {}",
+        summary.text
+    );
+    assert!(
+        summary.text.contains("view.max_bytes"),
+        "and says how to see the records: {}",
+        summary.text
+    );
+}
+
+/// The published ceiling for a connectivity view, in bytes.
+///
+/// Derived from all 153 sheets of KiCad's demo corpus: the worst sheet fills
+/// 71 per cent of it.
+fn connectivity_ceiling(symbols: usize, nets: usize) -> usize {
+    2_048 + 80 * symbols + 128 * nets
+}
+
+/// The published ceiling for a layout digest, in bytes.
+///
+/// The base is larger because a digest also carries the wires and the text.
+/// The worst sheet fills 89 per cent of it.
+fn layout_ceiling(symbols: usize, nets: usize) -> usize {
+    8_192 + 80 * symbols + 128 * nets
 }
 
 #[test]
@@ -192,7 +238,7 @@ fn the_json_form_costs_more_than_the_terse_one() {
 
 #[cfg(feature = "corpus")]
 mod corpus {
-    use super::{ViewOptions, extract, layout};
+    use super::{ViewOptions, connectivity_ceiling, extract, layout, layout_ceiling};
     use kicli::model::Hierarchy;
     use kicli::view::connectivity;
     use std::path::PathBuf;
@@ -204,16 +250,6 @@ mod corpus {
         root.is_dir().then_some(root)
     }
 
-    // The published ceilings are indexed on symbol count, and the corpus says
-    // symbol count is not what drives the size of a connectivity view. The
-    // worst sheet in KiCad's demos has 27 symbols and needs 14.5 kB, because a
-    // bank of FPGA pins is few symbols and hundreds of nets. Thirteen of 153
-    // sheets exceed the connectivity ceiling on that basis. Whether to
-    // re-index the ceilings, raise them, or let a single sheet fall back to a
-    // summary the way a whole project already does is a decision for the
-    // person who set them, so this test states the published numbers and does
-    // not run until that decision is made.
-    #[ignore = "the published ceilings are indexed on symbol count; the corpus shows nets drive the size"]
     #[test]
     fn views_stay_within_byte_ceilings_corpus() {
         let Some(root) = corpus_root() else {
@@ -240,34 +276,43 @@ mod corpus {
                 let symbols = hierarchy.files[placement.file]
                     .schematic
                     .symbols()
+                    .filter(|symbol| symbol.reference_on(&placement.path).is_some())
                     .filter(|symbol| !symbol.is_power())
+                    .count();
+                let nets_here = nets
+                    .nets()
+                    .iter()
+                    .filter(|net| net.sheets.contains(&placement.path))
                     .count();
                 let connectivity = connectivity::render(&hierarchy, &nets, &one);
                 let layout = layout::render(&hierarchy, &one);
 
-                let ceiling = if symbols <= 60 { 2_048 } else { 9_216 };
+                let connectivity_room = connectivity_ceiling(symbols, nets_here);
+                let layout_room = layout_ceiling(symbols, nets_here);
                 assert!(
-                    connectivity.len() <= ceiling.max(9_216),
-                    "{}: {symbols} symbols, connectivity {} bytes",
+                    connectivity.len() <= connectivity_room,
+                    "{}: {symbols} symbols and {nets_here} nets allow {connectivity_room} bytes, the view is {}",
                     entry.display(),
                     connectivity.len()
                 );
                 assert!(
-                    layout.len() <= 10_240,
-                    "{}: {symbols} symbols, layout {} bytes",
+                    layout.len() <= layout_room,
+                    "{}: {symbols} symbols and {nets_here} nets allow {layout_room} bytes, the digest is {}",
                     entry.display(),
                     layout.len()
                 );
                 assert!(
-                    connectivity.len() + layout.len() <= 18_432,
-                    "{}: both views are {} bytes",
+                    connectivity.len() + layout.len() <= connectivity_room + layout_room,
+                    "{}: both views together are {} bytes",
                     entry.display(),
                     connectivity.len() + layout.len()
                 );
-                if connectivity.len() + layout.len() > worst.0 {
+
+                let fill = (connectivity.len() * 100) / connectivity_room.max(1);
+                if fill > worst.0 {
                     worst = (
-                        connectivity.len() + layout.len(),
-                        format!("{} ({symbols} symbols)", entry.display()),
+                        fill,
+                        format!("{} ({symbols} symbols, {nets_here} nets)", entry.display()),
                     );
                 }
                 checked += 1;

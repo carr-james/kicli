@@ -30,6 +30,8 @@ pub enum Scope {
     OneSheet,
     /// An index and per-sheet counts, because everything would not fit.
     IndexAndSummaries,
+    /// A summary of one sheet, because that sheet alone would not fit.
+    SheetSummary,
 }
 
 impl Scope {
@@ -40,6 +42,7 @@ impl Scope {
             Scope::WholeProject => "project",
             Scope::OneSheet => "sheet",
             Scope::IndexAndSummaries => "index",
+            Scope::SheetSummary => "sheet-summary",
         }
     }
 }
@@ -73,7 +76,7 @@ pub fn render(
     };
     let asked_for_one_sheet = options.sheet.is_some();
 
-    if asked_for_one_sheet || full.len() <= max_bytes {
+    if full.len() <= max_bytes {
         let scope = if asked_for_one_sheet {
             Scope::OneSheet
         } else {
@@ -86,11 +89,19 @@ pub fn render(
         };
     }
 
-    let text = index(hierarchy, nets, max_bytes, full.len());
+    // One sheet can be too big on its own. A bank of connector pins is a
+    // handful of symbols and several hundred nets, so the fallback belongs at
+    // the sheet as much as at the project.
+    let scope = if asked_for_one_sheet {
+        Scope::SheetSummary
+    } else {
+        Scope::IndexAndSummaries
+    };
+    let text = index(hierarchy, nets, options, max_bytes, full.len(), scope);
     Rendered {
         bytes: text.len(),
         text,
-        scope: Scope::IndexAndSummaries,
+        scope,
     }
 }
 
@@ -99,19 +110,43 @@ pub fn render(
 /// It names the budget it did not fit and how big the full view would have
 /// been, so the caller can raise the budget or ask for one sheet instead of
 /// guessing.
-fn index(hierarchy: &Hierarchy, nets: &Nets, max_bytes: usize, would_be: usize) -> String {
+fn index(
+    hierarchy: &Hierarchy,
+    nets: &Nets,
+    options: &ViewOptions,
+    max_bytes: usize,
+    would_be: usize,
+    scope: Scope,
+) -> String {
+    let wanted: Vec<&crate::model::Placement> = hierarchy
+        .placements
+        .iter()
+        .filter(|placement| {
+            options
+                .sheet
+                .as_ref()
+                .is_none_or(|path| &placement.path == path)
+        })
+        .collect();
+
     let mut out = String::new();
     let _ = writeln!(
         out,
-        "# scope index  sheets={}  full={would_be}B budget={max_bytes}B",
-        hierarchy.placements.len()
+        "# scope {}  sheets={}  full={would_be}B budget={max_bytes}B",
+        scope.token(),
+        wanted.len()
     );
     let _ = writeln!(
         out,
-        "# ask for one sheet with --sheet <path>, or raise view.max_bytes"
+        "# raise view.max_bytes to see the records{}",
+        if scope == Scope::IndexAndSummaries {
+            ", or ask for one sheet with --sheet <path>"
+        } else {
+            ""
+        }
     );
 
-    for placement in &hierarchy.placements {
+    for placement in wanted {
         let file = &hierarchy.files[placement.file];
         let placed: Vec<_> = file
             .schematic

@@ -426,19 +426,39 @@ extra vocabulary.
 ### 7.4 Budgets (`representation.md` §6)
 
 Measured on real sheets: connectivity is **1,463 B** for a 46-symbol sheet and
-**7,896 B** for the largest sheet in KiCad's entire demo corpus (234 symbols) —
-50–113× smaller than the source file. Layout digest is the same order. Token
-figures are byte-derived estimates (~3.5 B/token): ≈400 tokens for a median
-sheet, ≈2.5 k for the largest. Budget targets for regression:
+**7,896 B** for the largest sheet of KiCad's older demo corpus (234 symbols) —
+50–113× smaller than the source file. Token figures are byte-derived estimates
+(~3.5 B/token): ≈400 tokens for a median sheet, ≈2.5 k for the largest.
 
-| View | Sheet | Ceiling |
-|---|---|---|
-| connectivity | median (37 sym) | 2 KB |
-| connectivity | 234 symbols | 9 KB |
-| layout | 234 symbols | 10 KB |
-| both | 234 symbols | 18 KB |
+**A ceiling is indexed on symbols *and* nets** (amended 2026-08-13). The earlier
+table indexed on symbol count alone, and symbol count does not predict the size
+of a connectivity view. Measured over all 153 sheets of the KiCad 10.0.5 demos,
+the largest connectivity view belongs to a sheet of **27 symbols** —
+`vme-wren/fpga-hp-banks`, a bank of FPGA pins, which is a handful of parts and
+203 nets. Thirteen sheets exceeded the old ceilings, and none of them was large
+by symbol count.
+
+| View | Ceiling |
+|---|---|
+| connectivity | `2 KB + 80 B × symbols + 128 B × nets` |
+| layout | `8 KB + 80 B × symbols + 128 B × nets` |
+| both | the sum of the two |
+
+Derived from the same 153 sheets. Every sheet fits: the fullest connectivity
+view uses **71 %** of its ceiling and the fullest layout digest **89 %**. The
+layout base is larger because a digest also carries wires and text, neither of
+which scales with either count.
 
 A view that exceeds its ceiling is a bug (Constitution §6).
+
+**The runtime guarantee is `view.max_bytes`, not the ceilings.** The ceilings
+are a regression gate on a representative corpus. What protects a reader's
+context is the budget: a view that would exceed it falls back to an index and
+per-sheet summaries, and **a single sheet that would exceed it on its own falls
+back the same way** — which is what the FPGA-bank sheet needs, since asking for
+one sheet is otherwise the escape hatch from a project that does not fit. The
+output always states which of the four scopes it is: whole project, one sheet,
+index, or one sheet's summary.
 
 ## 8. Mutation semantics (resolves R7 for geometry)
 
