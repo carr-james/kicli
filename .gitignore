@@ -1,3 +1,6 @@
 .DS_Store
 /target/
 .kicli/
+
+# Subagent worktrees. They are checkouts, not content.
+.claude/worktrees/
