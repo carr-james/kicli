@@ -276,12 +276,22 @@ impl Graph {
             .map(|field| field.value.clone())
             .unwrap_or_default();
         for pin in resolve_pins(symbol, definition) {
+            // A power symbol names a net through a power input: the rail says
+            // "I am +5V". A power OUTPUT on a power symbol says only "something
+            // drives this net", which is what PWR_FLAG is, and it names
+            // nothing. Merging those by value joins every flagged net in the
+            // project into one, which is four rails on KiCad's own CM5 demo.
+            let names_a_net = pin.electrical == "power_in";
             let kind = NodeKind::Pin(PinNode {
                 reference: reference.cloned(),
                 number: pin.number.clone(),
                 symbol: symbol.uuid.clone(),
                 power,
-                value: value.clone(),
+                value: if names_a_net {
+                    value.clone()
+                } else {
+                    String::new()
+                },
             });
             self.push_at(sheet, Carrier::Net, kind, pin.position);
         }
