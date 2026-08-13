@@ -19,15 +19,24 @@
 //!    anchor as well (`SCH_LABEL_BASE::UpdateDanglingState`, which connects
 //!    the label to a segment it hits only while the label is still dangling).
 //!
+//! Names finish the job, because a drawing connects by name as well as by
+//! geometry:
+//!
+//! 4. Labels of equal text join: local labels within one placement of one
+//!    sheet, global labels across the project, and a hierarchical label with
+//!    the like-named pin of the sheet symbol that draws its placement.
+//! 5. Power-symbol pins of equal value join across the project.
+//!
 //! A bundle never joins a single net: a bus, a bus label and a bus entry to a
 //! bus carry a bundle, and the union-find refuses to join the two kinds, as
 //! KiCad's subgraph walk does.
 //!
 //! All arithmetic is integer. A point is on a segment or it is not.
 
+use super::MergeRules;
 use crate::geometry::{Point, resolve_pins};
 use crate::model::hierarchy::{Hierarchy, Placement};
-use crate::model::items::{Item, LineKind, Refdes, SheetPath, Symbol, Uuid};
+use crate::model::items::{Item, LabelKind, LineKind, Refdes, SheetPath, Symbol, Uuid};
 use crate::model::library::{LibrarySymbol, definition_of, read_library};
 use kicli_sexpr::{Doc, NodeId};
 use std::collections::BTreeMap;
@@ -52,6 +61,8 @@ pub(crate) struct PinNode {
     pub symbol: Uuid,
     /// Is the symbol a power symbol? A netlist leaves those pins out.
     pub power: bool,
+    /// The symbol's value, which for a power symbol is the net name.
+    pub value: String,
 }
 
 /// What a node is.
@@ -66,9 +77,19 @@ pub(crate) enum NodeKind {
     /// A no-connect marker.
     NoConnect,
     /// A label of any of the four kinds.
-    Label,
+    Label {
+        /// Which kind of label.
+        kind: LabelKind,
+        /// The text, which for the first three kinds is a net name.
+        text: String,
+    },
     /// One pin on the border of a sheet symbol.
-    SheetPin,
+    SheetPin {
+        /// The pin name, which matches a hierarchical label in the child file.
+        name: String,
+        /// The sheet symbol the pin belongs to.
+        sheet_item: Uuid,
+    },
     /// A pin of a placed symbol.
     Pin(PinNode),
 }
@@ -93,6 +114,10 @@ pub(crate) struct Node {
 pub(crate) struct Sheet {
     /// The sheet path, in KiCad's uuid form.
     pub path: SheetPath,
+    /// The placement this one hangs from.
+    parent: Option<usize>,
+    /// The sheet symbol in the parent that draws this placement.
+    drawn_by: Option<Uuid>,
 }
 
 /// The connection graph of one project.
@@ -106,7 +131,7 @@ pub(crate) struct Graph {
 
 impl Graph {
     /// Build the graph of a loaded hierarchy.
-    pub(crate) fn build(hierarchy: &Hierarchy) -> Self {
+    pub(crate) fn build(hierarchy: &Hierarchy, rules: MergeRules) -> Self {
         let mut graph = Self {
             nodes: Vec::new(),
             sheets: Vec::new(),
@@ -118,6 +143,13 @@ impl Graph {
         graph.merge_shared_points();
         graph.merge_junctions();
         graph.merge_labels_on_segments();
+        if rules.labels {
+            graph.merge_by_name();
+            graph.merge_hierarchy();
+        }
+        if rules.power {
+            graph.merge_power();
+        }
         graph
     }
 
@@ -143,6 +175,12 @@ impl Graph {
         for (index, placement) in hierarchy.placements.iter().enumerate() {
             self.sheets.push(Sheet {
                 path: placement.path.clone(),
+                parent: placement.parent,
+                drawn_by: placement
+                    .path
+                    .segments()
+                    .last()
+                    .map(|last| Uuid(last.to_owned())),
             });
             let file = &hierarchy.files[placement.file];
             let library = &libraries[placement.file];
@@ -190,12 +228,20 @@ impl Graph {
             }),
             Item::Label(label) => {
                 let carrier = carrier_of_name(&label.text);
-                self.push_at(sheet, carrier, NodeKind::Label, label.at);
+                let kind = NodeKind::Label {
+                    kind: label.kind,
+                    text: label.text.clone(),
+                };
+                self.push_at(sheet, carrier, kind, label.at);
             }
             Item::Sheet(child) => {
                 for pin in &child.pins {
                     let carrier = carrier_of_name(&pin.name);
-                    self.push_at(sheet, carrier, NodeKind::SheetPin, pin.at);
+                    let kind = NodeKind::SheetPin {
+                        name: pin.name.clone(),
+                        sheet_item: child.uuid.clone(),
+                    };
+                    self.push_at(sheet, carrier, kind, pin.at);
                 }
             }
             Item::Symbol(symbol) => self.read_symbol(sheet, symbol, library, placement),
@@ -217,12 +263,17 @@ impl Graph {
         let reference = symbol.reference_on(&placement.path);
         let power =
             definition.is_power || reference.is_some_and(|refdes| refdes.0.starts_with('#'));
+        let value = symbol
+            .field("Value")
+            .map(|field| field.value.clone())
+            .unwrap_or_default();
         for pin in resolve_pins(symbol, definition) {
             let kind = NodeKind::Pin(PinNode {
                 reference: reference.cloned(),
                 number: pin.number.clone(),
                 symbol: symbol.uuid.clone(),
                 power,
+                value: value.clone(),
             });
             self.push_at(sheet, Carrier::Net, kind, pin.position);
         }
@@ -273,7 +324,7 @@ impl Graph {
     /// Rule 3: a label joins the lines its anchor lies on.
     fn merge_labels_on_segments(&mut self) {
         let by_point = self.by_point();
-        let labels = self.nodes_where(|node| matches!(node.kind, NodeKind::Label));
+        let labels = self.nodes_where(|node| matches!(node.kind, NodeKind::Label { .. }));
 
         for label in labels {
             let sheet = self.nodes[label].sheet;
@@ -284,6 +335,80 @@ impl Graph {
             }
             for line in lines {
                 self.union(label, line);
+            }
+        }
+    }
+
+    /// Rule 4: labels of equal text join.
+    ///
+    /// A netclass flag carries a netclass name and not a net name, so its text
+    /// joins nothing.
+    fn merge_by_name(&mut self) {
+        let mut local: BTreeMap<(usize, &str), Vec<usize>> = BTreeMap::new();
+        let mut global: BTreeMap<&str, Vec<usize>> = BTreeMap::new();
+        for (index, node) in self.nodes.iter().enumerate() {
+            if let NodeKind::Label { kind, text } = &node.kind {
+                match kind {
+                    LabelKind::Local => local.entry((node.sheet, text)).or_default().push(index),
+                    LabelKind::Global => global.entry(text).or_default().push(index),
+                    LabelKind::Hierarchical | LabelKind::NetclassFlag => {}
+                }
+            }
+        }
+        let groups: Vec<Vec<usize>> = local.into_values().chain(global.into_values()).collect();
+        self.union_each(&groups);
+    }
+
+    /// Rule 4, the hierarchy half: a hierarchical label meets the pin above it.
+    fn merge_hierarchy(&mut self) {
+        let mut pairs = Vec::new();
+        for (index, node) in self.nodes.iter().enumerate() {
+            let NodeKind::Label {
+                kind: LabelKind::Hierarchical,
+                text,
+            } = &node.kind
+            else {
+                continue;
+            };
+            let sheet = &self.sheets[node.sheet];
+            let (Some(parent), Some(drawn_by)) = (sheet.parent, sheet.drawn_by.as_ref()) else {
+                continue;
+            };
+            for (other, candidate) in self.nodes.iter().enumerate() {
+                if candidate.sheet != parent {
+                    continue;
+                }
+                if let NodeKind::SheetPin { name, sheet_item } = &candidate.kind {
+                    if name == text && sheet_item == drawn_by {
+                        pairs.push((index, other));
+                    }
+                }
+            }
+        }
+        for (label, pin) in pairs {
+            self.union(label, pin);
+        }
+    }
+
+    /// Rule 5: power-symbol pins of equal value join across the project.
+    fn merge_power(&mut self) {
+        let mut by_value: BTreeMap<&str, Vec<usize>> = BTreeMap::new();
+        for (index, node) in self.nodes.iter().enumerate() {
+            if let NodeKind::Pin(pin) = &node.kind {
+                if pin.power && !pin.value.is_empty() {
+                    by_value.entry(&pin.value).or_default().push(index);
+                }
+            }
+        }
+        let groups: Vec<Vec<usize>> = by_value.into_values().collect();
+        self.union_each(&groups);
+    }
+
+    /// Join every node of every group to the others of its group.
+    fn union_each(&mut self, groups: &[Vec<usize>]) {
+        for group in groups {
+            for pair in group.windows(2) {
+                self.union(pair[0], pair[1]);
             }
         }
     }
@@ -337,8 +462,8 @@ impl Graph {
                     && matches!(
                         self.nodes[other].kind,
                         NodeKind::Pin(_)
-                            | NodeKind::Label
-                            | NodeKind::SheetPin
+                            | NodeKind::Label { .. }
+                            | NodeKind::SheetPin { .. }
                             | NodeKind::NoConnect
                     )
             })

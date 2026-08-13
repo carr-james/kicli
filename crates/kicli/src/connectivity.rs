@@ -16,6 +16,46 @@ mod names;
 use crate::model::hierarchy::Hierarchy;
 use crate::model::items::{Refdes, SheetPath, Uuid};
 
+/// Which merge rules to apply.
+///
+/// Every set includes the geometric rules. The rest are switches, so that a
+/// test can show what each rule is worth: geometry alone leaves one ground net
+/// as one net per power symbol.
+///
+/// # Examples
+///
+/// ```
+/// use kicli::connectivity::MergeRules;
+/// assert!(MergeRules::ALL.power);
+/// assert!(!MergeRules::GEOMETRY.labels);
+/// ```
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MergeRules {
+    /// Merge items that carry the same label name.
+    pub labels: bool,
+    /// Merge power-symbol pins whose symbol value is equal.
+    pub power: bool,
+}
+
+impl MergeRules {
+    /// Every rule: what a netlist needs.
+    pub const ALL: Self = Self {
+        labels: true,
+        power: true,
+    };
+    /// The geometric rules alone.
+    pub const GEOMETRY: Self = Self {
+        labels: false,
+        power: false,
+    };
+}
+
+impl Default for MergeRules {
+    fn default() -> Self {
+        Self::ALL
+    }
+}
+
 /// One pin of one placed symbol, at one place in the hierarchy.
 ///
 /// A sheet placed twice gives every pin on it two entries, one per sheet path,
@@ -101,7 +141,16 @@ impl Nets {
 /// ```
 #[must_use]
 pub fn extract(hierarchy: &Hierarchy) -> Nets {
-    let mut graph = graph::Graph::build(hierarchy);
+    extract_with(hierarchy, MergeRules::ALL)
+}
+
+/// Extract the nets of a loaded hierarchy under a chosen set of rules.
+///
+/// [`extract`] is this function with every rule on, which is the only set that
+/// agrees with KiCad. The others exist to show what each rule is worth.
+#[must_use]
+pub fn extract_with(hierarchy: &Hierarchy, rules: MergeRules) -> Nets {
+    let mut graph = graph::Graph::build(hierarchy, rules);
     Nets {
         nets: names::nets_of(&mut graph),
     }

@@ -5,7 +5,7 @@
 //! junction, and the same pin with one. KiCad's own netlist is the oracle for
 //! all four.
 
-use kicli::connectivity::{NetPin, Nets, extract};
+use kicli::connectivity::{MergeRules, NetPin, Nets, extract_with};
 use kicli::model::Hierarchy;
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
@@ -16,7 +16,7 @@ fn fixture() -> PathBuf {
 
 fn nets() -> Nets {
     let hierarchy = Hierarchy::load(&fixture()).expect("the fixture loads");
-    extract(&hierarchy)
+    extract_with(&hierarchy, MergeRules::GEOMETRY)
 }
 
 /// The pin sets, the way a netlist reports them: power symbols left out.
