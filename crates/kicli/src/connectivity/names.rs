@@ -132,6 +132,12 @@ fn draft(graph: &Graph, nodes: &[usize]) -> Option<Draft> {
         return None;
     }
     pins.sort();
+    // A pin of unit 0 is drawn on every unit of a symbol, so one pin number
+    // reaches a net once per unit. A net lists it once
+    // (`NETLIST_EXPORTER_XML::makeListOfNets`, the `alg::remove_duplicates`
+    // call). The rule is per net and not per symbol: when the units are wired
+    // apart, the pin number is listed on each net it reaches.
+    pins.dedup_by(|left, right| left.reference == right.reference && left.number == right.number);
     let listed = pins
         .iter()
         .filter(|pin| !pin.power)

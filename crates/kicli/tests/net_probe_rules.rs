@@ -1,0 +1,345 @@
+//! Each merge rule, on the smallest drawing that shows it.
+//!
+//! A rule here was measured before it was implemented: the drawing was built,
+//! `kicad-cli sch export netlist` was asked what it joins, and the answer is
+//! the expectation below. The drawing is built by this file rather than
+//! committed, so the rule, its evidence and its drawing stay in one place.
+//!
+//! The default run compares kicli against those recorded answers. With
+//! `KICLI_TEST_KICAD_CLI` set, every probe is exported by `kicad-cli` as well
+//! and the recorded answer is checked against the tool, so a stale expectation
+//! is caught rather than trusted.
+
+use kicli::connectivity::{NetPin, Nets, extract};
+use kicli::model::Hierarchy;
+use kicli_sexpr::Doc;
+use std::collections::BTreeSet;
+use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
+
+/// A net partition: one sorted pin list per net.
+type Partition = BTreeSet<Vec<String>>;
+
+/// The root sheet uuid every probe uses.
+const ROOT: &str = "00000000-0000-4000-8000-999999999999";
+
+/// One probe drawing, built item by item.
+struct Probe {
+    name: &'static str,
+    symbols: Vec<String>,
+    items: Vec<String>,
+    next_uuid: u32,
+}
+
+impl Probe {
+    fn new(name: &'static str) -> Self {
+        Self {
+            name,
+            symbols: vec![resistor()],
+            items: Vec::new(),
+            next_uuid: 0,
+        }
+    }
+
+    /// A fresh uuid. The counter makes every probe file reproducible.
+    fn uuid(&mut self) -> String {
+        self.next_uuid += 1;
+        format!("00000000-0000-4000-8000-{:012}", self.next_uuid)
+    }
+
+    /// Add a library symbol the probe places.
+    fn define(&mut self, symbol: String) -> &mut Self {
+        self.symbols.push(symbol);
+        self
+    }
+
+    /// Place a symbol, with the pin numbers it draws.
+    fn place(&mut self, library: &str, reference: &str, at: (&str, &str), pins: &[&str]) {
+        self.place_unit(library, reference, at, 1, reference, pins);
+    }
+
+    /// Place one unit of a symbol, with a value of its own.
+    fn place_unit(
+        &mut self,
+        library: &str,
+        reference: &str,
+        at: (&str, &str),
+        unit: u32,
+        value: &str,
+        pins: &[&str],
+    ) {
+        let uuid = self.uuid();
+        let pin_uuids: Vec<String> = pins.iter().map(|_| self.uuid()).collect();
+        let (x, y) = at;
+        let pin_list: String = pins
+            .iter()
+            .zip(&pin_uuids)
+            .map(|(number, uuid)| format!("(pin \"{number}\" (uuid \"{uuid}\"))\n"))
+            .collect();
+        let fields = fields(&[
+            ("Reference", reference),
+            ("Value", value),
+            ("Footprint", ""),
+            ("Datasheet", ""),
+            ("Description", ""),
+        ]);
+        self.items.push(format!(
+            "(symbol (lib_id \"Probe:{library}\") (at {x} {y} 0) (unit {unit}) (body_style 1)\n\
+             (exclude_from_sim no) (in_bom yes) (on_board yes) (in_pos_files yes) (dnp no)\n\
+             (uuid \"{uuid}\")\n{fields}{pin_list}\
+             (instances (project \"probe\" (path \"/{ROOT}\" (reference \"{reference}\") (unit {unit}))))\n)"
+        ));
+    }
+
+    /// Draw a wire between two points.
+    fn wire(&mut self, from: (&str, &str), to: (&str, &str)) {
+        let uuid = self.uuid();
+        self.items.push(format!(
+            "(wire (pts (xy {} {}) (xy {} {})) (stroke (width 0) (type default)) (uuid \"{uuid}\"))",
+            from.0, from.1, to.0, to.1
+        ));
+    }
+
+    /// The file text.
+    fn text(&self) -> String {
+        format!(
+            "(kicad_sch (version 20260306) (generator \"eeschema\") (generator_version \"10.0\")\n\
+             (uuid \"{ROOT}\") (paper \"A4\")\n(lib_symbols\n{}\n)\n{}\n\
+             (sheet_instances (path \"/\" (page \"1\")))\n(embedded_fonts no)\n)",
+            self.symbols.join("\n"),
+            self.items.join("\n")
+        )
+    }
+
+    /// Write the probe to the scratch directory and return its path.
+    fn write(&self) -> PathBuf {
+        let directory = Path::new(env!("CARGO_TARGET_TMPDIR")).join("net-probes");
+        std::fs::create_dir_all(&directory).expect("the scratch directory is writable");
+        let path = directory.join(format!("{}.kicad_sch", self.name));
+        std::fs::write(&path, self.text()).expect("the probe file is writable");
+        path
+    }
+
+    /// kicli's partition of the probe, checked against KiCad when it is there.
+    fn partition(&self) -> Partition {
+        let path = self.write();
+        let hierarchy = Hierarchy::load(&path).expect("the probe loads");
+        let found = partition_of(&extract(&hierarchy));
+        if let Some(tool) = kicad_cli() {
+            let netlist = export_netlist(&tool, &path).expect("kicad-cli exported a netlist");
+            assert_eq!(
+                found,
+                kicad_partition(&netlist),
+                "kicli and KiCad disagree about {}",
+                self.name
+            );
+        }
+        found
+    }
+}
+
+/// The five fields every placed symbol carries.
+fn fields(values: &[(&str, &str)]) -> String {
+    values
+        .iter()
+        .map(|(name, value)| {
+            format!(
+                "(property \"{name}\" \"{value}\" (at 0 0 0) (show_name no) (do_not_autoplace no)\n\
+                 (effects (font (size 1.27 1.27))))\n"
+            )
+        })
+        .collect()
+}
+
+/// One library pin.
+fn pin(electrical: &str, at: (&str, &str), angle: &str, number: &str, name: &str) -> String {
+    format!(
+        "(pin {electrical} line (at {} {} {angle}) (length 2.54)\n\
+         (name \"{name}\" (effects (font (size 1.27 1.27))))\n\
+         (number \"{number}\" (effects (font (size 1.27 1.27)))))",
+        at.0, at.1
+    )
+}
+
+/// One library symbol, from its units.
+fn symbol(name: &str, reference: &str, power: bool, units: &[(&str, Vec<String>)]) -> String {
+    let bodies: String = units
+        .iter()
+        .map(|(unit, pins)| format!("(symbol \"{name}_{unit}\"\n{}\n)\n", pins.join("\n")))
+        .collect();
+    let power = if power { "(power global)" } else { "" };
+    format!(
+        "(symbol \"Probe:{name}\" {power} (pin_names (offset 0))\n\
+         (exclude_from_sim no) (in_bom yes) (on_board yes) (in_pos_files yes)\n\
+         (duplicate_pin_numbers_are_jumpers no)\n{}{bodies})",
+        fields(&[
+            ("Reference", reference),
+            ("Value", name),
+            ("Footprint", ""),
+            ("Datasheet", ""),
+            ("Description", ""),
+        ])
+    )
+}
+
+/// A resistor: pin 1 above the anchor, pin 2 below it.
+fn resistor() -> String {
+    symbol(
+        "R",
+        "R",
+        false,
+        &[(
+            "1_1",
+            vec![
+                pin("passive", ("0", "3.81"), "270", "1", ""),
+                pin("passive", ("0", "-3.81"), "90", "2", ""),
+            ],
+        )],
+    )
+}
+
+/// The partition kicli reads, the way a netlist reports it.
+fn partition_of(nets: &Nets) -> Partition {
+    nets.nets()
+        .iter()
+        .map(|net| {
+            net.pins
+                .iter()
+                .filter(|pin| !pin.power)
+                .map(NetPin::label)
+                .collect::<Vec<String>>()
+        })
+        .filter(|pins| !pins.is_empty())
+        .collect()
+}
+
+/// One expected net.
+fn net(pins: &[&str]) -> Vec<String> {
+    let mut sorted: Vec<String> = pins.iter().map(|pin| (*pin).to_owned()).collect();
+    sorted.sort();
+    sorted
+}
+
+/// The `kicad-cli` to run, or nothing when the caller did not ask for it.
+fn kicad_cli() -> Option<String> {
+    std::env::var("KICLI_TEST_KICAD_CLI").ok()?;
+    Some(std::env::var("KICLI_KICAD_CLI").unwrap_or_else(|_| "kicad-cli".to_owned()))
+}
+
+/// Export a netlist of a probe and read it back.
+///
+/// The tool's own output is dropped: the first run on a machine prints
+/// fontconfig warnings that say nothing about the netlist.
+fn export_netlist(tool: &str, probe: &Path) -> Option<String> {
+    let into = probe.with_extension("net");
+    let status = Command::new(tool)
+        .args(["sch", "export", "netlist", "-o"])
+        .arg(&into)
+        .arg(probe)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .ok()?;
+    if !status.success() {
+        return None;
+    }
+    std::fs::read_to_string(&into).ok()
+}
+
+/// The partition KiCad reports, read out of a netlist it wrote.
+fn kicad_partition(text: &str) -> Partition {
+    let doc = Doc::parse(text).expect("the netlist parses");
+    let root = doc.root().expect("the netlist has a root list");
+    let mut found = Partition::new();
+    for &child in doc.children(root) {
+        if !doc.head_is(child, "nets") {
+            continue;
+        }
+        for &net in doc.children(child) {
+            if !doc.head_is(net, "net") {
+                continue;
+            }
+            let mut pins: Vec<String> = doc
+                .children(net)
+                .iter()
+                .filter(|&&node| doc.head_is(node, "node"))
+                .filter_map(|&node| node_label(&doc, node))
+                .collect();
+            pins.sort();
+            if !pins.is_empty() {
+                found.insert(pins);
+            }
+        }
+    }
+    found
+}
+
+/// One `(node (ref "R1") (pin "2") ...)` as `R1.2`.
+fn node_label(doc: &Doc, node: kicli_sexpr::NodeId) -> Option<String> {
+    let value = |head: &str| -> Option<String> {
+        let list = doc
+            .children(node)
+            .iter()
+            .copied()
+            .find(|&child| doc.head_is(child, head))?;
+        doc.children(list)
+            .get(1)
+            .and_then(|&id| doc.atom_as_str(id))
+    };
+    Some(format!("{}.{}", value("ref")?, value("pin")?))
+}
+
+/// A part with a pin of unit 0, which every unit draws.
+fn dual_unit() -> String {
+    symbol(
+        "DUAL",
+        "U",
+        false,
+        &[
+            ("0_1", vec![pin("passive", ("7.62", "0"), "180", "9", "S")]),
+            (
+                "1_1",
+                vec![
+                    pin("passive", ("0", "3.81"), "270", "1", "A"),
+                    pin("passive", ("0", "-3.81"), "90", "2", "B"),
+                ],
+            ),
+            (
+                "2_1",
+                vec![
+                    pin("passive", ("0", "3.81"), "270", "3", "C"),
+                    pin("passive", ("0", "-3.81"), "90", "4", "D"),
+                ],
+            ),
+        ],
+    )
+}
+
+#[test]
+fn a_pin_shared_by_two_units_is_listed_once_per_net() {
+    let mut probe = Probe::new("shared-unit-pin");
+    probe.define(dual_unit());
+
+    // Both units of U1 draw pin 9. One wire joins the two copies.
+    probe.place_unit("DUAL", "U1", ("50.8", "50.8"), 1, "U1", &["1", "2", "9"]);
+    probe.place_unit("DUAL", "U1", ("50.8", "76.2"), 2, "U1", &["3", "4", "9"]);
+    probe.wire(("58.42", "50.8"), ("88.9", "50.8"));
+    probe.wire(("58.42", "76.2"), ("88.9", "76.2"));
+    probe.wire(("88.9", "50.8"), ("88.9", "76.2"));
+    probe.place("R", "R1", ("88.9", "54.61"), &["1", "2"]);
+
+    // Both units of U2 draw pin 9 as well, onto two nets of their own.
+    probe.place_unit("DUAL", "U2", ("50.8", "114.3"), 1, "U2", &["1", "2", "9"]);
+    probe.place_unit("DUAL", "U2", ("50.8", "139.7"), 2, "U2", &["3", "4", "9"]);
+    probe.wire(("58.42", "114.3"), ("88.9", "114.3"));
+    probe.wire(("58.42", "139.7"), ("88.9", "139.7"));
+    probe.place("R", "R2", ("88.9", "118.11"), &["1", "2"]);
+    probe.place("R", "R3", ("88.9", "143.51"), &["1", "2"]);
+
+    let found = probe.partition();
+    // One net, one entry for U1 pin 9, though two pins reach it.
+    assert!(found.contains(&net(&["R1.1", "U1.9"])));
+    // The rule is per net: wired apart, the pin number is on both nets.
+    assert!(found.contains(&net(&["R2.1", "U2.9"])));
+    assert!(found.contains(&net(&["R3.1", "U2.9"])));
+}

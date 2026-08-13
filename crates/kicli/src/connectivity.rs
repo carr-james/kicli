@@ -96,6 +96,10 @@ pub struct Net {
     /// need it to read ERC output and the editor.
     pub kicad_name: String,
     /// The pins of the net, sorted by reference designator then pin number.
+    ///
+    /// One pin number appears once per reference designator. A pin that a
+    /// library puts in unit 0 is drawn by every unit of the symbol, so two
+    /// units may carry the same pin onto one net; the net lists it once.
     pub pins: Vec<NetPin>,
     /// The sheet paths the net is drawn on, sorted.
     pub sheets: Vec<SheetPath>,
