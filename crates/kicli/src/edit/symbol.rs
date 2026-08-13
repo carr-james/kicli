@@ -20,11 +20,13 @@
 //! which would undo the work without saying so.
 
 use std::fmt;
+use std::fmt::Write as _;
 
-use kicli_sexpr::{Doc, NodeId, SexprError};
+use kicli_sexpr::{Doc, NodeId, SexprError, quote};
 
 use crate::geometry::{Angle, Iu, Point, Transform};
-use crate::model::items::{Mirror, Symbol, Uuid};
+use crate::model::items::{LibId, Mirror, Refdes, Schematic, SheetPath, Symbol, Uuid};
+use crate::model::library::read_library;
 
 /// The eight orientations a placed symbol can take, as the file writes them.
 ///
@@ -38,6 +40,19 @@ const ORIENTATIONS: [(i32, Option<Mirror>); 8] = [
     (0, Some(Mirror::Y)),
     (90, Some(Mirror::X)),
     (90, Some(Mirror::Y)),
+];
+
+/// The header lists a schematic writes before its objects.
+///
+/// A new `lib_symbols` goes after the last of them, which is where KiCad puts
+/// it.
+const HEADER_TOKENS: [&str; 6] = [
+    "version",
+    "generator",
+    "generator_version",
+    "uuid",
+    "paper",
+    "title_block",
 ];
 
 /// Why a symbol command did not happen.
@@ -56,6 +71,22 @@ pub enum EditError {
     /// This is a kicli fault, not a caller's.
     #[error("kicli built s-expression text it cannot read back: {0}")]
     Fragment(#[from] SexprError),
+
+    /// The library definition is not a `(symbol "name" ...)` block.
+    #[error("the library definition is not a (symbol \"name\" ...) block")]
+    NotADefinition,
+
+    /// A placement carries no instance data, so it has no reference anywhere.
+    #[error("a placement needs instance data for every sheet path its sheet is on")]
+    NoInstances,
+
+    /// The source of new identifiers ran dry.
+    #[error("the placement needs more identifiers than the source has")]
+    NoIdentifier,
+
+    /// The document holds no outermost list.
+    #[error("this document has no outermost list, so it is not a schematic")]
+    NoRoot,
 }
 
 /// How much freedom a symbol command has.
@@ -133,6 +164,49 @@ pub struct Edited {
     pub symbol: Uuid,
     /// What the command noticed while it worked.
     pub findings: Vec<Finding>,
+}
+
+/// One placement of a symbol, on one sheet path.
+///
+/// A sheet placed twice needs one of these per placement, because each carries
+/// its own reference designator.
+#[derive(Clone, Debug)]
+pub struct Instance {
+    /// The project the sheet path belongs to.
+    pub project: String,
+    /// The sheet path this reference applies to.
+    pub path: SheetPath,
+    /// The reference designator on that path.
+    pub reference: Refdes,
+    /// The unit of a multi-unit part on that path.
+    pub unit: u32,
+}
+
+/// What to place, and where.
+#[derive(Clone, Debug)]
+pub struct Placement<'a> {
+    /// The library identifier the placement records, such as `Device:R`.
+    pub lib_id: &'a LibId,
+    /// The `(symbol "R" ...)` block, as the library file writes it.
+    ///
+    /// The block is copied into the sheet's `lib_symbols` under the whole
+    /// library identifier. KiCad draws that copy, so a placement without it
+    /// draws as a placeholder.
+    pub definition: &'a str,
+    /// Where the anchor goes, before the grid snap.
+    pub at: Point,
+    /// The rotation to write.
+    pub angle: Angle,
+    /// The mirror to write, applied after the rotation.
+    pub mirror: Option<Mirror>,
+    /// Which unit of a multi-unit part to draw.
+    pub unit: u32,
+    /// Which body style to draw: 1 is normal, 2 is the De Morgan alternative.
+    pub body_style: u32,
+    /// The value to write, when it is not the library's own.
+    pub value: Option<&'a str>,
+    /// One entry per sheet path the sheet is placed on. It must not be empty.
+    pub instances: &'a [Instance],
 }
 
 /// Round a coordinate to the nearest grid line, halves away from zero.
@@ -266,6 +340,162 @@ pub fn mirror_symbol(
     reorient(doc, symbol, current.compose(reflection), options)
 }
 
+/// Delete a symbol, its instance data and its unused definition.
+///
+/// The instance data sits inside the symbol, so it goes with it. The embedded
+/// definition stays when another placement still draws through it, and goes
+/// when none does.
+///
+/// # Errors
+///
+/// Returns [`EditError`] when the document holds no outermost list.
+pub fn delete_symbol(
+    doc: &mut Doc,
+    schematic: &Schematic,
+    symbol: &Symbol,
+) -> Result<Edited, EditError> {
+    let key = definition_key(symbol).to_owned();
+    doc.remove(symbol.node);
+
+    let still_drawn = schematic
+        .symbols()
+        .any(|other| other.node != symbol.node && definition_key(other) == key);
+    if !still_drawn
+        && let Some((_, entry)) = schematic
+            .library_symbols
+            .iter()
+            .find(|(name, _)| *name == key)
+    {
+        doc.remove(*entry);
+    }
+    Ok(Edited {
+        symbol: symbol.uuid.clone(),
+        findings: Vec::new(),
+    })
+}
+
+/// Place a symbol from a library, with its definition and its instance data.
+///
+/// The definition is copied into the sheet's `lib_symbols` under the whole
+/// library identifier, because that copy is what KiCad draws. The placement
+/// gets one `path` entry per [`Instance`], so a sheet placed twice gets two
+/// reference designators.
+///
+/// `identifiers` supplies the new symbol's identifier and one per pin. A test
+/// passes a counter, so a placement is reproducible.
+///
+/// # Errors
+///
+/// Returns [`EditError`] when the request carries no instance data, when the
+/// definition is not a symbol block, when the identifiers run out, or when
+/// kicli cannot read back the text it built.
+pub fn place_symbol(
+    doc: &mut Doc,
+    schematic: &Schematic,
+    request: &Placement<'_>,
+    grid: Iu,
+    options: Options,
+    identifiers: &mut dyn Iterator<Item = Uuid>,
+) -> Result<Edited, EditError> {
+    let first = request.instances.first().ok_or(EditError::NoInstances)?;
+    let (at, findings) = place_on_grid(request.at, grid, options);
+    let uuid = identifiers.next().ok_or(EditError::NoIdentifier)?;
+
+    embed_definition(doc, schematic, request)?;
+
+    // A second copy of the definition, kept out of the tree. Its properties
+    // become the placement's fields and its pins name the placement's pins.
+    let template = doc.add_fragment(request.definition)?;
+    if !doc.head_is(template, "symbol") {
+        return Err(EditError::NotADefinition);
+    }
+    let definition = read_library(
+        doc,
+        &[(request.lib_id.0.clone(), template)],
+        schematic.version,
+    )
+    .into_iter()
+    .next()
+    .ok_or(EditError::NotADefinition)?;
+
+    let node = doc.add_fragment(&placement_text(doc, template, request, at, &uuid))?;
+    take_fields(doc, template, node, request, at, &first.reference)?;
+
+    for pin in definition.pins_for(request.unit, request.body_style) {
+        let pin_uuid = identifiers.next().ok_or(EditError::NoIdentifier)?;
+        let fragment = doc.add_fragment(&format!(
+            "(pin {} (uuid {}))",
+            quote(&pin.number),
+            quote(&pin_uuid.0)
+        ))?;
+        doc.push_child(node, fragment);
+    }
+
+    let instances = doc.add_fragment(&instances_text(request.instances))?;
+    doc.push_child(node, instances);
+
+    let root = doc.root().ok_or(EditError::NoRoot)?;
+    let index = doc
+        .children(root)
+        .iter()
+        .position(|&child| {
+            doc.head_is(child, "sheet_instances") || doc.head_is(child, "embedded_fonts")
+        })
+        .unwrap_or_else(|| doc.children(root).len());
+    doc.insert_child(root, index, node);
+
+    Ok(Edited {
+        symbol: uuid,
+        findings,
+    })
+}
+
+/// Move the definition's properties onto the placement, as its fields.
+///
+/// A library property position is relative to the anchor and Y-up, exactly like
+/// a library pin's, so it takes the same flip and the same orientation matrix.
+fn take_fields(
+    doc: &mut Doc,
+    template: NodeId,
+    node: NodeId,
+    request: &Placement<'_>,
+    at: Point,
+    reference: &Refdes,
+) -> Result<(), EditError> {
+    let transform = Transform::from_file(request.angle, request.mirror);
+    for property in doc.children(template).to_vec() {
+        if !doc.head_is(property, "property") {
+            continue;
+        }
+        doc.remove(property);
+        let name = doc
+            .children(property)
+            .get(1)
+            .and_then(|&id| doc.atom_as_str(id))
+            .unwrap_or_default();
+        let template_at = position_of(doc, property).unwrap_or_default();
+        let offset = transform.apply(Point {
+            x: template_at.x,
+            y: -template_at.y,
+        });
+        set_position(doc, property, at + offset)?;
+        if name == "Reference" {
+            set_value(doc, property, &reference.0);
+        } else if name == "Value"
+            && let Some(value) = request.value
+        {
+            set_value(doc, property, value);
+        }
+        doc.push_child(node, property);
+    }
+    Ok(())
+}
+
+/// The cache key a placement draws through.
+fn definition_key(symbol: &Symbol) -> &str {
+    symbol.lib_name.as_deref().unwrap_or(&symbol.lib_id.0)
+}
+
 /// Decide where the anchor lands, and say so when it is not where it was asked.
 fn place_on_grid(asked: Point, grid: Iu, options: Options) -> (Point, Vec<Finding>) {
     let on_grid = grid.0 != 0 && asked.x.0 % grid.0 == 0 && asked.y.0 % grid.0 == 0;
@@ -332,6 +562,16 @@ fn at_of(doc: &Doc, owner: NodeId) -> Option<NodeId> {
         .iter()
         .copied()
         .find(|&child| doc.head_is(child, "at"))
+}
+
+/// The position a list's `(at ...)` records.
+fn position_of(doc: &Doc, owner: NodeId) -> Option<Point> {
+    let at = at_of(doc, owner)?;
+    let values = doc.children(at);
+    Some(Point {
+        x: Iu(doc.atom_as_iu(*values.get(1)?)?),
+        y: Iu(doc.atom_as_iu(*values.get(2)?)?),
+    })
 }
 
 /// Write a position, keeping any angle the list already carries.
@@ -434,16 +674,155 @@ fn clear_autoplace(doc: &mut Doc, owner: NodeId) {
     }
 }
 
+/// Replace a property's value.
+fn set_value(doc: &mut Doc, property: NodeId, value: &str) {
+    let Some(&atom) = doc.children(property).get(2) else {
+        return;
+    };
+    if doc.atom_text(atom).is_some() {
+        doc.set_atom(atom, &quote(value));
+    }
+}
+
 /// Something to call a list in an error message.
 fn name_of(doc: &Doc, owner: NodeId) -> String {
     doc.head(owner).unwrap_or("this object").to_owned()
 }
 
+/// Copy the definition into the sheet's embedded library, once.
+fn embed_definition(
+    doc: &mut Doc,
+    schematic: &Schematic,
+    request: &Placement<'_>,
+) -> Result<(), EditError> {
+    if schematic
+        .library_symbols
+        .iter()
+        .any(|(name, _)| *name == request.lib_id.0)
+    {
+        return Ok(());
+    }
+    let entry = doc.add_fragment(request.definition)?;
+    if !doc.head_is(entry, "symbol") {
+        return Err(EditError::NotADefinition);
+    }
+    // A library file keys the definition by the symbol name alone. A schematic
+    // keys it by the whole library identifier.
+    let &name = doc
+        .children(entry)
+        .get(1)
+        .ok_or(EditError::NotADefinition)?;
+    if doc.atom_text(name).is_none() {
+        return Err(EditError::NotADefinition);
+    }
+    doc.set_atom(name, &quote(&request.lib_id.0));
+
+    let cache = library_cache(doc)?;
+    doc.push_child(cache, entry);
+    Ok(())
+}
+
+/// The file's `lib_symbols`, made when the file has none.
+fn library_cache(doc: &mut Doc) -> Result<NodeId, EditError> {
+    let root = doc.root().ok_or(EditError::NoRoot)?;
+    if let Some(&cache) = doc
+        .children(root)
+        .iter()
+        .find(|&&child| doc.head_is(child, "lib_symbols"))
+    {
+        return Ok(cache);
+    }
+    let fresh = doc.add_fragment("(lib_symbols)")?;
+    let index = doc
+        .children(root)
+        .iter()
+        .rposition(|&child| {
+            doc.head(child)
+                .is_some_and(|head| HEADER_TOKENS.contains(&head))
+        })
+        .map_or(1, |position| position + 1);
+    doc.insert_child(root, index, fresh);
+    Ok(fresh)
+}
+
+/// The placement's own lists, up to and including its identifier.
+///
+/// The three yes-or-no flags are copied from the definition, so a file written
+/// against an older format does not gain a token its version does not know.
+fn placement_text(
+    doc: &Doc,
+    template: NodeId,
+    request: &Placement<'_>,
+    at: Point,
+    uuid: &Uuid,
+) -> String {
+    let mut text = String::new();
+    let _ = write!(text, "(symbol (lib_id {})", quote(&request.lib_id.0));
+    let _ = write!(
+        text,
+        " (at {} {} {})",
+        at.x,
+        at.y,
+        request.angle.0.rem_euclid(360)
+    );
+    if let Some(axis) = request.mirror {
+        let _ = write!(text, " (mirror {})", axis_token(axis));
+    }
+    let _ = write!(text, " (unit {})", request.unit);
+    let _ = write!(text, " (body_style {})", request.body_style);
+    for flag in ["exclude_from_sim", "in_bom", "on_board", "in_pos_files"] {
+        if let Some(value) = flag_of(doc, template, flag) {
+            let _ = write!(text, " ({flag} {value})");
+        }
+    }
+    let _ = write!(text, " (dnp no) (uuid {}))", quote(&uuid.0));
+    text
+}
+
+/// The value of a yes-or-no list of a definition, when it carries one.
+fn flag_of<'a>(doc: &'a Doc, node: NodeId, head: &str) -> Option<&'a str> {
+    let list = doc
+        .children(node)
+        .iter()
+        .copied()
+        .find(|&child| doc.head_is(child, head))?;
+    doc.atom_text(*doc.children(list).get(1)?)
+}
+
+/// The `(instances ...)` of a placement, one path per placement of its sheet.
+fn instances_text(instances: &[Instance]) -> String {
+    let mut projects: Vec<&str> = Vec::new();
+    for instance in instances {
+        if !projects.contains(&instance.project.as_str()) {
+            projects.push(&instance.project);
+        }
+    }
+    let mut text = String::from("(instances");
+    for project in projects {
+        let _ = write!(text, " (project {}", quote(project));
+        for instance in instances
+            .iter()
+            .filter(|instance| instance.project == project)
+        {
+            let _ = write!(
+                text,
+                " (path {} (reference {}) (unit {}))",
+                quote(&instance.path.0),
+                quote(&instance.reference.0),
+                instance.unit
+            );
+        }
+        text.push(')');
+    }
+    text.push(')');
+    text
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{ORIENTATIONS, inverse, snap, snap_point};
+    use super::{Instance, ORIENTATIONS, instances_text, inverse, snap, snap_point};
     use crate::geometry::{Angle, GRID, Iu, Point, Transform};
-    use crate::model::items::Mirror;
+    use crate::model::items::{Mirror, Refdes, SheetPath};
 
     #[test]
     fn a_half_grid_step_rounds_away_from_zero() {
@@ -485,5 +864,28 @@ mod tests {
             offset.rotated(Point::default(), Angle(270)),
             "the field turns against the angle the file records"
         );
+    }
+
+    #[test]
+    fn a_twice_placed_sheet_gets_two_paths_under_one_project() {
+        let instances = [
+            Instance {
+                project: "board".to_owned(),
+                path: SheetPath("/a/b".to_owned()),
+                reference: Refdes("R1".to_owned()),
+                unit: 1,
+            },
+            Instance {
+                project: "board".to_owned(),
+                path: SheetPath("/a/c".to_owned()),
+                reference: Refdes("R2".to_owned()),
+                unit: 1,
+            },
+        ];
+        let text = instances_text(&instances);
+        assert_eq!(text.matches("(project ").count(), 1);
+        assert_eq!(text.matches("(path ").count(), 2);
+        assert!(text.contains(r#"(reference "R1")"#), "{text}");
+        assert!(text.contains(r#"(reference "R2")"#), "{text}");
     }
 }
