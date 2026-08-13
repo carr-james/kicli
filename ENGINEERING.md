@@ -11,7 +11,7 @@ cargo fmt --check          # formatting is rustfmt's opinion, not yours
 cargo clippy --all-targets --all-features -- -D warnings
 cargo test                 # includes doctests
 cargo doc --no-deps        # must build clean; missing_docs is denied
-cargo deny check           # licence allowlist (MIT/Apache-2.0/BSD; no MPL, no GPL) + advisories
+cargo deny check           # licence allowlist (see Dependencies) + advisories
 ```
 
 Crate lints (in lib.rs):
@@ -127,3 +127,15 @@ Adding a crate requires: licence on the allowlist (cargo-deny enforces),
 justification in the commit message, and preference for boring/std-adjacent
 choices. The dependency budget is small on purpose — this tool must build
 from source trivially for years.
+
+**The licence allowlist governs the shipped artefact**: normal and build
+dependencies, which are MIT/Apache-2.0/BSD, never MPL or GPL. Dev-dependencies
+are exempt, because a test helper is not distributed and its licence attaches to
+nothing we ship. This is also what cargo-deny does: verified on this workspace,
+an MPL-2.0 crate is rejected as a normal dependency and passes as a
+dev-dependency.
+
+**Advisories cover everything**, dev-dependencies included — also verified: a
+crate with an open RUSTSEC advisory fails `cargo deny check advisories` when
+added as a dev-dependency. A known-vulnerable test helper is still a problem on
+a developer's machine.
