@@ -63,10 +63,10 @@ require updating the agent docs (Principle 10) in the same change.
 
 ## 9. Licensing hygiene
 
-kicli is dual-licensed MIT OR Apache-2.0. AGPL code (including Konnect) must
-never be read for the purpose of copying, ported, or vendored. Konnect may be
-referenced only as a black-box existence proof. Dependencies must be
-MIT/Apache/BSD-compatible.
+kicli is GPL-3.0-or-later. Dependencies must be GPL-3-compatible
+(MIT/Apache/BSD/MPL-2.0 all qualify). AGPL code, including Konnect, remains
+excluded — never read its source; black-box observations only. KiCad's own GPL
+source, protos, fonts, and demo files may now be read and derived from freely.
 
 ## 10. Agent docs ship with the tool
 

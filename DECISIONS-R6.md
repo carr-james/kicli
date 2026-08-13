@@ -35,17 +35,17 @@ that motivated it. Notes on specific items:
 | 2 | Yes — refuse to write files whose format stamp exceeds kicli's known maximum; config knob to override. |
 | 3 | Non-canonical input: reformat, and flag `"reformatted": true` in structured output. Files containing `#` comments: refuse to write unless `--allow-comment-loss`. |
 | 4 | Yes — preserve the input's prettifier mode (compact stays compact). |
-| 5 | Yes — `cargo xtask corpus` fetches KiCad demos/qa at a pinned tag into target/. GPL files never enter the repo. |
+| 5 | Yes — `cargo xtask corpus` fetches KiCad demos/qa at a pinned tag into target/. KiCad's files never enter the repo. **Unchanged by the GPL-3.0-or-later relicensing (2026-08-13):** vendoring them is now permitted, but the fetch keeps the repository small and the fixtures purpose-built, which is why it was worth having anyway. |
 | 6 | Yes — embedded files/fonts are opaque bytes, never re-encoded; refuse any op that would move them between files. |
 | 7 | Confirmed — variants: round-trip preservation only, no variant-aware editing in v1. Multi-top-level hierarchies: readable, but `--sheet` assumes a single root. |
-| 8 | Confirmed — MPL-2.0 dependencies are out under Constitution §9 (so `via-kicad-sexp` is out; `resvg` is fine as MIT/Apache). Revisit only if a critical dependency demands it. |
+| 8 | ~~Confirmed — MPL-2.0 dependencies are out under Constitution §9 (so `via-kicad-sexp` is out; `resvg` is fine as MIT/Apache).~~ **DISSOLVED** by the GPL-3.0-or-later relicensing (2026-08-13). MPL-2.0 is GPL-3-compatible and is now on the allowlist, so the question no longer has a subject. `via-kicad-sexp` is no longer excluded on licence grounds; it stays unused on the technical grounds in `sexpr-strategy.md` §3. |
 
 ## M2 blockers
 
 | Q | Decision |
 |---|---|
 | 9 | Yes — the blocking off-grid rule applies to connectable geometry only; field/graphic text is exempt (KiCad's own autoplacement must pass). |
-| 10 | Yes — build our own advance-width table measured from KiCad's SVG `textLength`; validate against IPC `GetTextExtents` when the M9 IPC client exists. No GPL Newstroke vendoring. |
+| 10 | Yes — build our own advance-width table measured from KiCad's SVG `textLength`; validate against IPC `GetTextExtents` when the M9 IPC client exists. No GPL Newstroke vendoring. **Unchanged by the GPL-3.0-or-later relicensing (2026-08-13):** vendoring Newstroke is now permitted, but a measured table is still a few hundred numbers against tens of thousands of vendored glyph bytes, so the decision stands on size and provenance. |
 | 11 | Yes — `sch view` defaults to whole-project within a byte budget, falling back to index + per-sheet summaries; output states which mode was used. |
 | 12 | Yes, synthetic stable `n<k>` names as primary — AMENDED: views also carry KiCad's current net name (e.g. `Net-(R1-Pad1)`) as an attribute, so agents can correlate with ERC output and the GUI. |
 | 13 | SHA-256 truncated for snapshot hashes. Power symbols suppressed from symbol lists (`--include-power` to show). `view --stats` reports bytes only. |
@@ -94,7 +94,7 @@ that motivated it. Notes on specific items:
 
 | Q | Decision |
 |---|---|
-| 29 | Depend on `kicad-ipc-rs` (MIT, checked-in generated code) for the IPC client. No proto vendoring; upstream licensing outreach deferred indefinitely. |
+| 29 | ~~Depend on `kicad-ipc-rs` (MIT, checked-in generated code) for the IPC client. No proto vendoring; upstream licensing outreach deferred indefinitely.~~ **DISSOLVED** by the GPL-3.0-or-later relicensing (2026-08-13). KiCad's GPL-3 `.proto` files may now be vendored or generated from directly, and no upstream outreach is needed. `kicad-ipc-rs` remains the default for M9 because checked-in generated code is less build machinery, not because of its licence; vendoring the protos is a free choice if it turns out cleaner. |
 | 30 | Yes — minimum KiCad 10.0.0 for `pcb` commands, verified via `GetVersion` at connect. |
 
 ## Cross-cutting

@@ -24,10 +24,14 @@ PCB layout remain human work.
 - Secondary: James, using it directly and reviewing agent output.
 - Platforms: Linux (Arch) and macOS. Rust, single binary, `cargo install kicli`
   or GitHub release binaries. No CI initially; local `cargo test` + fixtures.
-- Licence: MIT OR Apache-2.0. Dependencies must be MIT/Apache/BSD-compatible;
-  **MPL-2.0 is excluded** (Constitution §9, Q8) — this rules out
-  `via-kicad-sexp`, and does not affect `resvg`, which is MIT/Apache as of
-  0.48 (`rendering.md` §5.1).
+- Licence: **GPL-3.0-or-later** (final, 2026-08-13). Dependencies must be
+  GPL-3-compatible, which MIT, Apache-2.0, BSD, ISC, Zlib and **MPL-2.0** all
+  are; AGPL is excluded (Constitution §9). Two consequences run through this
+  spec. **KiCad's own GPL source, protos, fonts and demo files may be read and
+  derived from freely** — the `Prettify` port (§5.3), the pin and text maths
+  (§8) and the IPC protos (§13) are all clean under this licence. And Konnect
+  stays black-box: AGPL is still excluded, and its source is still never read.
+  Q8 and Q29 are dissolved by this decision (`DECISIONS-R6.md`).
 
 ## 3. Decisions record (from elicitation, 2026-08)
 
@@ -81,8 +85,15 @@ can move field text". It is:
    service, so it is reproducible and diffable across runs.
 4. Single binary, no Python environment, no running KiCad for schematic work.
 
+**Licensing, stated plainly** (§2): the Python alternatives are MIT and kicli is
+GPL-3.0-or-later. Someone who must embed this code in a closed product should
+use `kicad-tools`; someone who wants a tool that tracks KiCad's own behaviour
+closely benefits from kicli sharing KiCad's licence, because kicli can port
+KiCad's own algorithms rather than reverse-engineer them. Konnect is AGPL and is
+still observed only as a black box.
+
 `AGENT.md` (§16) must cite `kicad-tools` as the recommendation for users who
-want Python and breadth.
+want Python and breadth, and must state kicli's licence.
 
 ## 5. File-format target and round-trip properties
 
@@ -437,7 +448,11 @@ anchor. `--keep-field-positions` opts out. kicli **always clears
 overwrite the work on next open (`geometry.md` §4.1).
 
 **Text metrics (Q10):** kicli builds its **own advance-width table, measured
-from KiCad's SVG `textLength`** — no GPL Newstroke vendoring. The measurement is
+from KiCad's SVG `textLength`**. Vendoring Newstroke is now permitted (§2), so
+this is no longer a licensing constraint; the table stays measured because a few
+hundred numbers with a provenance note beat tens of thousands of vendored glyph
+bytes, and because measuring checks kicli against the real renderer. The
+measurement is
 one `kicad-cli sch export svg` run over a generated calibration sheet;
 `textLength(s) = Σ advance(c) + 3·penWidth` fits every tested sample exactly
 (`kicad-cli.md` §5.5). The table is validated against IPC `GetTextExtents` once
@@ -704,7 +719,8 @@ emitted**, both paths returned.
 resolution is ≥ **6 px/mm**; below that, 1.27 mm text is unreadable to a vision
 model. If both cannot be satisfied, emit at 1600 px and warn that text may be
 illegible, suggesting a smaller region. Rasteriser is `resvg` (MIT/Apache as of
-0.48.1 — pin the version and re-check on upgrade).
+0.48.1; its older MPL-2.0 releases would also qualify now, so pin the version
+for reproducible output rather than for its licence).
 
 **Cache (Q24):** exported SVGs are cached under `.kicli/render/` keyed on the
 sheet's content hash (§7.3).
@@ -745,9 +761,12 @@ requests get `AS_TOKEN_MISMATCH`. `AS_NOT_READY` and `AS_BUSY` are **normal** an
 retried with bounded exponential backoff; `AS_UNIMPLEMENTED` is a hard,
 clearly-labelled failure.
 
-**Licensing (Q29):** kicli depends on **`kicad-ipc-rs` 0.5.1 (MIT, checked-in
-generated code)**. kicli does not vendor or generate from KiCad's GPL-3 `.proto`
-files. Upstream licensing outreach is deferred indefinitely.
+**Client choice (Q29, dissolved by §2):** kicli depends on **`kicad-ipc-rs`
+0.5.1 (MIT, checked-in generated code)** because checked-in generated code is
+less build machinery than a protobuf codegen step, not because of its licence.
+KiCad's GPL-3 `.proto` files may now be vendored or generated from directly, and
+M9 may take that route if it proves cleaner. No upstream licensing outreach is
+needed.
 
 **Version floor (Q30):** minimum KiCad **10.0.0** for `pcb` commands, verified
 via `GetVersion` at connect; refuse otherwise (exit 6).
@@ -875,9 +894,12 @@ fixtures sit in the tree is an engineering concern and is specified in
   fixtures are canonicalised once with `kicad-cli sch upgrade --force` (which is
   idempotent): our content, KiCad's bytes. Any fixture derived from a v9 source
   must be checked for bus aliases first (`sch-format.md` §5.6).
-- **KiCad's `demos/` and `qa/data` are GPL and are never vendored.** They are an
-  external corpus fetched by **`cargo xtask corpus`** at a pinned tag into
-  `target/`, excluded from the default test run (Q5).
+- **KiCad's `demos/` and `qa/data` are never vendored.** They are an external
+  corpus fetched by **`cargo xtask corpus`** at a pinned tag into `target/`,
+  excluded from the default test run (Q5). Vendoring them is now permitted
+  (§2), and the fetch stays: it keeps the repository small, keeps the in-repo
+  fixtures purpose-built, and pins the corpus to a KiCad tag rather than to a
+  copy that ages in the tree.
 - The `kiutils` / `kicad-skip` round-trip comparison is kept as a **regression
   fixture**: kicli must preserve every token on the file where `kiutils` loses
   14.7 % (`ecosystem.md` §7).

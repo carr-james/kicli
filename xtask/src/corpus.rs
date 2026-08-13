@@ -1,10 +1,12 @@
 //! Fetch KiCad's own project files as an external test corpus.
 //!
-//! KiCad's demos and regression data are GPL, so they never enter this
-//! repository. This task clones them at a pinned tag into `target/`, which is
-//! not tracked, and canonicalises the demo schematics through KiCad's own
-//! writer. Tests that use the corpus are feature-gated, so the default test run
-//! stays hermetic and needs no network.
+//! KiCad's demos and regression data never enter this repository. This task
+//! clones them at a pinned tag into `target/`, which is not tracked, and
+//! canonicalises the demo schematics through KiCad's own writer. Fetching beats
+//! copying here: the repository stays small, the in-repo fixtures stay
+//! purpose-built, and the corpus is pinned to a KiCad tag rather than to a copy
+//! that ages in the tree. Tests that use the corpus are feature-gated, so the
+//! default test run stays hermetic and needs no network.
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};

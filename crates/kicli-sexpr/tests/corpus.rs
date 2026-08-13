@@ -1,6 +1,6 @@
 //! The same properties, against KiCad's own files.
 //!
-//! These files are GPL and live in `target/`, fetched by `cargo xtask corpus`.
+//! These files live in `target/`, fetched by `cargo xtask corpus`.
 //! They are the strongest available evidence that the prettifier port matches
 //! KiCad, because KiCad wrote every byte of them.
 //!

@@ -67,8 +67,9 @@ plain function can remove.
   round-trip laws, formatter equivalence, router determinism. Constitution §1
   lives here.
 - **Golden-file tests**: fixtures in `tests/fixtures/` (purpose-built, per
-  Constitution; GPL corpus fetched by xtask stays in target/). Assert exact
-  output; update goldens only in a dedicated commit that says why.
+  Constitution; KiCad's corpus fetched by xtask stays in target/, now to keep
+  the repository small rather than for licence reasons). Assert exact output;
+  update goldens only in a dedicated commit that says why.
 - **Integration tests** (few): `tests/` running the compiled binary end-to-end
   (`assert_cmd`), including the kicad-cli paths, skipped gracefully when
   kicad-cli is absent.
@@ -129,11 +130,13 @@ choices. The dependency budget is small on purpose — this tool must build
 from source trivially for years.
 
 **The licence allowlist governs the shipped artefact**: normal and build
-dependencies, which are MIT/Apache-2.0/BSD, never MPL or GPL. Dev-dependencies
-are exempt, because a test helper is not distributed and its licence attaches to
-nothing we ship. This is also what cargo-deny does: verified on this workspace,
-an MPL-2.0 crate is rejected as a normal dependency and passes as a
-dev-dependency.
+dependencies, which must be GPL-3-compatible. Permissive licences (MIT,
+Apache-2.0, BSD, ISC, Zlib) qualify, and so do MPL-2.0, LGPL and GPL itself,
+because GPL-3 absorbs them. AGPL does not qualify and Constitution §9 excludes
+it. Dev-dependencies are exempt, because a test helper is not distributed and
+its licence attaches to nothing we ship. This is also what cargo-deny does:
+verified on this workspace, a crate whose licence is off the allowlist is
+rejected as a normal dependency and passes as a dev-dependency.
 
 **Advisories cover everything**, dev-dependencies included — also verified: a
 crate with an open RUSTSEC advisory fails `cargo deny check advisories` when
