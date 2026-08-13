@@ -12,17 +12,14 @@
     }
   },
   "schematic": {
-    "bus_aliases": [
-      [
-        "DPHY",
-        [
-          "D0_N",
-          "D0_P",
-          "CLK_N",
-          "CLK_P"
-        ]
+    "bus_aliases": {
+      "DPHY": [
+        "D0_N",
+        "D0_P",
+        "CLK_N",
+        "CLK_P"
       ]
-    ]
+    }
   },
   "meta": {
     "filename": "minimal.kicad_pro",

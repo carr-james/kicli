@@ -9,16 +9,13 @@
     "filename": "healthy.kicad_pro",
     "version": 3
   },
-  "net_settings": {
-    "bus_aliases": [
-      {
-        "members": [
-          "A0",
-          "A1"
-        ],
-        "name": "ADDR"
-      }
-    ]
+  "schematic": {
+    "bus_aliases": {
+      "ADDR": [
+        "A0",
+        "A1"
+      ]
+    }
   },
   "sheets": []
 }

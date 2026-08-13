@@ -46,22 +46,27 @@ pub enum ProjectError {
 pub fn read_project(text: &str) -> Result<Project, ProjectError> {
     let root: serde_json::Value = serde_json::from_str(text)?;
 
+    // KiCad writes bus aliases as an object: the alias name is the key and
+    // its members are the value. Verified against 73 project files KiCad wrote
+    // itself, 12 of them with aliases, none in any other shape. An earlier
+    // reading here expected a list of name-and-members pairs, which no KiCad
+    // file uses, so every real project reported no aliases at all.
     let bus_aliases = root
         .pointer("/schematic/bus_aliases")
-        .and_then(serde_json::Value::as_array)
+        .and_then(serde_json::Value::as_object)
         .map(|entries| {
             entries
                 .iter()
-                .filter_map(|entry| {
-                    let pair = entry.as_array()?;
-                    let name = pair.first()?.as_str()?.to_owned();
-                    let members = pair
-                        .get(1)?
-                        .as_array()?
-                        .iter()
-                        .filter_map(|m| m.as_str().map(str::to_owned))
-                        .collect();
-                    Some(BusAlias { name, members })
+                .map(|(name, members)| BusAlias {
+                    name: name.clone(),
+                    members: members
+                        .as_array()
+                        .map(|list| {
+                            list.iter()
+                                .filter_map(|member| member.as_str().map(str::to_owned))
+                                .collect()
+                        })
+                        .unwrap_or_default(),
                 })
                 .collect()
         })

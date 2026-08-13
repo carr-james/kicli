@@ -6,8 +6,10 @@ read with an order-preserving JSON reader and written back with
 
 | verdict | files |
 |---|---|
-| byte-identical | 4 |
+| byte-identical | 37 |
+| reformats-numbers | 3 |
 
-Files measured: 4.
+Files measured: 40.
 
-- `byte-identical` first seen in `broken.kicad_pro`
+- `byte-identical` first seen in `CM5_MINIMA_3.kicad_pro`
+- `reformats-numbers` first seen in `Q17ng.kicad_pro`

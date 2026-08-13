@@ -2,6 +2,7 @@ project healthy
   file       healthy.kicad_pro
   root       healthy.kicad_sch
   kicad-cli  not found
+  alias      ADDR = A0 A1
 
 sheets 2
   page 1  symbols 0  power 0  file healthy.kicad_sch  path /00000000-0000-4000-8000-050000000000
