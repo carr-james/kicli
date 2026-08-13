@@ -447,18 +447,25 @@ anchor. `--keep-field-positions` opts out. kicli **always clears
 `fields_autoplaced`** when it sets a field position explicitly, or KiCad will
 overwrite the work on next open (`geometry.md` §4.1).
 
-**Text metrics (Q10):** kicli builds its **own advance-width table, measured
-from KiCad's SVG `textLength`**. Vendoring Newstroke is now permitted (§2), so
-this is no longer a licensing constraint; the table stays measured because a few
-hundred numbers with a provenance note beat tens of thousands of vendored glyph
-bytes, and because measuring checks kicli against the real renderer. The
-measurement is
-one `kicad-cli sch export svg` run over a generated calibration sheet;
-`textLength(s) = Σ advance(c) + 3·penWidth` fits every tested sample exactly
-(`kicad-cli.md` §5.5). The table is validated against IPC `GetTextExtents` once
-the M9 client exists (`ipc-api.md` §4.1). Text extents feed the box maths in
-`geometry.md` §5; findings that depend on a non-stroke `face` font are marked
-`approximate` in the output.
+**Text metrics (Q10, amended after the relicensing):** kicli **ports KiCad's own
+measurement logic** — the stroke-font advance loop, the `INTER_CHAR` term, and
+`GetTextBox`'s assembly of them (`geometry.md` §5.1, §5.2). §2 makes that legal,
+and a port is exact by construction where a fitted table is exact only where it
+was sampled. Glyph advances are derived from KiCad's Newstroke data, which is
+GPL-2.0-or-later; the derived table carries its origin and copyright notice, as
+does every ported function.
+
+**The SVG measurement stays, as the oracle rather than the source.** One
+`kicad-cli sch export svg` run over a generated calibration sheet yields
+`textLength` per item, computed by KiCad's own font engine, and the port must
+reproduce it (`kicad-cli.md` §5.5). Empirical calibration — fitting the residual
+and folding it into the table — is the **fallback** if the port and the
+measurement disagree and the difference is a stable linear term.
+
+The result is validated again against IPC `GetTextExtents` once the M9 client
+exists (`ipc-api.md` §4.1). Text extents feed the box maths in `geometry.md` §5;
+findings that depend on a non-stroke `face` font are marked `approximate` in the
+output.
 
 Two bounding boxes are modelled, as KiCad itself does: **body box** (graphics +
 pins, no text) for overlap rules, and **full box** (∪ visible field boxes) for
