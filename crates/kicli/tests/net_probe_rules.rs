@@ -100,11 +100,11 @@ impl Probe {
         ));
     }
 
-    /// Draw a local label.
-    fn label(&mut self, text: &str, at: (&str, &str)) {
+    /// Draw a label of any of the three kinds.
+    fn label_of_kind(&mut self, head: &str, shape: &str, text: &str, at: (&str, &str)) {
         let uuid = self.uuid();
         self.items.push(format!(
-            "(label \"{text}\" (at {} {} 0)\n\
+            "({head} \"{text}\" {shape} (at {} {} 0)\n\
              (effects (font (size 1.27 1.27)) (justify left bottom)) (uuid \"{uuid}\"))",
             at.0, at.1
         ));
@@ -116,9 +116,22 @@ impl Probe {
     /// and the resistor pin makes the net visible in a netlist. The resistor
     /// anchor sits one pin length below the wire, so pin 1 lands on it.
     fn named_strand(&mut self, reference: &str, wire_y: &str, anchor_y: &str, text: &str) {
+        self.strand_of_kind("label", "", reference, wire_y, anchor_y, text);
+    }
+
+    /// The same strand, named by a label of the kind asked for.
+    fn strand_of_kind(
+        &mut self,
+        head: &str,
+        shape: &str,
+        reference: &str,
+        wire_y: &str,
+        anchor_y: &str,
+        text: &str,
+    ) {
         self.place("R", reference, ("50.8", anchor_y), &["1", "2"]);
         self.wire(("50.8", wire_y), ("76.2", wire_y));
-        self.label(text, ("76.2", wire_y));
+        self.label_of_kind(head, shape, text, ("76.2", wire_y));
     }
 
     /// The file text.
@@ -406,6 +419,61 @@ fn two_labels_join_when_their_net_names_are_equal() {
     assert!(found.contains(&net(&["R3.1"])));
     assert!(found.contains(&net(&["R4.1"])));
     assert!(found.contains(&net(&["R5.1", "R6.1"])));
+}
+
+#[test]
+fn one_sheet_is_one_namespace() {
+    let mut probe = Probe::new("one-namespace");
+    probe.define(power("PWRX"));
+
+    // A local label against a hierarchical label of the same text.
+    probe.named_strand("R1", "25.4", "29.21", "LOC");
+    probe.strand_of_kind(
+        "hierarchical_label",
+        "(shape input)",
+        "R2",
+        "38.1",
+        "41.91",
+        "LOC",
+    );
+    // A local label against a global label of the same text.
+    probe.named_strand("R3", "50.8", "54.61", "GLB");
+    probe.strand_of_kind(
+        "global_label",
+        "(shape input)",
+        "R4",
+        "63.5",
+        "67.31",
+        "GLB",
+    );
+    // A local label against a power symbol of the same value.
+    probe.named_strand("R5", "76.2", "80.01", "PWRX");
+    probe.place("R", "R6", ("50.8", "92.71"), &["1", "2"]);
+    probe.wire(("50.8", "88.9"), ("76.2", "88.9"));
+    probe.place_unit("PWRX", "#PWR01", ("76.2", "88.9"), 1, "PWRX", &["1"]);
+    // A hierarchical label against a global label of the same text.
+    probe.strand_of_kind(
+        "hierarchical_label",
+        "(shape input)",
+        "R7",
+        "101.6",
+        "105.41",
+        "HGL",
+    );
+    probe.strand_of_kind(
+        "global_label",
+        "(shape input)",
+        "R8",
+        "114.3",
+        "118.11",
+        "HGL",
+    );
+
+    let found = probe.partition();
+    assert!(found.contains(&net(&["R1.1", "R2.1"])));
+    assert!(found.contains(&net(&["R3.1", "R4.1"])));
+    assert!(found.contains(&net(&["R5.1", "R6.1"])));
+    assert!(found.contains(&net(&["R7.1", "R8.1"])));
 }
 
 #[test]

@@ -22,10 +22,15 @@
 //! Names finish the job, because a drawing connects by name as well as by
 //! geometry:
 //!
-//! 4. Labels of equal text join: local labels within one placement of one
-//!    sheet, global labels across the project, and a hierarchical label with
-//!    the like-named pin of the sheet symbol that draws its placement.
-//! 5. Power-symbol pins of equal value join across the project.
+//! 4. Items of equal name join, and one sheet is one namespace: a local
+//!    label, a hierarchical label, a global label and a power pin that carry
+//!    one name on one sheet are one net, whatever their kinds. A global label
+//!    and a power pin carry the name across the whole project as well, and a
+//!    hierarchical label meets the like-named pin of the sheet symbol that
+//!    draws its placement.
+//! 5. A pin names a net when it is a power input, either on a power symbol,
+//!    by the symbol's value, or hidden on an ordinary symbol, by its own
+//!    name.
 //!
 //! A bundle never joins a single net: a bus, a bus label and a bus entry to a
 //! bus carry a bundle, and the union-find refuses to join the two kinds, as
@@ -150,12 +155,9 @@ impl Graph {
         graph.merge_shared_points();
         graph.merge_junctions();
         graph.merge_labels_on_segments();
+        graph.merge_by_name(rules);
         if rules.labels {
-            graph.merge_by_name();
             graph.merge_hierarchy();
-        }
-        if rules.power {
-            graph.merge_power();
         }
         graph
     }
@@ -351,26 +353,41 @@ impl Graph {
         }
     }
 
-    /// Rule 4: labels of equal text join.
+    /// Rule 4: items of equal name join.
+    ///
+    /// One sheet has one namespace. A local label, a hierarchical label, a
+    /// global label and a power pin that carry one name on one sheet are one
+    /// net, whatever their kinds (`CONNECTION_GRAPH::processSubGraphs`, which
+    /// absorbs every same-sheet subgraph whose driver name matches). The
+    /// global kinds — a global label and a power pin — carry that name across
+    /// the whole project as well.
     ///
     /// A netclass flag carries a netclass name and not a net name, so its text
     /// joins nothing.
-    fn merge_by_name(&mut self) {
-        let mut local: BTreeMap<(usize, String), Vec<usize>> = BTreeMap::new();
-        let mut global: BTreeMap<String, Vec<usize>> = BTreeMap::new();
+    fn merge_by_name(&mut self, rules: MergeRules) {
+        let mut per_sheet: BTreeMap<(usize, String), Vec<usize>> = BTreeMap::new();
+        let mut project: BTreeMap<String, Vec<usize>> = BTreeMap::new();
         for (index, node) in self.nodes.iter().enumerate() {
-            if let NodeKind::Label { kind, text } = &node.kind {
-                match kind {
-                    LabelKind::Local => local
-                        .entry((node.sheet, net_name(text)))
-                        .or_default()
-                        .push(index),
-                    LabelKind::Global => global.entry(net_name(text)).or_default().push(index),
-                    LabelKind::Hierarchical | LabelKind::NetclassFlag => {}
+            let (name, everywhere) = match &node.kind {
+                NodeKind::Label { kind, text } if rules.labels => match kind {
+                    LabelKind::Local | LabelKind::Hierarchical => (net_name(text), false),
+                    LabelKind::Global => (net_name(text), true),
+                    LabelKind::NetclassFlag => continue,
+                },
+                NodeKind::Pin(pin) if rules.power && !pin.power_name.is_empty() => {
+                    (net_name(&pin.power_name), true)
                 }
+                _ => continue,
+            };
+            if everywhere {
+                project.entry(name.clone()).or_default().push(index);
             }
+            per_sheet.entry((node.sheet, name)).or_default().push(index);
         }
-        let groups: Vec<Vec<usize>> = local.into_values().chain(global.into_values()).collect();
+        let groups: Vec<Vec<usize>> = per_sheet
+            .into_values()
+            .chain(project.into_values())
+            .collect();
         self.union_each(&groups);
     }
 
@@ -403,23 +420,6 @@ impl Graph {
         for (label, pin) in pairs {
             self.union(label, pin);
         }
-    }
-
-    /// Rule 5: pins that name the same net join across the project.
-    fn merge_power(&mut self) {
-        let mut by_value: BTreeMap<String, Vec<usize>> = BTreeMap::new();
-        for (index, node) in self.nodes.iter().enumerate() {
-            if let NodeKind::Pin(pin) = &node.kind {
-                if !pin.power_name.is_empty() {
-                    by_value
-                        .entry(net_name(&pin.power_name))
-                        .or_default()
-                        .push(index);
-                }
-            }
-        }
-        let groups: Vec<Vec<usize>> = by_value.into_values().collect();
-        self.union_each(&groups);
     }
 
     /// Join every node of every group to the others of its group.
