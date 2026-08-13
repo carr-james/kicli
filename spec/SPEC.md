@@ -827,11 +827,15 @@ library-nickname renaming (§10); bus routing and cross-sheet routing (§9).
 
 ## 18. Fixtures and test corpora (C21, D18, Constitution §11)
 
-- **In-repo `fixtures/` are purpose-built** and are the gate for the default
-  `cargo test`. Canonical-byte fixtures are authored by us and canonicalised
-  once with `kicad-cli sch upgrade --force` (which is idempotent) — our content,
-  KiCad's bytes. Any fixture derived from a v9 source must be checked for bus
-  aliases first (`sch-format.md` §5.6).
+This section fixes the **provenance** of test data, not its location. Where
+fixtures sit in the tree is an engineering concern and is specified in
+`ENGINEERING.md`.
+
+- **In-repo fixtures are purpose-built** — authored by us, not copied from
+  anyone — and they are the gate for the default `cargo test`. Canonical-byte
+  fixtures are canonicalised once with `kicad-cli sch upgrade --force` (which is
+  idempotent): our content, KiCad's bytes. Any fixture derived from a v9 source
+  must be checked for bus aliases first (`sch-format.md` §5.6).
 - **KiCad's `demos/` and `qa/data` are GPL and are never vendored.** They are an
   external corpus fetched by **`cargo xtask corpus`** at a pinned tag into
   `target/`, excluded from the default test run (Q5).
