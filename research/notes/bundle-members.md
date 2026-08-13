@@ -61,52 +61,97 @@ kicli merges every bundle item into classes as it does any other item, then,
 for each class, expands the member names of every bundle name in it and joins
 the like-named nets on every sheet that class reaches.
 
-## Open, and the reason the corpus is not yet exact
 
-**Two bundles of different names, wired together, share their members.** In
-`royalblue54L_feather` the root sheet wires the port `UART{TX, RX}` of one
-child to the port `UART_TRG{TX, RX}` of two others, and KiCad puts `UART.RX`
-and `UART_TRG.RX` on one net. `demos/video` does the same at scale:
-`VRAM[0..31]` and `DQ[0..31]` are wired together on the root sheet, and
-`VRAM31` and `DQ31` are one net.
+## Two bundles on one bus carry each other's members
 
-Five probes failed to reproduce it, and each is recorded here so the next
-attempt does not repeat them. Each has a root sheet wiring the ports of two
-children together:
+**Measured 2026-08-14 against KiCad 10.0.5.** This is the rule five earlier
+probes looked for and did not find. It is simpler than the source reading
+suggested:
 
-1. two vectors, `AA[0..3]` and `BB[0..3]`, with `AA1` and `BB1` on the two
-   children — two nets;
-2. the same with bus entries joining each named wire to its bundle — two nets;
-3. two groups, `AA{P Q}` and `BB{P Q}`, with `AA.P` and `BB.P` — two nets;
-4. the same with bus entries — two nets;
-5. probe 1 with a label `AA[0..3]` on the root's bundle — `AA1` moved to the
-   root's sheet path, so the propagation did reach the like-named child, and
-   `BB1` did not move at all.
+> **Where one bus carries two bundle names, their corresponding members are one
+> net.** No wire joins the member nets, and no net has to carry both names.
 
-Probe 5 is the informative one: the propagation happens, and it stops at the
-bundle whose name differs.
+That is how `UART.RX` and `UART_TRG.RX` become one net in
+`royalblue54L_feather`: the root sheet joins the port `UART{TX, RX}` of one
+child to the port `UART_TRG{TX, RX}` of two others with a bus, so one bus
+carries both names.
 
-KiCad's own answer is in `CONNECTION_GRAPH::matchBusMember`
-(`eeschema/connection_graph.cpp`), which is worth quoting for whoever picks
-this up:
+Correspondence was measured member by member, and it is not what the names
+suggest:
 
-```cpp
-if( aBusConnection->Type() == CONNECTION_TYPE::BUS )
-    // Vector bus: compare against index, because we allow the name to be different
-    ... bus_member->VectorIndex() == aSearch->VectorIndex()
-else
-    // Group bus ... compare names, because for bus groups we expect the naming
-    // to be consistent across all usages
-    ... bus_member->LocalName() == aSearch->LocalName()
-```
+| Two bundles | Joined |
+|---|---|
+| `UART{TX, RX, CTS}`, `UART_TRG{TX, RX}` | `.TX` to `.TX`, `.RX` to `.RX`; `UART.CTS` alone |
+| `AA{P, Q}`, `BB{Q, Z}` | `AA.Q` to `BB.Q` only |
+| `AA[0..2]`, `BB[5..6]` | `AA0` to `BB5`, `AA1` to `BB6`; `AA2` alone |
+| `ANALOG{A[0..1]}`, `BB[0..1]` | `ANALOG.A0` to `BB0`, `ANALOG.A1` to `BB1` |
 
-So the correspondence is by **vector index** between two vectors and by
-**local member name** between two groups. What the probes have not found is
-the condition under which `propagateToNeighbors` carries one bundle's
-connection onto another bundle of a different name. Until that is measured,
-kicli joins members only where the names agree, and three demo hierarchies —
-`royalblue54L_feather`, `video` and `vme-wren` — differ from KiCad by exactly
-the nets that cross from one bundle name to another.
+So a group member corresponds by its own name without the group's, and a vector
+member by **its place in the range, not the number written in its name**:
+`AA[0..2]` against `BB[5..6]` joins `AA0` to `BB5`. A group whose member is
+itself a vector holds vector members, so `ANALOG{A[0..1]}` corresponds by place.
+This is `CONNECTION_GRAPH::matchBusMember` (`eeschema/connection_graph.cpp`,
+tag 10.0.5), which compares `VectorIndex()` for a vector and `LocalName()`
+otherwise.
+
+**One measured case is deliberately not implemented.** A vector against a plain
+group, `AA[0..1]` against `BB{P, Q}`, puts `AA0`, `BB.P` and `BB.Q` all on one
+net and leaves `AA1` alone. That follows from comparing a vector index against
+members that have none, and it is degenerate rather than designed — KiCad's own
+comment above the loop is "This feels a bit hacky, perhaps this algorithm should
+be revisited in the future". kicli corresponds only between two vectors or two
+groups, so it differs from KiCad on that drawing. No corpus project draws one.
+
+## Why five probes missed it: the probes were wrong, not the rule
+
+Probes 1 to 5 drew the right shape — a root sheet wiring the ports of two
+children together — and measured two nets. The drawing was not what they
+thought. A sheet pin carries an angle, and the angle decides which edge of the
+sheet symbol the pin binds to: 0 is the right edge, 180 the left. The probe
+harness wrote 0 for every pin. A pin written at the left edge with angle 0 is
+moved by KiCad to the edge its angle names, which takes it off the bus drawn to
+meet it, so the second child was never on the bus at all.
+
+The control that found it: two children carrying the **same** bundle name, whose
+members must join and did not. A probe whose control fails is measuring its own
+defect. `two_bundles_on_one_bus_join_their_corresponding_members` in
+`net_probe_rules.rs` now draws both angles, and `Probe::sheet_named` documents
+which edge each one binds to.
+
+The source reading that produced probes 5 and 6 — that the trigger is a net with
+two or more bus parents — is not wrong, but it is the mechanism one level down.
+A net reached by two bundles on one bus has two bus parents by construction. Six
+probes aimed at reproducing the mechanism directly; the rule above is what the
+drawing has to show.
+
+## Still open: `video` and `vme-wren`
+
+With the rule above, 33 of the 35 corpus hierarchies match KiCad exactly, up
+from 32. `video` and `vme-wren` remain, and `video`'s cause is now measured and
+is a **different rule**:
+
+> **A bundle names its members at its own sheet path.** Two bundles on one
+> sheet whose members expand to equal names put those members on one net, with
+> no bus between the two bundles at all.
+
+Measured on two buses that never touch: `DQ[0..2]` and `DQ[0..1]`, each leaving
+the root sheet to a child of its own, put `DQ0` and `DQ1` on one net each,
+named `/DQ0` and `/DQ1` at the root path. The control, `AA[0..1]` against
+`BB[0..1]` drawn the same way, stays apart. That is the shape `video` draws:
+its root sheet carries `DQ[0..31]`, `DQ[0..15]` and `DQ[0..7]` on three
+separate buses, and KiCad puts all their `DQ0` on one net.
+
+kicli joins like-named member nets only across the sheets one bus class reaches,
+so it splits that net three ways. Closing it needs the half that is **not yet
+measured**: which sheet path a bundle's members take when the bundle spans
+several sheets. `royalblue54L_feather` names the merged net
+`/Connectors/UART.RX`, a child path and not the root, so the answer is driver
+priority rather than "the sheet the label is drawn on". That is the next probe,
+and it should carry a control that fails loudly, as this one now does.
+
+`vme-wren`'s difference is not yet attributed. Its missing joins are whole
+connector pins (`J6.32`, `JFP2.4`, `IC14.B1`) that kicli leaves on nets of their
+own, which does not look like either rule above.
 
 ## Reproduction
 
@@ -118,103 +163,7 @@ grep -A8 '"/child/AN0"' probe.net   # two pins
 grep -A4 '"/ZZ9"'       probe.net   # one pin
 ```
 
-`cargo test --test net_probe_rules` builds that drawing and holds the rule in
-place. With `KICLI_TEST_KICAD_CLI` set it exports the netlist as well, so the
-expectation above is checked against the tool rather than remembered.
-
-## The trigger, found in KiCad's source after the probes
-
-**Added 2026-08-13 by the orchestrator, after the five probes above.** The
-probes looked for a bus wired to a bus. That is not the trigger, which is why
-none of them reproduced it.
-
-`CONNECTION_GRAPH::processSubGraphs` (`eeschema/connection_graph.cpp:2581-2588`,
-tag 10.0.5) opens with:
-
-```cpp
-// Handle buses that have been linked together somewhere by member (net) connections.
-for( CONNECTION_SUBGRAPH* subgraph : m_driver_subgraphs )
-{
-    if( subgraph->m_bus_parents.size() < 2 )
-        continue;
-```
-
-The subject is a **net**, not a bus. A net subgraph gains a bus parent at
-`:2244-2251`, where a bus's member name matches a net subgraph's driver name:
-
-```cpp
-if( connection->IsBus() && candidate->m_driver_connection->IsNet() )
-{
-    subgraph->m_bus_neighbors[member].insert( candidate );
-    candidate->m_bus_parents[member].insert( subgraph );
-}
-```
-
-So the rule is:
-
-> **One net that is a member of two or more bundles links those bundles'
-> corresponding members.** Correspondence is `matchBusMember`: by index between
-> two vectors, by local member name between two groups.
-
-That is how `UART.RX` and `UART_TRG.RX` become one net in
-`royalblue54L_feather`, and `VRAM31` and `DQ31` in `video`: a single net is a
-child of both bundles, and every matching member pair is joined behind it.
-
-The comment KiCad puts above the loop is worth keeping in mind — "This feels a
-bit hacky, perhaps this algorithm should be revisited in the future" — because
-it says the behaviour is emergent rather than designed, and a future release may
-change it. The netlist oracle is what will notice if it does.
-
-**Still not measured**: which name a net must carry to become a member-child of
-a bundle — the full member name (`UART.RX`) or the local one (`RX`) — and what
-`test_name` is built from at `:2200-2240`. That is one probe, now that the loop
-to aim it at is known: give one wire a label that is a member of two bundles of
-different names, and see whether KiCad joins their other members.
-
-**What kicli must implement** to close the last three hierarchies: track, per
-net, the bundles it is a member of; where a net has two or more, union the
-corresponding members of those bundles. The member-matching half already exists
-in the extractor for rule 6; what is missing is the bus-parent bookkeeping and
-the linking pass.
-
-## Probe six, and what the trigger still needs
-
-**2026-08-14.** The source reading above gave a shape to test: one net that
-answers to a member name of two bundles. The obvious drawing is a net carrying
-two member labels, so that its subgraph has two drivers and `test_name`
-(`connection_graph.cpp:2189`, `member->Name( true )`, the full member name)
-matches through the `m_multiple_drivers` branch at `:2205`.
-
-Drawn and measured: a wire with both `UART.RX` and `UART_TRG.RX` on it, and the
-other member of each group on its own wire.
-
-```
-/UART.RX        R1.2
-/UART.TX        R2.2
-/UART_TRG.TX    R3.2
-```
-
-`UART.TX` and `UART_TRG.TX` stayed apart, so **that is not the trigger either**,
-and `/UART_TRG.RX` did not even appear as a name: the shared net took one name
-and dropped the other.
-
-The reason is now obvious in hindsight and worth writing down, because it is the
-thing all six probes have missed. `m_bus_parents` is populated at `:2251` only
-when a **bus subgraph** exists whose member matches the net. A drawing with no
-bus wire has no bus subgraph, so a net cannot have a bus parent, let alone two,
-however many member labels it carries.
-
-**The next probe, which is now fully specified:** two bus wires on one sheet,
-one labelled `UART{RX TX}` and the other `UART_TRG{RX TX}`, each with its own
-member nets drawn off bus entries, **and** one net carrying both `UART.RX` and
-`UART_TRG.RX`. That gives two bus subgraphs, and one net that is a child of
-both. If `UART.TX` and `UART_TRG.TX` then join, the rule is confirmed and the
-implementation below is what closes it.
-
-**An implementation was written against the source and then reverted**, because
-it never fired on the corpus and no test could show it correct. Writing code for
-a rule that has not been reproduced is the thing this project does not do. The
-shape it took, for whoever picks this up: track for each net the bundle classes
-it is a member of; where there are two or more, take each pair and union their
-corresponding members, matching by index between two vectors and by local name
-between two groups, per `matchBusMember` at `:3324`.
+`cargo test --test net_probe_rules` builds every drawing above and holds the
+rules in place. With `KICLI_TEST_KICAD_CLI` set it exports each one with
+`kicad-cli` as well, so the expectations are checked against the tool rather
+than remembered.

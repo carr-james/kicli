@@ -222,14 +222,16 @@ mod corpus {
         }
     }
 
-    // 32 of 35 hierarchies of KiCad's demo corpus match exactly. The three
-    // that do not — RoyalBlue54L-Feather, video and vme-wren — differ only
-    // where a net crosses from one bundle name to another, which
-    // research/notes/bundle-members.md records as measured but not yet
-    // reproduced. The test is kept whole and does not run, so that closing
-    // that last rule is a matter of deleting one attribute and reading the
-    // report.
-    #[ignore = "32 of 35 corpus hierarchies match; the rest need the two-bus-parents rule, whose trigger is recorded in research/notes/bundle-members.md"]
+    // 33 of 35 hierarchies of KiCad's demo corpus match exactly. The two that
+    // do not — video and vme-wren — need a rule that is not yet measured
+    // whole: a bundle names its members at its own sheet path, so two bundles
+    // on one sheet share the members whose names are equal, with no bus
+    // between them. Which sheet path a bundle spanning several sheets uses is
+    // the unmeasured half. research/notes/bundle-members.md carries the
+    // measurement and the drawing. The test is kept whole and does not run, so
+    // that closing the rule is a matter of deleting one attribute and reading
+    // the report.
+    #[ignore = "33 of 35 corpus hierarchies match; the rest need the sheet path a bundle names its members at, recorded in research/notes/bundle-members.md"]
     #[test]
     fn netlist_partition_matches_kicad_corpus() {
         let Some(tool) = kicad_cli() else {

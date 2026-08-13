@@ -35,6 +35,8 @@ struct Probe {
     path: String,
     /// The uuid prefix, so a child's uuids differ from its parent's.
     series: u32,
+    /// The uuid of the sheet this file is.
+    sheet_uuid: String,
     symbols: Vec<String>,
     items: Vec<String>,
     next_uuid: u32,
@@ -47,6 +49,7 @@ impl Probe {
             file: "probe",
             path: format!("/{ROOT}"),
             series: 1,
+            sheet_uuid: ROOT.to_owned(),
             symbols: vec![resistor()],
             items: Vec::new(),
             next_uuid: 0,
@@ -55,11 +58,17 @@ impl Probe {
 
     /// A probe for the child sheet this one draws.
     fn child_of(parent: &Probe) -> Self {
+        Self::named_child_of(parent, "child", CHILD, 2)
+    }
+
+    /// The same, for a probe that draws more than one child.
+    fn named_child_of(parent: &Probe, file: &'static str, uuid: &str, series: u32) -> Self {
         Self {
             name: parent.name,
-            file: "child",
-            path: format!("/{ROOT}/{CHILD}"),
-            series: 2,
+            file,
+            path: format!("/{ROOT}/{uuid}"),
+            series,
+            sheet_uuid: uuid.to_owned(),
             symbols: vec![resistor()],
             items: Vec::new(),
             next_uuid: 0,
@@ -77,21 +86,41 @@ impl Probe {
 
     /// Draw the sheet symbol that places the child, with one port on it.
     fn sheet(&mut self, port: &str, at: (&str, &str)) {
+        self.sheet_named(CHILD, "child", port, at, "0");
+    }
+
+    /// The same, for a named child, with the port on the edge the angle says.
+    ///
+    /// The angle is which way the port points: 0 puts it on the right edge of
+    /// the sheet symbol, 180 on the left. KiCad moves a port whose angle
+    /// disagrees with its position, which takes it off the wire that was drawn
+    /// to meet it, so a probe that gets the angle wrong measures a drawing it
+    /// did not intend.
+    fn sheet_named(
+        &mut self,
+        uuid: &str,
+        name: &str,
+        port: &str,
+        at: (&str, &str),
+        angle: &str,
+    ) -> String {
         let pin_uuid = self.uuid();
+        let justify = if angle == "0" { "right" } else { "left" };
         self.items.push(format!(
             "(sheet (at {} {}) (size 25.4 25.4)\n\
              (exclude_from_sim no) (in_bom yes) (on_board yes) (dnp no)\n\
              (stroke (width 0) (type solid)) (fill (color 0 0 0 0.0000))\n\
-             (uuid \"{CHILD}\")\n\
-             (property \"Sheetname\" \"child\" (at {} {} 0)\n\
+             (uuid \"{uuid}\")\n\
+             (property \"Sheetname\" \"{name}\" (at {} {} 0)\n\
              (effects (font (size 1.27 1.27)) (justify left bottom)))\n\
-             (property \"Sheetfile\" \"child.kicad_sch\" (at {} {} 0)\n\
+             (property \"Sheetfile\" \"{name}.kicad_sch\" (at {} {} 0)\n\
              (effects (font (size 1.27 1.27)) (justify left top)))\n\
-             (pin \"{port}\" bidirectional (at {} {} 0)\n\
-             (effects (font (size 1.27 1.27)) (justify right)) (uuid \"{pin_uuid}\"))\n\
+             (pin \"{port}\" bidirectional (at {} {} {angle})\n\
+             (effects (font (size 1.27 1.27)) (justify {justify})) (uuid \"{pin_uuid}\"))\n\
              (instances (project \"probe\" (path \"/{ROOT}\" (page \"2\"))))\n)",
             at.0, at.1, at.0, at.1, at.0, at.1, at.0, at.1
         ));
+        uuid.to_owned()
     }
 
     /// Add a library symbol the probe places.
@@ -215,7 +244,7 @@ impl Probe {
 
     /// The file text.
     fn text(&self) -> String {
-        let uuid = if self.series == 1 { ROOT } else { CHILD };
+        let uuid = &self.sheet_uuid;
         let instances = if self.series == 1 {
             "(sheet_instances (path \"/\" (page \"1\")))"
         } else {
@@ -243,12 +272,12 @@ impl Probe {
 
     /// kicli's partition of the probe, checked against KiCad when it is there.
     fn partition(&self) -> Partition {
-        self.partition_with(None)
+        self.partition_with(&[])
     }
 
-    /// The same, of a probe that draws a child sheet.
-    fn partition_with(&self, child: Option<&Probe>) -> Partition {
-        if let Some(child) = child {
+    /// The same, of a probe that draws child sheets.
+    fn partition_with(&self, children: &[&Probe]) -> Partition {
+        for child in children {
             child.write();
         }
         let path = self.write();
@@ -573,12 +602,104 @@ fn a_bundle_carries_its_members_to_every_sheet_it_reaches() {
     child.named_strand("R2", "25.4", "29.21", "AN0");
     child.named_strand("R6", "88.9", "92.71", "ZZ9");
 
-    let found = probe.partition_with(Some(&child));
+    let found = probe.partition_with(&[&child]);
     // The two sheets' AN0 are one net, though no wire joins them.
     assert!(found.contains(&net(&["R1.1", "R2.1"])));
     // A name the bundle does not carry stays local to its sheet.
     assert!(found.contains(&net(&["R5.1"])));
     assert!(found.contains(&net(&["R6.1"])));
+}
+
+/// Draw a bundle down the sheet, name it, and hang member nets off it.
+///
+/// This is the shape a child sheet of the bundle-linking probe needs: a
+/// hierarchical label puts the bundle on the port above, and each member is a
+/// named wire joined to the bundle by a bus entry.
+fn bundled_members(probe: &mut Probe, bundle: &str, members: &[(&str, &str)]) {
+    probe.bus(("127", "20.32"), ("127", "101.6"));
+    probe.label_of_kind(
+        "hierarchical_label",
+        "(shape input)",
+        bundle,
+        ("127", "20.32"),
+    );
+    for (index, (reference, member)) in members.iter().enumerate() {
+        let wire_y = format!("{}", 38.1 + 12.7 * index as f64);
+        let anchor_y = format!("{}", 41.91 + 12.7 * index as f64);
+        probe.bus_entry(("124.46", &wire_y), ("2.54", "2.54"));
+        probe.wire(("99.06", &wire_y), ("124.46", &wire_y));
+        probe.label_of_kind("label", "", member, ("101.6", &wire_y));
+        probe.place("R", reference, ("99.06", &anchor_y), &["1", "2"]);
+    }
+}
+
+#[test]
+fn two_bundles_on_one_bus_join_their_corresponding_members() {
+    let mut probe = Probe::new("linked-bundles");
+    let first = "00000000-0000-4000-8000-cccccccccc01";
+    let second = "00000000-0000-4000-8000-cccccccccc02";
+    let mut left = Probe::named_child_of(&probe, "child1", first, 2);
+    let mut right = Probe::named_child_of(&probe, "child2", second, 3);
+
+    // One bus joins the ports of two children, and the two carry bundles of
+    // different names. The port angle puts each pin on the edge the bus meets.
+    probe.sheet_named(first, "child1", "UART{TX, RX, CTS}", ("101.6", "50.8"), "0");
+    probe.sheet_named(
+        second,
+        "child2",
+        "UART_TRG{TX, RX}",
+        ("152.4", "50.8"),
+        "180",
+    );
+    probe.bus(("101.6", "50.8"), ("152.4", "50.8"));
+
+    bundled_members(
+        &mut left,
+        "UART{TX, RX, CTS}",
+        &[("R1", "UART.TX"), ("R2", "UART.RX"), ("R3", "UART.CTS")],
+    );
+    bundled_members(
+        &mut right,
+        "UART_TRG{TX, RX}",
+        &[("R4", "UART_TRG.TX"), ("R5", "UART_TRG.RX")],
+    );
+
+    let found = probe.partition_with(&[&left, &right]);
+    // A group member corresponds by its own name, so TX joins TX and RX joins
+    // RX, though the two bundles are named differently and no wire joins the
+    // member nets.
+    assert!(found.contains(&net(&["R1.1", "R4.1"])));
+    assert!(found.contains(&net(&["R2.1", "R5.1"])));
+    // A member the other bundle does not carry stays on its own net.
+    assert!(found.contains(&net(&["R3.1"])));
+}
+
+#[test]
+fn two_vector_bundles_on_one_bus_join_by_place_and_not_by_index() {
+    let mut probe = Probe::new("linked-vectors");
+    let first = "00000000-0000-4000-8000-cccccccccc01";
+    let second = "00000000-0000-4000-8000-cccccccccc02";
+    let mut left = Probe::named_child_of(&probe, "child1", first, 2);
+    let mut right = Probe::named_child_of(&probe, "child2", second, 3);
+
+    // The two ranges start at different numbers on purpose.
+    probe.sheet_named(first, "child1", "AA[0..2]", ("101.6", "50.8"), "0");
+    probe.sheet_named(second, "child2", "BB[5..6]", ("152.4", "50.8"), "180");
+    probe.bus(("101.6", "50.8"), ("152.4", "50.8"));
+
+    bundled_members(
+        &mut left,
+        "AA[0..2]",
+        &[("R1", "AA0"), ("R2", "AA1"), ("R3", "AA2")],
+    );
+    bundled_members(&mut right, "BB[5..6]", &[("R4", "BB5"), ("R5", "BB6")]);
+
+    let found = probe.partition_with(&[&left, &right]);
+    // The first member of one range joins the first of the other, so the
+    // number written in the name is not what corresponds.
+    assert!(found.contains(&net(&["R1.1", "R4.1"])));
+    assert!(found.contains(&net(&["R2.1", "R5.1"])));
+    assert!(found.contains(&net(&["R3.1"])));
 }
 
 #[test]

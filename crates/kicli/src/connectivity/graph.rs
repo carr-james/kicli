@@ -34,7 +34,9 @@
 //!
 //! 6. A bundle carries its members. A net named after one member, on any
 //!    sheet the bundle reaches, is that member, and no wire between the two
-//!    is needed.
+//!    is needed. Where one bus carries two bundle names, their corresponding
+//!    members are one net as well: a vector member corresponds by its place
+//!    in the range, a group member by its own name.
 //!
 //! A bundle never joins a single net: a bus, a bus label and a bus entry to a
 //! bus carry a bundle, and the union-find refuses to join the two kinds, as
@@ -463,25 +465,36 @@ impl Graph {
         found
     }
 
-    /// Rule 6: a bundle carries its members wherever it reaches.
+    /// Rule 6: a bundle carries its members wherever it reaches, and two
+    /// bundles on one bus carry each other's.
     ///
     /// A bundle names one net per member. A net of that name, on any sheet the
     /// bundle reaches, is that member, and no wire between the two is needed:
     /// `CONNECTION_GRAPH::processSubGraphs` links a bundle to every same-sheet
     /// net whose name is one of its members, and `propagateToNeighbors` then
     /// carries the member along the bundle through the hierarchy.
+    ///
+    /// Where one bus carries two bundle names, their corresponding members are
+    /// one net as well. Members are collected by what they correspond to
+    /// rather than by name, so `UART.RX` and `UART_TRG.RX` land in one group
+    /// and join. `CONNECTION_GRAPH::matchBusMember` decides the
+    /// correspondence, and [`Correspondence`] records what it measures.
     fn merge_bus_members(&mut self, rules: MergeRules) {
-        let mut carried: BTreeMap<usize, BTreeSet<String>> = BTreeMap::new();
+        let mut carried: BTreeMap<usize, BTreeMap<Correspondence, BTreeSet<String>>> =
+            BTreeMap::new();
         let mut reaches: BTreeMap<usize, BTreeSet<usize>> = BTreeMap::new();
         for index in self.nodes_where(|node| node.carrier == Carrier::Bus) {
             let (sheet, name) = (self.nodes[index].sheet, name_of(&self.nodes[index]));
             let class = self.class_of(index);
             reaches.entry(class).or_default().insert(sheet);
             if let Some(name) = name {
-                carried
-                    .entry(class)
-                    .or_default()
-                    .extend(bus_members(&name).iter().map(|member| net_name(member)));
+                let by_key = carried.entry(class).or_default();
+                for member in bus_members_of(&name) {
+                    by_key
+                        .entry(member.corresponds)
+                        .or_default()
+                        .insert(net_name(&member.name));
+                }
             }
         }
 
@@ -496,15 +509,17 @@ impl Graph {
         }
 
         let mut groups = Vec::new();
-        for (class, members) in carried {
+        for (class, by_key) in carried {
             let Some(sheets) = reaches.get(&class) else {
                 continue;
             };
-            for member in members {
+            for members in by_key.into_values() {
                 let mut group = Vec::new();
-                for &sheet in sheets {
-                    if let Some(nodes) = by_place.get(&(sheet, member.clone())) {
-                        group.extend(nodes);
+                for member in members {
+                    for &sheet in sheets {
+                        if let Some(nodes) = by_place.get(&(sheet, member.clone())) {
+                            group.extend(nodes);
+                        }
                     }
                 }
                 if group.len() > 1 {
@@ -666,7 +681,32 @@ fn name_of(node: &Node) -> Option<String> {
     }
 }
 
-/// The member net names a bundle name stands for.
+/// What a bundle member corresponds to in another bundle on the same bus.
+///
+/// `CONNECTION_GRAPH::matchBusMember` compares vector members by index and
+/// everything else by its own name. Measured against KiCad 10.0.5: `AA[0..2]`
+/// against `BB[5..6]` joins `AA0` to `BB5`, so the index that counts is the
+/// member's place in the range and not the number written in the name.
+/// `UART{TX, RX}` against `UART_TRG{TX, RX}` joins by `TX` and `RX`, and
+/// `ANALOG{A[0..1]}` against `BB[0..1]` joins by place, because a group whose
+/// member is a vector holds vector members.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+enum Correspondence {
+    /// A vector member, by its place in the range.
+    Place(usize),
+    /// Any other member, by its own name without the group's.
+    Name(String),
+}
+
+/// One member of a bundle: the net it names, and what it corresponds to.
+struct BusMember {
+    /// The net name the member stands for, such as `UART.RX`.
+    name: String,
+    /// What the member matches in another bundle on the same bus.
+    corresponds: Correspondence,
+}
+
+/// The members a bundle name stands for, each with what it corresponds to.
 ///
 /// A vector, `AN[0..7]`, stands for `AN0` to `AN7`. A group, `I2C{SCL, SDA}`,
 /// stands for `I2C.SCL` and `I2C.SDA`: the group's name, a stop, then the
@@ -674,26 +714,42 @@ fn name_of(node: &Node) -> Option<String> {
 /// alone, and a member may itself be a vector, so `ANALOG{A[0..5]}` stands for
 /// `ANALOG.A0` to `ANALOG.A5` (`NET_SETTINGS::ParseBusVector` and
 /// `ParseBusGroup`, and `SCH_CONNECTION::ConfigureFromLabel` for the stop).
-fn bus_members(name: &str) -> Vec<String> {
+fn bus_members_of(name: &str) -> Vec<BusMember> {
     let plain = unescape_net_name(name);
     // A group is read first: its own member list may hold a vector, and a
     // vector read out of `ANALOG{A[0..5]}` would take the brace for a prefix.
     let Some((prefix, members)) = group_parts(&plain) else {
-        return vector_members(&plain).unwrap_or_default();
+        return vector_members(&plain)
+            .unwrap_or_default()
+            .into_iter()
+            .enumerate()
+            .map(|(place, name)| BusMember {
+                name,
+                corresponds: Correspondence::Place(place),
+            })
+            .collect();
     };
     let mut found = Vec::new();
     for member in members {
-        let expanded = bus_members(&member);
-        let names = if expanded.is_empty() {
-            vec![member]
+        // A member that is itself a vector keeps the place it holds in that
+        // vector; one that is a plain name corresponds by that name.
+        let expanded = bus_members_of(&member);
+        let inner = if expanded.is_empty() {
+            vec![BusMember {
+                corresponds: Correspondence::Name(member.clone()),
+                name: member,
+            }]
         } else {
             expanded
         };
-        for name in names {
-            found.push(if prefix.is_empty() {
-                name
-            } else {
-                format!("{prefix}.{name}")
+        for member in inner {
+            found.push(BusMember {
+                name: if prefix.is_empty() {
+                    member.name
+                } else {
+                    format!("{prefix}.{}", member.name)
+                },
+                corresponds: member.corresponds,
             });
         }
     }
@@ -908,8 +964,24 @@ fn entry_end(doc: &Doc, node: NodeId, at: Point) -> Point {
 
 #[cfg(test)]
 mod tests {
-    use super::{Carrier, bus_members, carrier_of_name, on_segment};
+    use super::{Carrier, Correspondence, carrier_of_name, on_segment};
     use crate::geometry::Point;
+
+    /// The member names a bundle stands for, in order.
+    fn bus_members(name: &str) -> Vec<String> {
+        super::bus_members_of(name)
+            .into_iter()
+            .map(|member| member.name)
+            .collect()
+    }
+
+    /// What each member of a bundle corresponds to, in order.
+    fn corresponds(name: &str) -> Vec<Correspondence> {
+        super::bus_members_of(name)
+            .into_iter()
+            .map(|member| member.corresponds)
+            .collect()
+    }
 
     #[test]
     fn a_point_is_on_a_segment_or_it_is_not() {
@@ -961,5 +1033,27 @@ mod tests {
         // A plain name carries no members.
         assert!(bus_members("GND").is_empty());
         assert!(bus_members("~{RESET}").is_empty());
+    }
+
+    #[test]
+    fn a_member_corresponds_by_place_in_a_vector_and_by_name_in_a_group() {
+        use Correspondence::{Name, Place};
+        // A vector member corresponds by its place, not by the number in its
+        // name, so `AA[0..1]` and `BB[5..6]` correspond pair by pair.
+        assert_eq!(corresponds("AA[0..1]"), [Place(0), Place(1)]);
+        assert_eq!(corresponds("BB[5..6]"), [Place(0), Place(1)]);
+        // A group member corresponds by its own name, without the group's, so
+        // `UART{TX, RX}` and `UART_TRG{TX, RX}` correspond pair by pair.
+        assert_eq!(
+            corresponds("UART{TX, RX}"),
+            [Name("TX".to_owned()), Name("RX".to_owned())]
+        );
+        assert_eq!(
+            corresponds("UART_TRG{TX, RX}"),
+            [Name("TX".to_owned()), Name("RX".to_owned())]
+        );
+        // A group whose member is a vector holds vector members, which is why
+        // `ANALOG{A[0..1]}` corresponds to `BB[0..1]` and not by name.
+        assert_eq!(corresponds("ANALOG{A[0..1]}"), [Place(0), Place(1)]);
     }
 }
