@@ -30,11 +30,15 @@ pub mod geometry;
 
 pub mod connectivity;
 
+pub mod view;
+
 pub mod lint;
 
 pub mod render;
 
 pub mod libraries;
+
+pub mod kicad;
 
 pub mod pcb;
 

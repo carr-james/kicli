@@ -33,10 +33,19 @@ No `#[allow(...)]` without an adjacent comment justifying it. No `unwrap()` or
 - **Single responsibility** holds as-is: one module = one concern. The
   workspace is three crates: `kicli-sexpr` (tokens/tree/prettify — minimal
   dependencies, no knowledge of schematics), `kicli` (modules: `model`,
-  `geometry`, `connectivity`, `lint`, `render`, `libraries`, `pcb`, `cli`),
-  and `xtask`. `cli` depends on everything; nothing depends on `cli`;
-  `kicli-sexpr` depends on nothing of ours. Crate boundaries enforce the
+  `geometry`, `connectivity`, `view`, `lint`, `render`, `libraries`, `kicad`,
+  `pcb`, `cli`), and `xtask`. `cli` depends on everything; nothing depends on
+  `cli`; `kicli-sexpr` depends on nothing of ours. Crate boundaries enforce the
   dependency direction — do not merge them for convenience.
+- **Two of those modules exist because the spec needs them, and the list above
+  is not closed.** `view` owns the compact text and JSON representations, which
+  are a separate concern from `render`: views are the truth an agent acts on,
+  renders are passive pictures. `kicad` owns every invocation of an external
+  KiCad binary — discovery, the version check, the process seam and the
+  exit-code translation — because `lint`, `render` and `cli` all need it and
+  none of them may depend on another. A later milestone may add a module the
+  same way: state the concern, keep the dependency direction, and amend this
+  list in the same change.
 - **Interfaces → traits.** Depend on traits or generics at seams that need
   substitution (e.g. the process-runner behind kicad-cli invocation, so tests
   can fake it). Do NOT introduce a trait with a single implementation and no
