@@ -32,6 +32,8 @@ pub mod geometry;
 
 pub mod connectivity;
 
+pub mod edit;
+
 pub mod view;
 
 pub mod lint;
