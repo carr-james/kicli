@@ -5,6 +5,10 @@
 //! The module knows nothing about the command surface, files on disk, or
 //! `kicad-cli`.
 
+pub mod transform;
+
+pub use transform::Transform;
+
 use std::fmt;
 
 /// Internal units per millimetre in a schematic.
