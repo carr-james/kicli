@@ -23,9 +23,18 @@ type Partition = BTreeSet<Vec<String>>;
 /// The root sheet uuid every probe uses.
 const ROOT: &str = "00000000-0000-4000-8000-999999999999";
 
+/// The uuid of the sheet symbol a probe with a child sheet draws.
+const CHILD: &str = "00000000-0000-4000-8000-cccccccccccc";
+
 /// One probe drawing, built item by item.
 struct Probe {
     name: &'static str,
+    /// The file name, without the extension.
+    file: &'static str,
+    /// The sheet path the symbols of this file are placed on.
+    path: String,
+    /// The uuid prefix, so a child's uuids differ from its parent's.
+    series: u32,
     symbols: Vec<String>,
     items: Vec<String>,
     next_uuid: u32,
@@ -35,6 +44,22 @@ impl Probe {
     fn new(name: &'static str) -> Self {
         Self {
             name,
+            file: "probe",
+            path: format!("/{ROOT}"),
+            series: 1,
+            symbols: vec![resistor()],
+            items: Vec::new(),
+            next_uuid: 0,
+        }
+    }
+
+    /// A probe for the child sheet this one draws.
+    fn child_of(parent: &Probe) -> Self {
+        Self {
+            name: parent.name,
+            file: "child",
+            path: format!("/{ROOT}/{CHILD}"),
+            series: 2,
             symbols: vec![resistor()],
             items: Vec::new(),
             next_uuid: 0,
@@ -44,7 +69,29 @@ impl Probe {
     /// A fresh uuid. The counter makes every probe file reproducible.
     fn uuid(&mut self) -> String {
         self.next_uuid += 1;
-        format!("00000000-0000-4000-8000-{:012}", self.next_uuid)
+        format!(
+            "00000000-0000-4000-800{}-{:012}",
+            self.series, self.next_uuid
+        )
+    }
+
+    /// Draw the sheet symbol that places the child, with one port on it.
+    fn sheet(&mut self, port: &str, at: (&str, &str)) {
+        let pin_uuid = self.uuid();
+        self.items.push(format!(
+            "(sheet (at {} {}) (size 25.4 25.4)\n\
+             (exclude_from_sim no) (in_bom yes) (on_board yes) (dnp no)\n\
+             (stroke (width 0) (type solid)) (fill (color 0 0 0 0.0000))\n\
+             (uuid \"{CHILD}\")\n\
+             (property \"Sheetname\" \"child\" (at {} {} 0)\n\
+             (effects (font (size 1.27 1.27)) (justify left bottom)))\n\
+             (property \"Sheetfile\" \"child.kicad_sch\" (at {} {} 0)\n\
+             (effects (font (size 1.27 1.27)) (justify left top)))\n\
+             (pin \"{port}\" bidirectional (at {} {} 0)\n\
+             (effects (font (size 1.27 1.27)) (justify right)) (uuid \"{pin_uuid}\"))\n\
+             (instances (project \"probe\" (path \"/{ROOT}\" (page \"2\"))))\n)",
+            at.0, at.1, at.0, at.1, at.0, at.1, at.0, at.1
+        ));
     }
 
     /// Add a library symbol the probe places.
@@ -99,7 +146,8 @@ impl Probe {
             "(symbol (lib_id \"Probe:{library}\") (at {x} {y} 0) (unit {unit}) (body_style 1)\n\
              {attributes}\n\
              (uuid \"{uuid}\")\n{fields}{pin_list}\
-             (instances (project \"probe\" (path \"/{ROOT}\" (reference \"{reference}\") (unit {instance_unit}))))\n)"
+             (instances (project \"probe\" (path \"{}\" (reference \"{reference}\") (unit {instance_unit}))))\n)",
+            self.path
         ));
     }
 
@@ -167,10 +215,16 @@ impl Probe {
 
     /// The file text.
     fn text(&self) -> String {
+        let uuid = if self.series == 1 { ROOT } else { CHILD };
+        let instances = if self.series == 1 {
+            "(sheet_instances (path \"/\" (page \"1\")))"
+        } else {
+            ""
+        };
         format!(
             "(kicad_sch (version 20260306) (generator \"eeschema\") (generator_version \"10.0\")\n\
-             (uuid \"{ROOT}\") (paper \"A4\")\n(lib_symbols\n{}\n)\n{}\n\
-             (sheet_instances (path \"/\" (page \"1\")))\n(embedded_fonts no)\n)",
+             (uuid \"{uuid}\") (paper \"A4\")\n(lib_symbols\n{}\n)\n{}\n{instances}\n\
+             (embedded_fonts no)\n)",
             self.symbols.join("\n"),
             self.items.join("\n")
         )
@@ -178,15 +232,25 @@ impl Probe {
 
     /// Write the probe to the scratch directory and return its path.
     fn write(&self) -> PathBuf {
-        let directory = Path::new(env!("CARGO_TARGET_TMPDIR")).join("net-probes");
+        let directory = Path::new(env!("CARGO_TARGET_TMPDIR"))
+            .join("net-probes")
+            .join(self.name);
         std::fs::create_dir_all(&directory).expect("the scratch directory is writable");
-        let path = directory.join(format!("{}.kicad_sch", self.name));
+        let path = directory.join(format!("{}.kicad_sch", self.file));
         std::fs::write(&path, self.text()).expect("the probe file is writable");
         path
     }
 
     /// kicli's partition of the probe, checked against KiCad when it is there.
     fn partition(&self) -> Partition {
+        self.partition_with(None)
+    }
+
+    /// The same, of a probe that draws a child sheet.
+    fn partition_with(&self, child: Option<&Probe>) -> Partition {
+        if let Some(child) = child {
+            child.write();
+        }
         let path = self.write();
         let hierarchy = Hierarchy::load(&path).expect("the probe loads");
         let found = partition_of(&extract(&hierarchy));
@@ -485,6 +549,36 @@ fn two_labels_join_when_their_net_names_are_equal() {
     assert!(found.contains(&net(&["R3.1"])));
     assert!(found.contains(&net(&["R4.1"])));
     assert!(found.contains(&net(&["R5.1", "R6.1"])));
+}
+
+#[test]
+fn a_bundle_carries_its_members_to_every_sheet_it_reaches() {
+    let mut probe = Probe::new("bundle-members");
+    let mut child = Probe::child_of(&probe);
+
+    // The bundle leaves the root sheet through the port of the child.
+    probe.sheet("AN[0..7]", ("101.6", "50.8"));
+    probe.bus(("101.6", "50.8"), ("152.4", "50.8"));
+    probe.label_of_kind("label", "", "AN[0..7]", ("152.4", "50.8"));
+    // A member of it, and a name the bundle does not carry.
+    probe.named_strand("R1", "25.4", "29.21", "AN0");
+    probe.named_strand("R5", "88.9", "92.71", "ZZ9");
+
+    child.label_of_kind(
+        "hierarchical_label",
+        "(shape input)",
+        "AN[0..7]",
+        ("101.6", "50.8"),
+    );
+    child.named_strand("R2", "25.4", "29.21", "AN0");
+    child.named_strand("R6", "88.9", "92.71", "ZZ9");
+
+    let found = probe.partition_with(Some(&child));
+    // The two sheets' AN0 are one net, though no wire joins them.
+    assert!(found.contains(&net(&["R1.1", "R2.1"])));
+    // A name the bundle does not carry stays local to its sheet.
+    assert!(found.contains(&net(&["R5.1"])));
+    assert!(found.contains(&net(&["R6.1"])));
 }
 
 #[test]

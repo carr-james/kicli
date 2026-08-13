@@ -32,6 +32,10 @@
 //!    by the symbol's value, or hidden on an ordinary symbol, by its own
 //!    name.
 //!
+//! 6. A bundle carries its members. A net named after one member, on any
+//!    sheet the bundle reaches, is that member, and no wire between the two
+//!    is needed.
+//!
 //! A bundle never joins a single net: a bus, a bus label and a bus entry to a
 //! bus carry a bundle, and the union-find refuses to join the two kinds, as
 //! KiCad's subgraph walk does.
@@ -45,7 +49,7 @@ use crate::model::hierarchy::{Hierarchy, Placement};
 use crate::model::items::{Item, LabelKind, LineKind, Refdes, SheetPath, Symbol, Uuid};
 use crate::model::library::{LibrarySymbol, definition_of, read_library};
 use kicli_sexpr::{Doc, NodeId};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 /// Does an item carry one net, or a bundle of them?
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -161,6 +165,7 @@ impl Graph {
         graph.merge_by_name(rules);
         if rules.labels {
             graph.merge_hierarchy();
+            graph.merge_bus_members(rules);
         }
         graph
     }
@@ -414,6 +419,28 @@ impl Graph {
     fn merge_by_name(&mut self, rules: MergeRules) {
         let mut per_sheet: BTreeMap<(usize, String), Vec<usize>> = BTreeMap::new();
         let mut project: BTreeMap<String, Vec<usize>> = BTreeMap::new();
+        for named in self.naming_items(rules) {
+            if named.everywhere {
+                project
+                    .entry(named.name.clone())
+                    .or_default()
+                    .push(named.node);
+            }
+            per_sheet
+                .entry((named.sheet, named.name))
+                .or_default()
+                .push(named.node);
+        }
+        let groups: Vec<Vec<usize>> = per_sheet
+            .into_values()
+            .chain(project.into_values())
+            .collect();
+        self.union_each(&groups);
+    }
+
+    /// Every item that names a net, with the name it drives.
+    fn naming_items(&self, rules: MergeRules) -> Vec<Named> {
+        let mut found = Vec::new();
         for (index, node) in self.nodes.iter().enumerate() {
             let (name, everywhere) = match &node.kind {
                 NodeKind::Label { kind, text } if rules.labels => match kind {
@@ -426,15 +453,65 @@ impl Graph {
                 }
                 _ => continue,
             };
-            if everywhere {
-                project.entry(name.clone()).or_default().push(index);
-            }
-            per_sheet.entry((node.sheet, name)).or_default().push(index);
+            found.push(Named {
+                node: index,
+                sheet: node.sheet,
+                name,
+                everywhere,
+            });
         }
-        let groups: Vec<Vec<usize>> = per_sheet
-            .into_values()
-            .chain(project.into_values())
-            .collect();
+        found
+    }
+
+    /// Rule 6: a bundle carries its members wherever it reaches.
+    ///
+    /// A bundle names one net per member. A net of that name, on any sheet the
+    /// bundle reaches, is that member, and no wire between the two is needed:
+    /// `CONNECTION_GRAPH::processSubGraphs` links a bundle to every same-sheet
+    /// net whose name is one of its members, and `propagateToNeighbors` then
+    /// carries the member along the bundle through the hierarchy.
+    fn merge_bus_members(&mut self, rules: MergeRules) {
+        let mut carried: BTreeMap<usize, BTreeSet<String>> = BTreeMap::new();
+        let mut reaches: BTreeMap<usize, BTreeSet<usize>> = BTreeMap::new();
+        for index in self.nodes_where(|node| node.carrier == Carrier::Bus) {
+            let (sheet, name) = (self.nodes[index].sheet, name_of(&self.nodes[index]));
+            let class = self.class_of(index);
+            reaches.entry(class).or_default().insert(sheet);
+            if let Some(name) = name {
+                carried
+                    .entry(class)
+                    .or_default()
+                    .extend(bus_members(&name).iter().map(|member| net_name(member)));
+            }
+        }
+
+        let mut by_place: BTreeMap<(usize, String), Vec<usize>> = BTreeMap::new();
+        for named in self.naming_items(rules) {
+            if self.nodes[named.node].carrier == Carrier::Net {
+                by_place
+                    .entry((named.sheet, named.name))
+                    .or_default()
+                    .push(named.node);
+            }
+        }
+
+        let mut groups = Vec::new();
+        for (class, members) in carried {
+            let Some(sheets) = reaches.get(&class) else {
+                continue;
+            };
+            for member in members {
+                let mut group = Vec::new();
+                for &sheet in sheets {
+                    if let Some(nodes) = by_place.get(&(sheet, member.clone())) {
+                        group.extend(nodes);
+                    }
+                }
+                if group.len() > 1 {
+                    groups.push(group);
+                }
+            }
+        }
         self.union_each(&groups);
     }
 
@@ -571,6 +648,135 @@ fn on_segment(from: Point, to: Point, point: Point) -> bool {
     along >= 0 && along <= dx * dx + dy * dy
 }
 
+/// One item that names a net, as the name merges need it.
+struct Named {
+    node: usize,
+    sheet: usize,
+    name: String,
+    /// Does the name carry across the project, or only across its sheet?
+    everywhere: bool,
+}
+
+/// The name an item carries, if it carries one.
+fn name_of(node: &Node) -> Option<String> {
+    match &node.kind {
+        NodeKind::Label { text, .. } => Some(text.clone()),
+        NodeKind::SheetPin { name, .. } => Some(name.clone()),
+        _ => None,
+    }
+}
+
+/// The member net names a bundle name stands for.
+///
+/// A vector, `AN[0..7]`, stands for `AN0` to `AN7`. A group, `I2C{SCL, SDA}`,
+/// stands for `I2C.SCL` and `I2C.SDA`: the group's name, a stop, then the
+/// member's. A group with no name of its own, `{A B}`, stands for its members
+/// alone, and a member may itself be a vector, so `ANALOG{A[0..5]}` stands for
+/// `ANALOG.A0` to `ANALOG.A5` (`NET_SETTINGS::ParseBusVector` and
+/// `ParseBusGroup`, and `SCH_CONNECTION::ConfigureFromLabel` for the stop).
+fn bus_members(name: &str) -> Vec<String> {
+    let plain = unescape_net_name(name);
+    // A group is read first: its own member list may hold a vector, and a
+    // vector read out of `ANALOG{A[0..5]}` would take the brace for a prefix.
+    let Some((prefix, members)) = group_parts(&plain) else {
+        return vector_members(&plain).unwrap_or_default();
+    };
+    let mut found = Vec::new();
+    for member in members {
+        let expanded = bus_members(&member);
+        let names = if expanded.is_empty() {
+            vec![member]
+        } else {
+            expanded
+        };
+        for name in names {
+            found.push(if prefix.is_empty() {
+                name
+            } else {
+                format!("{prefix}.{name}")
+            });
+        }
+    }
+    found
+}
+
+/// The members of a vector, such as `AN[0..7]`.
+///
+/// The range may be written either way round, and a suffix of `+`, `-`, `P`
+/// or `N` follows the index.
+fn vector_members(plain: &str) -> Option<Vec<String>> {
+    let open = plain.find('[')?;
+    let rest = &plain[open + 1..];
+    let close = rest.find(']')?;
+    let suffix = &rest[close + 1..];
+    if !suffix
+        .chars()
+        .all(|character| matches!(character, '+' | '-' | 'P' | 'N' | '}'))
+    {
+        return None;
+    }
+    let (first, last) = rest[..close].split_once("..")?;
+    let (first, last) = (first.parse::<i64>().ok()?, last.parse::<i64>().ok()?);
+    if first == last {
+        return None;
+    }
+    let prefix = &plain[..open];
+    Some(
+        (first.min(last)..=first.max(last))
+            .map(|index| format!("{prefix}{index}{suffix}"))
+            .collect(),
+    )
+}
+
+/// The name and the member list of a group, such as `USB{DP DM}`.
+///
+/// A space or a comma separates members. A brace that follows `$`, `~`, `^`
+/// or `_` draws formatting, such as the overbar of `~{RESET}`, so it nests
+/// inside a member name rather than ending the list.
+fn group_parts(plain: &str) -> Option<(String, Vec<String>)> {
+    let characters: Vec<char> = plain.chars().collect();
+    let open = characters.iter().position(|&character| character == '{')?;
+    if open > 0 && matches!(characters[open - 1], '$' | '~' | '^' | '_') {
+        return None;
+    }
+    let prefix: String = characters[..open].iter().collect();
+    if prefix.contains(' ') || prefix.contains('[') || prefix.contains(']') {
+        return None;
+    }
+
+    let mut members = Vec::new();
+    let mut member = String::new();
+    let mut depth = 0_u32;
+    for (index, &character) in characters.iter().enumerate().skip(open + 1) {
+        match character {
+            '{' => {
+                if index == 0 || !matches!(characters[index - 1], '$' | '~' | '^' | '_') {
+                    return None;
+                }
+                depth += 1;
+                member.push('{');
+            }
+            '}' if depth > 0 => {
+                depth -= 1;
+                member.push('}');
+            }
+            '}' => {
+                if !member.is_empty() {
+                    members.push(member);
+                }
+                return Some((prefix, members));
+            }
+            ' ' | ',' if depth == 0 => {
+                if !member.is_empty() {
+                    members.push(std::mem::take(&mut member));
+                }
+            }
+            other => member.push(other),
+        }
+    }
+    None
+}
+
 /// The symbol as it is drawn on one placement.
 ///
 /// The unit a symbol draws is a property of the sheet path, like the
@@ -702,7 +908,7 @@ fn entry_end(doc: &Doc, node: NodeId, at: Point) -> Point {
 
 #[cfg(test)]
 mod tests {
-    use super::{Carrier, carrier_of_name, on_segment};
+    use super::{Carrier, bus_members, carrier_of_name, on_segment};
     use crate::geometry::Point;
 
     #[test]
@@ -732,5 +938,28 @@ mod tests {
         // formatting. Neither makes a bundle.
         assert_eq!(carrier_of_name("VPP{slash}MCLR"), Carrier::Net);
         assert_eq!(carrier_of_name("~{RESET}"), Carrier::Net);
+    }
+
+    #[test]
+    fn a_bundle_name_expands_to_its_members() {
+        assert_eq!(bus_members("AN[0..2]"), ["AN0", "AN1", "AN2"]);
+        // The range may be written either way round.
+        assert_eq!(bus_members("AN[2..0]"), ["AN0", "AN1", "AN2"]);
+        // A suffix follows the index.
+        assert_eq!(bus_members("D[0..1]P"), ["D0P", "D1P"]);
+        // A group's name, a stop, then the member's.
+        assert_eq!(bus_members("I2C{SCL, SDA}"), ["I2C.SCL", "I2C.SDA"]);
+        assert_eq!(bus_members("USB{DP DM}"), ["USB.DP", "USB.DM"]);
+        // A group with no name of its own carries its members alone.
+        assert_eq!(bus_members("{A B}"), ["A", "B"]);
+        // A member may be a vector, and an overbar stays inside a member.
+        assert_eq!(
+            bus_members("ANALOG{A[0..2]}"),
+            ["ANALOG.A0", "ANALOG.A1", "ANALOG.A2"]
+        );
+        assert_eq!(bus_members("SWD{~{RESET}, IO}"), ["SWD.~{RESET}", "SWD.IO"]);
+        // A plain name carries no members.
+        assert!(bus_members("GND").is_empty());
+        assert!(bus_members("~{RESET}").is_empty());
     }
 }
