@@ -52,16 +52,7 @@ struct FileRecord {
 /// Returns a [`Failure`] when the project does not read, or when `--sheet`
 /// names a path the tree does not hold.
 pub fn info(global: &Global, reporter: &Reporter) -> Result<Report, Failure> {
-    let directory = match &global.project {
-        Some(named) => named.clone(),
-        None => std::env::current_dir().map_err(|error| {
-            Failure::new(
-                ExitCode::File,
-                format!("cannot read the working directory: {error}"),
-            )
-        })?,
-    };
-    let loaded = Loaded::read(&directory)?;
+    let loaded = Loaded::for_command(global)?;
 
     let wanted = chosen_placements(&loaded, global.sheet.as_deref())?;
     let sheets = sheet_records(&loaded, &wanted);

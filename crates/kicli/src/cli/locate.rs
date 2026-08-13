@@ -5,6 +5,7 @@
 //! project file still reads when it holds exactly one schematic, because a
 //! single loose sheet is a common way to start.
 
+use super::args::Global;
 use super::exit::ExitCode;
 use super::output::Failure;
 use crate::model::{Config, Hierarchy, Project, read_project};
@@ -34,6 +35,28 @@ pub struct Loaded {
 }
 
 impl Loaded {
+    /// Read the project a command was pointed at.
+    ///
+    /// `--project` names the directory. Without it, the working directory is
+    /// the project, which is what a person standing in one expects.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`Failure`] when the directory holds no project kicli can
+    /// name, or when a file it does name will not read.
+    pub fn for_command(global: &Global) -> Result<Self, Failure> {
+        let directory = match &global.project {
+            Some(named) => named.clone(),
+            None => std::env::current_dir().map_err(|error| {
+                Failure::new(
+                    ExitCode::File,
+                    format!("cannot read the working directory: {error}"),
+                )
+            })?,
+        };
+        Self::read(&directory)
+    }
+
     /// Read the project in a directory.
     ///
     /// # Errors
@@ -109,19 +132,21 @@ fn roots(directory: &Path) -> Result<(Option<PathBuf>, PathBuf), Failure> {
                 ),
             ))
         }
-        0 if schematics.len() == 1 => Ok((None, schematics[0].clone())),
         0 if schematics.is_empty() => Err(Failure::new(
             ExitCode::Operation,
             format!("{} holds no KiCad project.", directory.display()),
         )),
-        0 => Err(Failure::new(
-            ExitCode::Operation,
-            format!(
-                "{} holds {} schematics and no project file, so kicli cannot tell which is the root.",
-                directory.display(),
-                schematics.len()
-            ),
-        )),
+        0 => match root_without_a_project_file(directory, &schematics) {
+            Some(root) => Ok((None, root)),
+            None => Err(Failure::new(
+                ExitCode::Operation,
+                format!(
+                    "{} holds {} schematics and no project file, so kicli cannot tell which is the root.",
+                    directory.display(),
+                    schematics.len()
+                ),
+            )),
+        },
         found => Err(Failure::new(
             ExitCode::Operation,
             format!(
@@ -130,6 +155,23 @@ fn roots(directory: &Path) -> Result<(Option<PathBuf>, PathBuf), Failure> {
             ),
         )),
     }
+}
+
+/// The root sheet of a directory that holds no project file.
+///
+/// One schematic is the root. Several are a choice, and the only convention
+/// that settles it is KiCad's own: a project directory is named after its
+/// project, so `channel/channel.kicad_sch` is the root and its siblings are its
+/// children. Without that match kicli asks rather than guesses.
+fn root_without_a_project_file(directory: &Path, schematics: &[PathBuf]) -> Option<PathBuf> {
+    if let [only] = schematics {
+        return Some(only.clone());
+    }
+    let named = directory.file_name()?;
+    schematics
+        .iter()
+        .find(|path| path.file_stem() == Some(named))
+        .cloned()
 }
 
 /// Every file of a directory with one extension, sorted by name.

@@ -11,14 +11,37 @@ const NO_KICAD_CLI: &str = "/nonexistent/kicad-cli";
 
 /// Run the binary against one of this crate's fixture projects.
 fn run(project: &str, args: &[&str]) -> Output {
+    run_with_tool(project, args, Path::new(NO_KICAD_CLI))
+}
+
+/// Run the binary with discovery pointed at a chosen binary.
+fn run_with_tool(project: &str, args: &[&str], tool: &Path) -> Output {
     let directory = fixture(project);
     Command::new(env!("CARGO_BIN_EXE_kicli"))
         .args(args)
         .arg("--project")
         .arg(&directory)
-        .env("KICLI_KICAD_CLI", NO_KICAD_CLI)
+        .env("KICLI_KICAD_CLI", tool)
         .output()
         .expect("the binary runs")
+}
+
+/// A stand-in for `kicad-cli` that reports one version and does nothing else.
+///
+/// The health check asks the binary its version, and a real KiCad install is
+/// neither present on every machine nor quick on a cold one. A stand-in keeps
+/// the check hermetic while the discovery and version paths still run.
+#[cfg(unix)]
+fn stand_in(version: &str) -> PathBuf {
+    use std::os::unix::fs::PermissionsExt;
+
+    let directory = Path::new(env!("CARGO_TARGET_TMPDIR")).join(format!("kicad-cli-{version}"));
+    std::fs::create_dir_all(&directory).expect("the directory is made");
+    let program = directory.join("kicad-cli");
+    std::fs::write(&program, format!("#!/bin/sh\necho {version}\n")).expect("the file is written");
+    std::fs::set_permissions(&program, std::fs::Permissions::from_mode(0o755))
+        .expect("the file is made runnable");
+    program
 }
 
 /// One of this crate's fixture directories.
@@ -160,4 +183,212 @@ fn a_directory_with_no_project_is_an_operation_error() {
     let run = run("sch", &["project", "info", "--quiet"]);
     assert_eq!(code(&run), 1);
     assert!(stdout(&run).is_empty());
+}
+
+#[cfg(unix)]
+#[test]
+fn project_check_finds_each_fault() {
+    let tool = stand_in("10.0.5");
+    let text = run_with_tool("project/broken", &["project", "check", "--quiet"], &tool);
+    assert_eq!(code(&text), 0, "findings are data, not failure");
+
+    let machine = run_with_tool(
+        "project/broken",
+        &["project", "check", "--quiet", "--output", "json"],
+        &tool,
+    );
+    assert_eq!(code(&machine), 0);
+    let reported = json(&machine);
+    let findings = reported["findings"].as_array().expect("findings is a list");
+
+    // The three planted faults, each in its own file and each a different kind.
+    let planted = [
+        ("sheet-file-missing", "broken.kicad_sch"),
+        ("version-ceiling", "future.kicad_sch"),
+        ("refuse-to-write", "commented.kicad_sch"),
+    ];
+    for (kind, file) in planted {
+        let found = findings
+            .iter()
+            .find(|finding| finding["kind"] == kind)
+            .unwrap_or_else(|| panic!("{kind} is reported: {reported}"));
+        assert_eq!(found["file"], file, "{kind} names its file");
+        assert!(
+            !found["message"]
+                .as_str()
+                .expect("the message is text")
+                .is_empty(),
+            "{kind} says what is wrong"
+        );
+    }
+
+    let kinds: Vec<&str> = findings
+        .iter()
+        .map(|finding| finding["kind"].as_str().expect("a kind"))
+        .collect();
+    assert_eq!(
+        kinds.len(),
+        3,
+        "no fault beyond the three planted: {kinds:?}"
+    );
+
+    // The text form carries the same findings.
+    let printed = stdout(&text);
+    for (kind, file) in planted {
+        assert!(printed.contains(kind), "the text form names {kind}");
+        assert!(printed.contains(file), "the text form names {file}");
+    }
+    assert_eq!(printed, golden("project_check_broken.golden"));
+}
+
+#[cfg(unix)]
+#[test]
+fn project_check_passes_a_healthy_project() {
+    let tool = stand_in("10.0.5");
+    let text = run_with_tool("project/healthy", &["project", "check", "--quiet"], &tool);
+    assert_eq!(code(&text), 0, "{}", stderr(&text));
+    assert_eq!(stdout(&text), golden("project_check_healthy.golden"));
+
+    let reported = json(&run_with_tool(
+        "project/healthy",
+        &["project", "check", "--quiet", "--output", "json"],
+        &tool,
+    ));
+    assert_eq!(
+        reported["findings"].as_array().expect("a list").len(),
+        0,
+        "a healthy project has nothing to report: {reported}"
+    );
+    assert_eq!(reported["checked"]["files"], 2);
+    assert_eq!(reported["checked"]["sheets"], 2);
+}
+
+#[cfg(unix)]
+#[test]
+fn project_check_reports_a_sheet_that_names_a_file_above_it() {
+    let tool = stand_in("10.0.5");
+    let reported = json(&run_with_tool(
+        "project/cycle",
+        &["project", "check", "--quiet", "--output", "json"],
+        &tool,
+    ));
+    let kinds: Vec<&str> = reported["findings"]
+        .as_array()
+        .expect("a list")
+        .iter()
+        .map(|finding| finding["kind"].as_str().expect("a kind"))
+        .collect();
+    assert!(kinds.contains(&"sheet-cycle"), "{reported}");
+}
+
+#[test]
+fn project_check_names_a_missing_kicad_cli() {
+    let reported = json(&run(
+        "project/healthy",
+        &["project", "check", "--quiet", "--output", "json"],
+    ));
+    let tool: Vec<&serde_json::Value> = reported["findings"]
+        .as_array()
+        .expect("a list")
+        .iter()
+        .filter(|finding| finding["kind"] == "kicad-cli")
+        .collect();
+    assert_eq!(tool.len(), 1, "{reported}");
+    assert!(
+        tool[0]["message"]
+            .as_str()
+            .expect("the message is text")
+            .contains("KiCad 10"),
+        "the finding carries an install hint: {}",
+        tool[0]["message"]
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn project_check_refuses_a_binary_of_the_wrong_version() {
+    let tool = stand_in("9.0.1");
+    let reported = json(&run_with_tool(
+        "project/healthy",
+        &["project", "check", "--quiet", "--output", "json"],
+        &tool,
+    ));
+    let named: Vec<&serde_json::Value> = reported["findings"]
+        .as_array()
+        .expect("a list")
+        .iter()
+        .filter(|finding| finding["kind"] == "kicad-cli")
+        .collect();
+    assert_eq!(named.len(), 1, "{reported}");
+    assert!(
+        named[0]["message"]
+            .as_str()
+            .expect("the message is text")
+            .contains("9.0.1"),
+        "the finding names the version it found"
+    );
+}
+
+#[test]
+fn project_check_names_the_checks_it_does_not_make() {
+    let run = run("project/healthy", &["project", "check", "--quiet"]);
+    let printed = stdout(&run);
+    assert!(
+        printed.contains("not covered"),
+        "the check says what it leaves out: {printed}"
+    );
+    assert!(
+        printed.contains("library"),
+        "library resolution is named as not covered: {printed}"
+    );
+}
+
+#[test]
+fn project_check_reads_the_whole_project() {
+    let run = run(
+        "project/healthy",
+        &["project", "check", "--quiet", "--sheet", "/anything"],
+    );
+    assert_eq!(code(&run), 2, "a health check is not restricted to a sheet");
+    assert!(stdout(&run).is_empty());
+    assert!(
+        stderr(&run).contains("--sheet"),
+        "the error names the flag: {}",
+        stderr(&run)
+    );
+}
+
+/// The warming step prints before the health check blocks on `kicad-cli`.
+///
+/// The first KiCad run on a machine builds the font cache and can take over two
+/// minutes. This one uses the real binary, so it is skipped unless asked for.
+#[test]
+fn project_check_announces_warming() {
+    if std::env::var("KICLI_TEST_KICAD_CLI").is_err() {
+        eprintln!("skipped: set KICLI_TEST_KICAD_CLI=1 to run this against a real kicad-cli");
+        return;
+    }
+
+    let found = which_kicad_cli().expect("kicad-cli is on PATH");
+    let run = run_with_tool("project/healthy", &["project", "check"], &found);
+    assert_eq!(code(&run), 0, "{}", stderr(&run));
+
+    let said = stderr(&run);
+    assert!(
+        said.contains("font cache") && said.contains("120"),
+        "the run says why it may be slow: {said}"
+    );
+    assert!(
+        stdout(&run).contains("kicad-cli  10."),
+        "the report carries the version it found: {}",
+        stdout(&run)
+    );
+}
+
+/// The `kicad-cli` on `PATH`, when there is one.
+fn which_kicad_cli() -> Option<PathBuf> {
+    let path = std::env::var_os("PATH")?;
+    std::env::split_paths(&path)
+        .map(|entry| entry.join("kicad-cli"))
+        .find(|candidate| candidate.is_file())
 }

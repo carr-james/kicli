@@ -6,6 +6,7 @@
 //! depends on the other modules. No other module depends on it.
 
 mod args;
+mod check;
 mod exit;
 mod locate;
 mod output;
@@ -71,10 +72,7 @@ fn dispatch(parsed: &Cli, reporter: &Reporter) -> Result<Report, Failure> {
         } => project::info(&parsed.global, reporter),
         Command::Project {
             verb: ProjectVerb::Check,
-        } => Err(Failure::new(
-            ExitCode::Operation,
-            "project check is not available in this build.".to_owned(),
-        )),
+        } => check::check(&parsed.global, reporter),
     }
 }
 
