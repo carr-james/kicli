@@ -30,11 +30,13 @@ No `#[allow(...)]` without an adjacent comment justifying it. No `unwrap()` or
 
 ## Structure (SOLID, translated)
 
-- **Single responsibility** holds as-is: one module = one concern. The crate
-  splits along the spec's seams: `sexpr` (tokens/tree/prettify), `model`
-  (typed schematic objects), `geometry`, `connectivity`, `lint`, `render`,
-  `libraries`, `pcb`, `cli`. `cli` depends on everything; nothing depends on
-  `cli`.
+- **Single responsibility** holds as-is: one module = one concern. The
+  workspace is three crates: `kicli-sexpr` (tokens/tree/prettify — minimal
+  dependencies, no knowledge of schematics), `kicli` (modules: `model`,
+  `geometry`, `connectivity`, `lint`, `render`, `libraries`, `pcb`, `cli`),
+  and `xtask`. `cli` depends on everything; nothing depends on `cli`;
+  `kicli-sexpr` depends on nothing of ours. Crate boundaries enforce the
+  dependency direction — do not merge them for convenience.
 - **Interfaces → traits.** Depend on traits or generics at seams that need
   substitution (e.g. the process-runner behind kicad-cli invocation, so tests
   can fake it). Do NOT introduce a trait with a single implementation and no
