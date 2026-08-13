@@ -16,7 +16,8 @@ use kicli_sexpr::{Doc, NodeId, SexprError, fmt_iu, quote};
 use crate::geometry::{Angle, Point};
 use crate::model::items::{Field, Item, ReadError, Schematic, Uuid};
 use crate::model::mutate::{Mutation, MutationError, Target, commit, state_before};
-use crate::model::version::PropertyOrder;
+use crate::model::version::{FormatVersion, PropertyOrder};
+use crate::model::write::format_version;
 use crate::view::snapshot::SnapshotError;
 
 /// The field whose truth lives in the instance data, not in the property.
@@ -214,6 +215,47 @@ pub fn justify(
         set_justification(doc, located.property, justification)?;
         clear_autoplace(doc, located.owner);
         Ok(())
+    })
+}
+
+/// Stop drawing a field.
+///
+/// The `hide` token moved between format stamps. This command writes the form
+/// the file itself uses, so the field reads back as hidden in the editor that
+/// wrote the file.
+///
+/// # Errors
+///
+/// Returns [`FieldError`] when the field is not there, or when the write does
+/// not happen.
+pub fn hide(
+    doc: &mut Doc,
+    target: &Target<'_>,
+    address: &FieldAddress,
+    taken: &str,
+) -> Result<Mutation, FieldError> {
+    change(doc, target, address, taken, |doc, located| {
+        set_hidden(doc, located.property, true)
+    })
+}
+
+/// Draw a field again.
+///
+/// KiCad writes no `hide` token for a visible field, so the token goes away
+/// rather than becoming `no`.
+///
+/// # Errors
+///
+/// Returns [`FieldError`] when the field is not there, or when the write does
+/// not happen.
+pub fn show(
+    doc: &mut Doc,
+    target: &Target<'_>,
+    address: &FieldAddress,
+    taken: &str,
+) -> Result<Mutation, FieldError> {
+    change(doc, target, address, taken, |doc, located| {
+        set_hidden(doc, located.property, false)
     })
 }
 
@@ -500,6 +542,40 @@ fn set_justification(
 
     let fragment = doc.add_fragment(&format!("(justify {})", tokens.join(" ")))?;
     replace_child(doc, effects, "justify", current, fragment);
+    Ok(())
+}
+
+/// Hide or show a field, in the form the file's stamp uses.
+///
+/// The token sits inside `effects` below stamp 20251028 and beside `show_name`
+/// above it. Writing it in the other place leaves the field visible, which is a
+/// corruption no reader reports.
+///
+/// A visible field carries no token at all: KiCad's demo files hold 232009
+/// `hide` lists and every one of them says `yes`.
+fn set_hidden(doc: &mut Doc, property: NodeId, hidden: bool) -> Result<(), FieldError> {
+    let in_effects = format_version(doc).is_some_and(FormatVersion::hide_lives_in_effects);
+
+    if !hidden {
+        let parent = if in_effects {
+            child_of(doc, property, "effects")
+        } else {
+            Some(property)
+        };
+        if let Some(flag) = parent.and_then(|list| child_of(doc, list, "hide")) {
+            doc.remove(flag);
+        }
+        return Ok(());
+    }
+
+    let parent = if in_effects {
+        effects_of(doc, property)?
+    } else {
+        property
+    };
+    let current = child_of(doc, parent, "hide");
+    let fragment = doc.add_fragment("(hide yes)")?;
+    replace_child(doc, parent, "hide", current, fragment);
     Ok(())
 }
 
