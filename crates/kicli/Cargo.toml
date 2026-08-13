@@ -21,5 +21,14 @@ path = "src/main.rs"
 # allowlist and a reason in the commit message.
 [dependencies]
 kicli-sexpr = { path = "../kicli-sexpr", version = "0.0.0" }
+# Project files are JSON. serde_json is also what the JSON output form will use.
+# preserve_order keeps object keys in file order, which is what makes a
+# round-trip comparison meaningful.
+serde_json = { version = "1", features = ["preserve_order"] }
+thiserror = "2"
 
 [dev-dependencies]
+
+[features]
+# Tests that read KiCad's GPL demo files from target/.
+corpus = []
