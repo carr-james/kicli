@@ -1,0 +1,5 @@
+# "Functions small enough to read without scrolling" (ENGINEERING.md).
+too-many-lines-threshold = 60
+
+# Names that need no backticks in rustdoc. ".." keeps clippy's default list.
+doc-valid-idents = ["..", "KiCad", "KiCad's", "Eeschema", "kicad-cli", "nng"]

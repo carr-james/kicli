@@ -1,0 +1,50 @@
+//! kicli gives LLM agents eyes and hands in KiCad 10.0 projects.
+//!
+//! The crate reads and mutates KiCad schematics at full human parity. It scores
+//! them with deterministic geometry rules. It never calls a model or a network
+//! service. See `spec/SPEC.md` for the specification and `CONSTITUTION.md` for
+//! the binding principles.
+//!
+//! # Module structure
+//!
+//! The modules split along the seams in `ENGINEERING.md`. Each module owns one
+//! concern. [`cli`] depends on the other modules. No module depends on [`cli`].
+//!
+//! # Status
+//!
+//! Milestone M1 is in progress. All modules are empty. See `tasks/M1.md`.
+
+// Crate lints, per ENGINEERING.md "Machine-enforced gates".
+#![deny(missing_docs)]
+#![deny(unsafe_code)]
+#![warn(clippy::pedantic)]
+
+pub mod sexpr;
+
+pub mod model;
+
+pub mod geometry;
+
+pub mod connectivity;
+
+pub mod lint;
+
+pub mod render;
+
+pub mod libraries;
+
+pub mod pcb;
+
+pub mod cli;
+
+/// The version of this build of kicli.
+///
+/// # Examples
+///
+/// ```
+/// assert!(!kicli::version().is_empty());
+/// ```
+#[must_use]
+pub fn version() -> &'static str {
+    env!("CARGO_PKG_VERSION")
+}

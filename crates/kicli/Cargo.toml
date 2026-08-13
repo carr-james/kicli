@@ -1,0 +1,24 @@
+[package]
+name = "kicli"
+description = "Eyes and hands in KiCad 10 projects for LLM agents."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[lib]
+name = "kicli"
+path = "src/lib.rs"
+
+[[bin]]
+name = "kicli"
+path = "src/main.rs"
+
+# The dependency budget is small on purpose (ENGINEERING.md "Dependencies").
+# Every addition needs a licence on the deny.toml allowlist and a reason in the
+# commit message.
+[dependencies]
+
+[dev-dependencies]

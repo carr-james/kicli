@@ -1,0 +1,11 @@
+[workspace]
+members = ["crates/kicli", "xtask"]
+resolver = "3"
+
+[workspace.package]
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/carr-james/kicli"
+authors = ["James Carr"]

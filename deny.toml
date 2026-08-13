@@ -1,0 +1,49 @@
+# cargo-deny configuration.
+#
+# Constitution §9 restricts kicli to MIT/Apache/BSD-compatible dependencies.
+# MPL-2.0 and GPL are excluded. The allowlist below is the enforcement.
+# See DECISIONS-R6.md Q8 and spec/SPEC.md §2.
+
+[graph]
+all-features = true
+# Intent: check dev-dependencies too, because proptest, assert_cmd and the fuzz
+# harness will be dev-dependencies.
+#
+# OBSERVED, cargo-deny 0.20.2: this key changes nothing. An MPL-2.0
+# dev-dependency passes `cargo deny check licenses` with the key set either way,
+# while the same crate as a normal dependency is correctly rejected. So the
+# licence gate covers the shipped artifact only. Re-verify at T22, when the
+# first real dev-dependency lands. See tasks/M1.md T1.
+exclude-dev = false
+
+[advisories]
+version = 2
+yanked = "deny"
+ignore = []
+
+[licenses]
+version = 2
+# Add a licence here only with a reason in the commit message.
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-3.0",
+    "Zlib",
+]
+confidence-threshold = 0.93
+# The allowlist states policy, not inventory. Entries no current dependency
+# uses are expected, so do not warn about them.
+unused-allowed-license = "allow"
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
