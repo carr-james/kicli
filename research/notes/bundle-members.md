@@ -176,3 +176,45 @@ net, the bundles it is a member of; where a net has two or more, union the
 corresponding members of those bundles. The member-matching half already exists
 in the extractor for rule 6; what is missing is the bus-parent bookkeeping and
 the linking pass.
+
+## Probe six, and what the trigger still needs
+
+**2026-08-14.** The source reading above gave a shape to test: one net that
+answers to a member name of two bundles. The obvious drawing is a net carrying
+two member labels, so that its subgraph has two drivers and `test_name`
+(`connection_graph.cpp:2189`, `member->Name( true )`, the full member name)
+matches through the `m_multiple_drivers` branch at `:2205`.
+
+Drawn and measured: a wire with both `UART.RX` and `UART_TRG.RX` on it, and the
+other member of each group on its own wire.
+
+```
+/UART.RX        R1.2
+/UART.TX        R2.2
+/UART_TRG.TX    R3.2
+```
+
+`UART.TX` and `UART_TRG.TX` stayed apart, so **that is not the trigger either**,
+and `/UART_TRG.RX` did not even appear as a name: the shared net took one name
+and dropped the other.
+
+The reason is now obvious in hindsight and worth writing down, because it is the
+thing all six probes have missed. `m_bus_parents` is populated at `:2251` only
+when a **bus subgraph** exists whose member matches the net. A drawing with no
+bus wire has no bus subgraph, so a net cannot have a bus parent, let alone two,
+however many member labels it carries.
+
+**The next probe, which is now fully specified:** two bus wires on one sheet,
+one labelled `UART{RX TX}` and the other `UART_TRG{RX TX}`, each with its own
+member nets drawn off bus entries, **and** one net carrying both `UART.RX` and
+`UART_TRG.RX`. That gives two bus subgraphs, and one net that is a child of
+both. If `UART.TX` and `UART_TRG.TX` then join, the rule is confirmed and the
+implementation below is what closes it.
+
+**An implementation was written against the source and then reverted**, because
+it never fired on the corpus and no test could show it correct. Writing code for
+a rule that has not been reproduced is the thing this project does not do. The
+shape it took, for whoever picks this up: track for each net the bundle classes
+it is a member of; where there are two or more, take each pair and union their
+corresponding members, matching by index between two vectors and by local name
+between two groups, per `matchBusMember` at `:3324`.
