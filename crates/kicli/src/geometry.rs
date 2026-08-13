@@ -5,8 +5,10 @@
 //! The module knows nothing about the command surface, files on disk, or
 //! `kicad-cli`.
 
+pub mod pins;
 pub mod transform;
 
+pub use pins::{ResolvedPin, resolve_pins};
 pub use transform::Transform;
 
 use std::fmt;
