@@ -1,4 +1,4 @@
-# "Functions small enough to read without scrolling" (ENGINEERING.md).
+# Keep functions short enough to read without scrolling.
 too-many-lines-threshold = 60
 
 # Names that need no backticks in rustdoc. ".." keeps clippy's default list.

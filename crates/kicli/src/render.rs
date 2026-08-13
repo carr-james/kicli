@@ -1,5 +1,6 @@
 //! Region cropping, annotation overlay, and rasterisation.
 //!
-//! This module crops a `kicad-cli` SVG by rewriting its `viewBox`. It appends
-//! one annotation group. It rasterises to PNG. Renders are passive output. No
-//! render ever feeds the score. See `spec/SPEC.md` §12.
+//! This module crops a `kicad-cli` SVG by rewriting its `viewBox`. The SVG's
+//! user units are millimetres and its origin is the page's top-left corner, so
+//! a region in schematic coordinates needs no transform. The module appends one
+//! annotation group, then rasterises to PNG. No render ever feeds the score.

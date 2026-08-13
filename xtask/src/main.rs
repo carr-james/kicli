@@ -1,20 +1,21 @@
 //! Workspace automation for kicli.
 //!
-//! Run a task with `cargo xtask <task>`. The alias is in `.cargo/config.toml`.
+//! Run a task with `cargo xtask <task>`. The alias lives in
+//! `.cargo/config.toml`.
 //!
-//! `check` runs every machine-enforced gate in `ENGINEERING.md`. All gates must
-//! pass before a task is complete. The gates run in order. A failing gate does
-//! not stop the run, so one invocation reports every problem.
+//! `check` runs every quality gate: formatting, lints, tests, documentation,
+//! and dependency licences. All gates must pass before a task is complete. A
+//! failing gate does not stop the run, so one invocation reports every problem.
 
 #![deny(unsafe_code)]
 #![warn(clippy::pedantic)]
 
 use std::process::{Command, ExitCode};
 
-/// Exit code 2 means a usage error. See `spec/SPEC.md` §6.1.
+/// Exit code 2 reports a usage error: xtask did not understand the task name.
 const EXIT_USAGE: u8 = 2;
 
-/// One machine-enforced gate from `ENGINEERING.md`.
+/// One quality gate.
 struct Gate {
     /// Short name printed in the summary.
     name: &'static str,
@@ -26,7 +27,7 @@ struct Gate {
     install_hint: Option<&'static str>,
 }
 
-/// The five gates, in the order `ENGINEERING.md` lists them.
+/// The gates, in the order they run.
 const GATES: &[Gate] = &[
     Gate {
         name: "fmt",
@@ -90,7 +91,7 @@ fn usage() {
     eprintln!("usage: cargo xtask <task>");
     eprintln!();
     eprintln!("tasks:");
-    eprintln!("  check    Run every gate in ENGINEERING.md.");
+    eprintln!("  check    Run every quality gate.");
 }
 
 /// Run every gate. Report a summary. Fail if any gate failed.

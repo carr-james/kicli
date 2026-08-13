@@ -16,9 +16,9 @@ path = "src/lib.rs"
 name = "kicli"
 path = "src/main.rs"
 
-# The dependency budget is small on purpose (ENGINEERING.md "Dependencies").
-# Every addition needs a licence on the deny.toml allowlist and a reason in the
-# commit message.
+# The dependency budget is small on purpose: this tool must build from source
+# trivially for years. Every addition needs a licence on the deny.toml
+# allowlist and a reason in the commit message.
 [dependencies]
 kicli-sexpr = { path = "../kicli-sexpr", version = "0.0.0" }
 

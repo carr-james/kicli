@@ -2,24 +2,24 @@
 //!
 //! The crate reads and mutates KiCad schematics at full human parity. It scores
 //! them with deterministic geometry rules. It never calls a model or a network
-//! service. See `spec/SPEC.md` for the specification and `CONSTITUTION.md` for
-//! the binding principles.
+//! service, so a score is reproducible offline and comparable across runs.
 //!
 //! # Structure
 //!
-//! The workspace is three crates (`ENGINEERING.md` "Structure"). `kicli-sexpr`
-//! holds the s-expression layer and knows nothing about schematics. This crate
-//! holds the schematic meaning. `xtask` holds the workspace automation.
+//! The workspace is three crates. `kicli-sexpr` holds the s-expression layer
+//! and knows nothing about schematics. This crate holds the schematic meaning.
+//! `xtask` holds the workspace automation.
 //!
-//! The modules below split along the seams in `ENGINEERING.md`. Each module
-//! owns one concern. [`cli`] depends on the other modules. No module depends on
-//! [`cli`].
+//! The modules below each own one concern. [`cli`] depends on the other
+//! modules. No module depends on [`cli`].
 //!
 //! # Status
 //!
 //! The modules below are empty. The crate exposes only [`version`].
 
-// Crate lints, per ENGINEERING.md "Machine-enforced gates".
+// Undocumented public items and unsafe code are errors. This problem domain
+// never needs unsafe. Pedantic lints warn; allow one only with a reason beside
+// it.
 #![deny(missing_docs)]
 #![deny(unsafe_code)]
 #![warn(clippy::pedantic)]

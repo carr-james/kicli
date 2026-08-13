@@ -1,14 +1,14 @@
 //! The kicli command-line binary.
 //!
 //! This binary is a thin shell over the library. It parses arguments and
-//! renders results. The command surface is specified in `spec/SPEC.md` §6.
+//! renders results.
 
 #![deny(unsafe_code)]
 #![warn(clippy::pedantic)]
 
 use std::process::ExitCode;
 
-/// Exit code 2 means a usage error. See `spec/SPEC.md` §6.1.
+/// Exit code 2 reports a usage error: kicli did not understand the arguments.
 const EXIT_USAGE: u8 = 2;
 
 fn main() -> ExitCode {

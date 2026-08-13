@@ -1,8 +1,9 @@
 # cargo-deny configuration.
 #
-# Constitution §9 restricts kicli to MIT/Apache/BSD-compatible dependencies.
-# MPL-2.0 and GPL are excluded. The allowlist below is the enforcement.
-# See spec/SPEC.md §2.
+# kicli is MIT OR Apache-2.0. Every dependency must carry a licence a
+# permissive binary can redistribute. MPL-2.0 and GPL are excluded, because
+# they impose obligations this project does not accept. The allowlist below is
+# the enforcement.
 
 [graph]
 all-features = true

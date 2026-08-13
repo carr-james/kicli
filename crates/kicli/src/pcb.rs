@@ -1,5 +1,6 @@
-//! Parametric PCB operations over the KiCad IPC API.
+//! Parametric PCB operations over the KiCad inter-process API.
 //!
 //! This module drives a running KiCad through an nng socket. It creates board
-//! outlines, fiducials, and registration holes. It places footprints coarsely.
-//! Every operation runs inside one commit. See `spec/SPEC.md` §13.
+//! outlines, fiducials, and registration holes, and it places footprints
+//! coarsely. Every operation runs inside one commit, so one kicli invocation
+//! becomes one undo step for the user.
