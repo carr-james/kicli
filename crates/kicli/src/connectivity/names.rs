@@ -19,6 +19,105 @@ use super::{Net, NetPin};
 use crate::model::items::{LabelKind, SheetPath};
 use std::collections::{BTreeMap, BTreeSet};
 
+/// The net name a piece of text drives.
+///
+/// A net name may not hold a `/`, because `/` separates the sheet path from
+/// the name. KiCad writes the character as `{slash}` and drops line breaks
+/// (`EscapeString`, `CTX_NETNAME`, in `common/string_utils.cpp`). Two labels
+/// join when these forms are equal, so `A/B` and `A{slash}B` are one net,
+/// while `A-B` and `A_B` are two.
+pub(crate) fn net_name(text: &str) -> String {
+    let mut name = String::with_capacity(text.len());
+    for character in text.chars() {
+        match character {
+            '/' => name.push_str("{slash}"),
+            '\n' | '\r' => {}
+            other => name.push(other),
+        }
+    }
+    name
+}
+
+/// The character an escape word stands for, if it is one.
+///
+/// The list is `UnescapeString` in `common/string_utils.cpp`.
+fn escaped_character(word: &str) -> Option<char> {
+    match word {
+        "dblquote" => Some('"'),
+        "quote" => Some('\''),
+        "lt" => Some('<'),
+        "gt" => Some('>'),
+        "backslash" => Some('\\'),
+        "slash" => Some('/'),
+        "bar" => Some('|'),
+        "comma" => Some(','),
+        "colon" => Some(':'),
+        "space" => Some(' '),
+        "dollar" => Some('$'),
+        "tab" => Some('\t'),
+        "return" => Some('\n'),
+        "brace" => Some('{'),
+        _ => None,
+    }
+}
+
+/// The text an escaped name stands for.
+///
+/// This is the inverse of [`net_name`] over the whole escape table, and it is
+/// what KiCad reads before it decides whether a name is a bundle
+/// (`SCH_CONNECTION::IsBusLabel`, which calls `UnescapeString` first). A brace
+/// that follows `$`, `~`, `^` or `_` is text formatting, such as an overbar,
+/// so it survives unchanged.
+pub(crate) fn unescape_net_name(text: &str) -> String {
+    let characters: Vec<char> = text.chars().collect();
+    let mut plain = String::with_capacity(text.len());
+    let mut index = 0;
+    while index < characters.len() {
+        let character = characters[index];
+        if character != '{' {
+            plain.push(character);
+            index += 1;
+            continue;
+        }
+        let formatting = index > 0 && matches!(characters[index - 1], '$' | '~' | '^' | '_');
+        let (word, end) = braced_word(&characters, index);
+        match (formatting, end, escaped_character(&word)) {
+            (false, Some(_), Some(character)) => plain.push(character),
+            (_, Some(_), _) => {
+                plain.push('{');
+                plain.push_str(&unescape_net_name(&word));
+                plain.push('}');
+            }
+            (_, None, _) => {
+                plain.push('{');
+                plain.push_str(&unescape_net_name(&word));
+            }
+        }
+        index = end.unwrap_or(characters.len() - 1) + 1;
+    }
+    plain
+}
+
+/// The text between a brace and its partner, and where the partner is.
+///
+/// Braces nest, so the partner is the one that closes the first.
+fn braced_word(characters: &[char], open: usize) -> (String, Option<usize>) {
+    let mut depth = 1_u32;
+    let mut word = String::new();
+    for (offset, &character) in characters.iter().enumerate().skip(open + 1) {
+        match character {
+            '{' => depth += 1,
+            '}' => depth -= 1,
+            _ => {}
+        }
+        if depth == 0 {
+            return (word, Some(offset));
+        }
+        word.push(character);
+    }
+    (word, None)
+}
+
 /// Every net of a built graph, ordered and named.
 pub(crate) fn nets_of(graph: &mut Graph) -> Vec<Net> {
     let mut members: BTreeMap<usize, Vec<usize>> = BTreeMap::new();
@@ -76,12 +175,13 @@ struct Draft {
 
 /// The names a net's items offer, split by what offers them.
 ///
-/// A label appears twice: as its own text, which is what kicli shows, and
-/// qualified by the readable sheet path, which is how KiCad writes it.
+/// A label appears twice: as its own text, which is what kicli shows, and as
+/// the net name it drives, which is how KiCad writes it. The two differ when
+/// the text holds a character a net name may not hold.
 #[derive(Default)]
 struct Drivers {
-    global: Vec<String>,
-    power: Vec<String>,
+    global: Vec<(String, String)>,
+    power: Vec<(String, String)>,
     local: Vec<(String, String)>,
     hierarchical: Vec<(String, String)>,
     sheet_pins: Vec<(String, String)>,
@@ -103,11 +203,13 @@ fn draft(graph: &Graph, nodes: &[usize]) -> Option<Draft> {
             NodeKind::Label { kind, text } => read_label(&mut drivers, *kind, text, &sheet.human),
             NodeKind::SheetPin { name, .. } => drivers
                 .sheet_pins
-                .push((format!("{}{name}", sheet.human), name.clone())),
+                .push((format!("{}{}", sheet.human, net_name(name)), name.clone())),
             NodeKind::Pin(pin) => {
                 drivers.pin_count += 1;
                 if pin.power {
-                    drivers.power.push(pin.value.clone());
+                    drivers
+                        .power
+                        .push((net_name(&pin.value), pin.value.clone()));
                 }
                 if let Some(reference) = &pin.reference {
                     if !pin.power {
@@ -154,9 +256,9 @@ fn draft(graph: &Graph, nodes: &[usize]) -> Option<Draft> {
 
 /// File one label under the kind of name it offers.
 fn read_label(drivers: &mut Drivers, kind: LabelKind, text: &str, prefix: &str) {
-    let qualified = format!("{prefix}{text}");
+    let qualified = format!("{prefix}{}", net_name(text));
     match kind {
-        LabelKind::Global => drivers.global.push(text.to_owned()),
+        LabelKind::Global => drivers.global.push((net_name(text), text.to_owned())),
         LabelKind::Local => drivers.local.push((qualified, text.to_owned())),
         LabelKind::Hierarchical => drivers.hierarchical.push((qualified, text.to_owned())),
         // A netclass flag carries a netclass name, not a net name.
@@ -166,8 +268,8 @@ fn read_label(drivers: &mut Drivers, kind: LabelKind, text: &str, prefix: &str) 
 
 /// The name kicli shows: a power value, then a label, the widest first.
 fn display_name(drivers: &Drivers) -> Option<String> {
-    first(&drivers.power)
-        .or_else(|| first(&drivers.global))
+    first_plain(&drivers.power)
+        .or_else(|| first_plain(&drivers.global))
         .or_else(|| first_plain(&drivers.hierarchical))
         .or_else(|| first_plain(&drivers.local))
 }
@@ -178,8 +280,8 @@ fn display_name(drivers: &Drivers) -> Option<String> {
 /// a local label, a hierarchical label, a sheet pin, and last a pin. A net
 /// named after its only pin is called unconnected rather than a net.
 fn kicad_name(drivers: &Drivers) -> String {
-    if let Some(name) = first(&drivers.global)
-        .or_else(|| first(&drivers.power))
+    if let Some(name) = first_qualified(&drivers.global)
+        .or_else(|| first_qualified(&drivers.power))
         .or_else(|| first_qualified(&drivers.local))
         .or_else(|| first_qualified(&drivers.hierarchical))
         .or_else(|| first_qualified(&drivers.sheet_pins))
@@ -209,4 +311,29 @@ fn first_plain(names: &[(String, String)]) -> Option<String> {
 /// The first sheet-path-qualified name in sorted order.
 fn first_qualified(names: &[(String, String)]) -> Option<String> {
     names.iter().map(|(qualified, _)| qualified).min().cloned()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{net_name, unescape_net_name};
+
+    #[test]
+    fn a_net_name_carries_no_slash() {
+        assert_eq!(net_name("VPP/MCLR"), "VPP{slash}MCLR");
+        assert_eq!(net_name("VPP{slash}MCLR"), "VPP{slash}MCLR");
+        assert_eq!(net_name("A\nB"), "AB");
+        assert_eq!(net_name("CC-DD"), "CC-DD");
+    }
+
+    #[test]
+    fn unescaping_undoes_the_escape_words_and_nothing_else() {
+        assert_eq!(unescape_net_name("VPP{slash}MCLR"), "VPP/MCLR");
+        assert_eq!(unescape_net_name("A{colon}B{comma}C"), "A:B,C");
+        // A brace after a formatting marker draws an overbar, so it stays.
+        assert_eq!(unescape_net_name("~{RESET}"), "~{RESET}");
+        // A word that is not in the table stays as it is written.
+        assert_eq!(unescape_net_name("{SDA SCL}"), "{SDA SCL}");
+        // An unterminated brace loses nothing.
+        assert_eq!(unescape_net_name("A{B"), "A{B");
+    }
 }

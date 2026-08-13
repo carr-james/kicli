@@ -34,6 +34,7 @@
 //! All arithmetic is integer. A point is on a segment or it is not.
 
 use super::MergeRules;
+use super::names::{net_name, unescape_net_name};
 use crate::geometry::{Point, resolve_pins};
 use crate::model::hierarchy::{Hierarchy, Placement};
 use crate::model::items::{Item, LabelKind, LineKind, Refdes, SheetPath, Symbol, Uuid};
@@ -362,13 +363,16 @@ impl Graph {
     /// A netclass flag carries a netclass name and not a net name, so its text
     /// joins nothing.
     fn merge_by_name(&mut self) {
-        let mut local: BTreeMap<(usize, &str), Vec<usize>> = BTreeMap::new();
-        let mut global: BTreeMap<&str, Vec<usize>> = BTreeMap::new();
+        let mut local: BTreeMap<(usize, String), Vec<usize>> = BTreeMap::new();
+        let mut global: BTreeMap<String, Vec<usize>> = BTreeMap::new();
         for (index, node) in self.nodes.iter().enumerate() {
             if let NodeKind::Label { kind, text } = &node.kind {
                 match kind {
-                    LabelKind::Local => local.entry((node.sheet, text)).or_default().push(index),
-                    LabelKind::Global => global.entry(text).or_default().push(index),
+                    LabelKind::Local => local
+                        .entry((node.sheet, net_name(text)))
+                        .or_default()
+                        .push(index),
+                    LabelKind::Global => global.entry(net_name(text)).or_default().push(index),
                     LabelKind::Hierarchical | LabelKind::NetclassFlag => {}
                 }
             }
@@ -397,7 +401,7 @@ impl Graph {
                     continue;
                 }
                 if let NodeKind::SheetPin { name, sheet_item } = &candidate.kind {
-                    if name == text && sheet_item == drawn_by {
+                    if net_name(name) == net_name(text) && sheet_item == drawn_by {
                         pairs.push((index, other));
                     }
                 }
@@ -410,11 +414,14 @@ impl Graph {
 
     /// Rule 5: power-symbol pins of equal value join across the project.
     fn merge_power(&mut self) {
-        let mut by_value: BTreeMap<&str, Vec<usize>> = BTreeMap::new();
+        let mut by_value: BTreeMap<String, Vec<usize>> = BTreeMap::new();
         for (index, node) in self.nodes.iter().enumerate() {
             if let NodeKind::Pin(pin) = &node.kind {
                 if pin.power && !pin.value.is_empty() {
-                    by_value.entry(&pin.value).or_default().push(index);
+                    by_value
+                        .entry(net_name(&pin.value))
+                        .or_default()
+                        .push(index);
                 }
             }
         }
@@ -528,13 +535,34 @@ fn on_segment(from: Point, to: Point, point: Point) -> bool {
 ///
 /// KiCad writes a bundle as a vector, `D[0..7]`, or as a group, `{A B}`, or as
 /// a group with a prefix. A name with neither form is one net.
+///
+/// The test is of the unescaped name (`SCH_CONNECTION::IsBusLabel`, which
+/// calls `UnescapeString` first). `VPP{slash}MCLR` is therefore one net named
+/// `VPP/MCLR`, and not a group of one member called `slash`. A brace that
+/// follows `$`, `~`, `^` or `_` draws formatting such as an overbar, so it
+/// does not make a group either.
 fn carrier_of_name(name: &str) -> Carrier {
-    let vector = name.contains('[') && name.contains("..") && name.ends_with(']');
-    if vector || name.contains('{') {
+    let plain = unescape_net_name(name);
+    if is_bus_vector(&plain) || is_bus_group(&plain) {
         Carrier::Bus
     } else {
         Carrier::Net
     }
+}
+
+/// Is this unescaped name a vector, such as `D[0..7]`?
+fn is_bus_vector(name: &str) -> bool {
+    name.contains('[') && name.contains("..") && name.ends_with(']')
+}
+
+/// Is this unescaped name a group, such as `{A B}` or `USB{DP DM}`?
+fn is_bus_group(name: &str) -> bool {
+    let characters: Vec<char> = name.chars().collect();
+    characters.iter().enumerate().any(|(index, &character)| {
+        character == '{'
+            && (index == 0 || !matches!(characters[index - 1], '$' | '~' | '^' | '_'))
+            && characters[index + 1..].contains(&'}')
+    })
 }
 
 /// The far end of a bus entry.
@@ -588,5 +616,9 @@ mod tests {
         assert_eq!(carrier_of_name("USB{DP DM}"), Carrier::Bus);
         assert_eq!(carrier_of_name("D0"), Carrier::Net);
         assert_eq!(carrier_of_name("GND"), Carrier::Net);
+        // An escape word is one character of one name, and an overbar is
+        // formatting. Neither makes a bundle.
+        assert_eq!(carrier_of_name("VPP{slash}MCLR"), Carrier::Net);
+        assert_eq!(carrier_of_name("~{RESET}"), Carrier::Net);
     }
 }

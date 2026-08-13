@@ -100,6 +100,27 @@ impl Probe {
         ));
     }
 
+    /// Draw a local label.
+    fn label(&mut self, text: &str, at: (&str, &str)) {
+        let uuid = self.uuid();
+        self.items.push(format!(
+            "(label \"{text}\" (at {} {} 0)\n\
+             (effects (font (size 1.27 1.27)) (justify left bottom)) (uuid \"{uuid}\"))",
+            at.0, at.1
+        ));
+    }
+
+    /// Draw a wire with a resistor on one end and a label on the other.
+    ///
+    /// This is the shape every naming probe needs: the label names the net,
+    /// and the resistor pin makes the net visible in a netlist. The resistor
+    /// anchor sits one pin length below the wire, so pin 1 lands on it.
+    fn named_strand(&mut self, reference: &str, wire_y: &str, anchor_y: &str, text: &str) {
+        self.place("R", reference, ("50.8", anchor_y), &["1", "2"]);
+        self.wire(("50.8", wire_y), ("76.2", wire_y));
+        self.label(text, ("76.2", wire_y));
+    }
+
     /// The file text.
     fn text(&self) -> String {
         format!(
@@ -342,4 +363,27 @@ fn a_pin_shared_by_two_units_is_listed_once_per_net() {
     // The rule is per net: wired apart, the pin number is on both nets.
     assert!(found.contains(&net(&["R2.1", "U2.9"])));
     assert!(found.contains(&net(&["R3.1", "U2.9"])));
+}
+
+#[test]
+fn two_labels_join_when_their_net_names_are_equal() {
+    let mut probe = Probe::new("escaped-label-names");
+
+    // A slash may not stand in a net name, so KiCad writes it `{slash}`.
+    // The raw form and the written form are one name.
+    probe.named_strand("R1", "25.4", "29.21", "AA/BB");
+    probe.named_strand("R2", "38.1", "41.91", "AA{slash}BB");
+    // The escape is not a general normalisation: these two stay apart.
+    probe.named_strand("R3", "50.8", "54.61", "CC-DD");
+    probe.named_strand("R4", "63.5", "67.31", "CC_DD");
+    // A name that holds an escape word is one net and not a bundle, so it
+    // joins an ordinary net rather than refusing to.
+    probe.named_strand("R5", "76.2", "80.01", "EE/FF");
+    probe.named_strand("R6", "88.9", "92.71", "EE/FF");
+
+    let found = probe.partition();
+    assert!(found.contains(&net(&["R1.1", "R2.1"])));
+    assert!(found.contains(&net(&["R3.1"])));
+    assert!(found.contains(&net(&["R4.1"])));
+    assert!(found.contains(&net(&["R5.1", "R6.1"])));
 }
