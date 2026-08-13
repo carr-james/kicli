@@ -1,0 +1,5 @@
+# Token counts for one KiCad 10.0.5 sheet, round-tripped by each tool.
+# tool version tokens_in tokens_out tokens_lost byte_identical
+kiutils 1.4.8 19851 16939 2912 no
+kicad-skip 0.2.5 19851 19851 0 no
+kicli 0 same same 0 yes

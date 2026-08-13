@@ -10,6 +10,8 @@
 #![deny(unsafe_code)]
 #![warn(clippy::pedantic)]
 
+mod corpus;
+
 use std::process::{Command, ExitCode};
 
 /// Exit code 2 reports a usage error: xtask did not understand the task name.
@@ -74,6 +76,7 @@ fn main() -> ExitCode {
 
     match task.as_deref() {
         Some("check") => run_check(),
+        Some("corpus") => corpus::run(std::env::args().any(|a| a == "--verify")),
         Some(other) => {
             eprintln!("xtask: unknown task '{other}'.");
             usage();
@@ -92,6 +95,7 @@ fn usage() {
     eprintln!();
     eprintln!("tasks:");
     eprintln!("  check    Run every quality gate.");
+    eprintln!("  corpus   Fetch KiCad's demo files into target/. --verify checks them.");
 }
 
 /// Run every gate. Report a summary. Fail if any gate failed.

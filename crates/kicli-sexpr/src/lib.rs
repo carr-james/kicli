@@ -16,9 +16,14 @@
 //! Schematic meaning lives in the `kicli` crate, and the crate boundary keeps
 //! that direction one-way.
 //!
-//! # Status
+//! # Reading a file and writing it back
 //!
-//! This crate is not implemented yet. It exposes no items.
+//! ```
+//! let source = "(kicad_sch\n\t(version 20260306)\n)\n";
+//! let doc = kicli_sexpr::Doc::parse(source).expect("parses");
+//! assert!(doc.is_canonical());
+//! assert_eq!(doc.emit(), source);
+//! ```
 
 // Undocumented public items and unsafe code are errors. This problem domain
 // never needs unsafe. Pedantic lints warn; allow one only with a reason beside
@@ -26,3 +31,17 @@
 #![deny(missing_docs)]
 #![deny(unsafe_code)]
 #![warn(clippy::pedantic)]
+
+pub mod error;
+pub mod lexer;
+pub mod number;
+pub mod prettify;
+pub mod quote;
+pub mod tree;
+
+pub use error::{SexprError, Span};
+pub use lexer::{Token, TokenKind, lex};
+pub use number::{UNITS_PER_MM, fmt_angle, fmt_iu, format_significant, parse_iu};
+pub use prettify::{FormatMode, detect_mode, flatten, prettify};
+pub use quote::{quote, unquote};
+pub use tree::{AtomKind, Doc, Node, NodeId, changed_line_count};

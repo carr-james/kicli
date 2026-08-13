@@ -8,8 +8,14 @@ license.workspace = true
 repository.workspace = true
 authors.workspace = true
 
-# This crate keeps minimal dependencies. It depends on nothing of ours, and the
-# standard library is enough for a lexer and a pretty-printer.
+# This crate keeps minimal dependencies. It depends on nothing of ours. thiserror
+# is the project's standard way to declare typed errors.
 [dependencies]
+thiserror = "2"
+
+[features]
+# Tests that read KiCad's GPL demo files from target/. Off by default, so the
+# normal test run needs no network and no KiCad install.
+corpus = []
 
 [dev-dependencies]
