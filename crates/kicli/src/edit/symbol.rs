@@ -296,6 +296,9 @@ pub fn move_symbol(
 /// The anchor does not move, so no grid question arises. The fields keep their
 /// own angles and their positions turn about the anchor.
 ///
+/// Only the symbol's own lines change: its `(at ...)`, its `(mirror ...)`, its
+/// fields' `(at ...)`, and the `fields_autoplaced` flag when the fields turned.
+///
 /// # Errors
 ///
 /// Returns [`EditError`] when the angle is not 0, 90, 180 or 270, when the
@@ -325,6 +328,9 @@ pub fn rotate_symbol(
 /// normalised one, so 180 degrees with a mirror comes out as 0 degrees with the
 /// other mirror, exactly as KiCad's own editor writes it.
 ///
+/// Only the symbol's own lines change: its `(at ...)`, its `(mirror ...)`, its
+/// fields' `(at ...)`, and the `fields_autoplaced` flag when the fields moved.
+///
 /// # Errors
 ///
 /// Returns [`EditError`] when the symbol carries no position, or when kicli
@@ -345,6 +351,9 @@ pub fn mirror_symbol(
 /// The instance data sits inside the symbol, so it goes with it. The embedded
 /// definition stays when another placement still draws through it, and goes
 /// when none does.
+///
+/// Only the symbol's own lines change, and the definition's when it goes too.
+/// No other object of the file is touched.
 ///
 /// # Errors
 ///

@@ -10,14 +10,16 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
-use kicli::edit::symbol::{Finding, Motion, Options, mirror_symbol, move_symbol, rotate_symbol};
+use kicli::edit::symbol::{
+    Finding, Motion, Options, delete_symbol, mirror_symbol, move_symbol, rotate_symbol,
+};
 use kicli::geometry::{Angle, GRID, Iu, Point, resolve_pins};
 use kicli::model::{
     Mirror, Mutation, Schematic, SheetPath, Symbol, Target, WriteOptions, commit, definition_of,
     read_library, state_before,
 };
 use kicli::view::snapshot::Snapshot;
-use kicli_sexpr::Doc;
+use kicli_sexpr::{Doc, changed_line_count};
 
 /// A scratch directory of its own for one test.
 fn scratch(name: &str) -> PathBuf {
@@ -376,6 +378,94 @@ fn a_mirror_reflects_the_pins_about_the_anchor() {
         after, expected,
         "a mirror about the X axis reflects every pin about the anchor's own line"
     );
+}
+
+#[test]
+fn a_symbol_command_changes_only_its_own_lines() {
+    let project = scratch("edit_symbol_locality");
+
+    for name in ["move", "rotate", "mirror", "delete"] {
+        let file = copy_fixture(&project, "geometry/asymmetric.kicad_sch");
+        let before = std::fs::read_to_string(&file).expect("the fixture reads");
+        let (mut doc, schematic) = read(&file);
+        let symbol = symbol_of(&schematic, "A1");
+        let uuid = symbol.uuid.0.clone();
+        let state = state(&doc, &schematic);
+
+        match name {
+            "move" => {
+                move_symbol(
+                    &mut doc,
+                    symbol,
+                    Motion::By(Point::new(0, -2 * GRID.0)),
+                    GRID,
+                    Options::default(),
+                )
+                .expect("the symbol moves");
+            }
+            "rotate" => {
+                rotate_symbol(&mut doc, symbol, Angle(90), Options::default())
+                    .expect("the symbol turns");
+            }
+            "mirror" => {
+                mirror_symbol(&mut doc, symbol, Mirror::Y, Options::default())
+                    .expect("the symbol mirrors");
+            }
+            _ => {
+                delete_symbol(&mut doc, &schematic, symbol).expect("the symbol goes");
+            }
+        }
+        write(&doc, &file, &project, &schematic, &state);
+        let after = std::fs::read_to_string(&file).expect("the written file reads");
+
+        assert_eq!(
+            outside_the_block(&before, &uuid),
+            outside_the_block(&after, &uuid),
+            "{name}: every line outside the symbol is byte-identical"
+        );
+        // The bound each command documents: the symbol's own lines. A delete
+        // takes all of them and the other three stay inside them.
+        let bound = block_length(&before, &uuid);
+        let changed = changed_line_count(&before, &after);
+        assert!(
+            changed <= bound,
+            "{name}: {changed} lines changed, which is past the symbol's own {bound}"
+        );
+    }
+}
+
+/// How many lines the top-level symbol carrying a uuid occupies.
+fn block_length(text: &str, uuid: &str) -> usize {
+    text.lines().count() - outside_the_block(text, uuid).len()
+}
+
+/// Every line of a file except those of the top-level symbol carrying a uuid.
+fn outside_the_block(text: &str, uuid: &str) -> Vec<String> {
+    let lines: Vec<&str> = text.lines().collect();
+    let mut start = None;
+    let mut found = None;
+    for (index, line) in lines.iter().enumerate() {
+        if *line == "\t(symbol" {
+            start = Some(index);
+        }
+        if line.contains(uuid) && start.is_some() {
+            found = start;
+            break;
+        }
+    }
+    let Some(start) = found else {
+        return lines.iter().map(|line| (*line).to_owned()).collect();
+    };
+    let end = lines[start..]
+        .iter()
+        .position(|line| *line == "\t)")
+        .map_or(lines.len(), |offset| start + offset + 1);
+    lines
+        .iter()
+        .enumerate()
+        .filter(|(index, _)| *index < start || *index >= end)
+        .map(|(_, line)| (*line).to_owned())
+        .collect()
 }
 
 /// The `kicad-cli` binary, when the environment asks for the live tests.
