@@ -35,7 +35,7 @@
 
 use super::MergeRules;
 use super::names::{net_name, unescape_net_name};
-use crate::geometry::{Point, resolve_pins};
+use crate::geometry::{Point, ResolvedPin, resolve_pins};
 use crate::model::hierarchy::{Hierarchy, Placement};
 use crate::model::items::{Item, LabelKind, LineKind, Refdes, SheetPath, Symbol, Uuid};
 use crate::model::library::{LibrarySymbol, definition_of, read_library};
@@ -62,8 +62,11 @@ pub(crate) struct PinNode {
     pub symbol: Uuid,
     /// Is the symbol a power symbol? A netlist leaves those pins out.
     pub power: bool,
-    /// The symbol's value, which for a power symbol is the net name.
-    pub value: String,
+    /// The net this pin names across the project, or the empty string.
+    ///
+    /// A power symbol names the net with its own value. An ordinary symbol
+    /// with a hidden power input names the net with the pin's name.
+    pub power_name: String,
 }
 
 /// What a node is.
@@ -277,22 +280,12 @@ impl Graph {
             .map(|field| field.value.clone())
             .unwrap_or_default();
         for pin in resolve_pins(symbol, definition) {
-            // A power symbol names a net through a power input: the rail says
-            // "I am +5V". A power OUTPUT on a power symbol says only "something
-            // drives this net", which is what PWR_FLAG is, and it names
-            // nothing. Merging those by value joins every flagged net in the
-            // project into one, which is four rails on KiCad's own CM5 demo.
-            let names_a_net = pin.electrical == "power_in";
             let kind = NodeKind::Pin(PinNode {
                 reference: reference.cloned(),
                 number: pin.number.clone(),
                 symbol: symbol.uuid.clone(),
                 power,
-                value: if names_a_net {
-                    value.clone()
-                } else {
-                    String::new()
-                },
+                power_name: power_name(&pin, power, &value),
             });
             self.push_at(sheet, Carrier::Net, kind, pin.position);
         }
@@ -412,14 +405,14 @@ impl Graph {
         }
     }
 
-    /// Rule 5: power-symbol pins of equal value join across the project.
+    /// Rule 5: pins that name the same net join across the project.
     fn merge_power(&mut self) {
         let mut by_value: BTreeMap<String, Vec<usize>> = BTreeMap::new();
         for (index, node) in self.nodes.iter().enumerate() {
             if let NodeKind::Pin(pin) = &node.kind {
-                if pin.power && !pin.value.is_empty() {
+                if !pin.power_name.is_empty() {
                     by_value
-                        .entry(net_name(&pin.value))
+                        .entry(net_name(&pin.power_name))
                         .or_default()
                         .push(index);
                 }
@@ -529,6 +522,33 @@ fn on_segment(from: Point, to: Point, point: Point) -> bool {
     }
     let along = dx * (px - ax) + dy * (py - ay);
     along >= 0 && along <= dx * dx + dy * dy
+}
+
+/// The net one pin names across the project, or the empty string.
+///
+/// A power symbol names a net through a power input: the rail says "I am +5V".
+/// A power OUTPUT on a power symbol says only "something drives this net",
+/// which is what `PWR_FLAG` is, and it names nothing. Merging those by value
+/// joins every flagged net in the project into one, which is four rails on
+/// KiCad's own CM5 demo.
+///
+/// An ordinary symbol names a net as well, through a **hidden** power input,
+/// and the name is the pin's own name rather than the symbol's value. That is
+/// how a chip with invisible `VCC` and `GND` pins reaches those rails with no
+/// wire drawn (`SCH_PIN::IsGlobalPower`, the `!IsVisible()` case, and
+/// `SCH_PIN::GetDefaultNetName`). A visible power input on an ordinary symbol
+/// names nothing: it must be wired.
+fn power_name(pin: &ResolvedPin, power_symbol: bool, value: &str) -> String {
+    if pin.electrical != "power_in" {
+        return String::new();
+    }
+    if power_symbol {
+        value.to_owned()
+    } else if pin.hidden {
+        pin.name.clone()
+    } else {
+        String::new()
+    }
 }
 
 /// Does this name stand for a bundle?

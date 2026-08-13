@@ -206,10 +206,10 @@ fn draft(graph: &Graph, nodes: &[usize]) -> Option<Draft> {
                 .push((format!("{}{}", sheet.human, net_name(name)), name.clone())),
             NodeKind::Pin(pin) => {
                 drivers.pin_count += 1;
-                if pin.power {
+                if !pin.power_name.is_empty() {
                     drivers
                         .power
-                        .push((net_name(&pin.value), pin.value.clone()));
+                        .push((net_name(&pin.power_name), pin.power_name.clone()));
                 }
                 if let Some(reference) = &pin.reference {
                     if !pin.power {

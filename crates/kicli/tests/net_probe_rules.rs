@@ -182,6 +182,26 @@ fn pin(electrical: &str, at: (&str, &str), angle: &str, number: &str, name: &str
     )
 }
 
+/// One library pin the editor does not draw.
+fn hidden_pin(electrical: &str, at: (&str, &str), number: &str, name: &str) -> String {
+    format!(
+        "(pin {electrical} line (at {} {} 180) (length 2.54) (hide yes)\n\
+         (name \"{name}\" (effects (font (size 1.27 1.27))))\n\
+         (number \"{number}\" (effects (font (size 1.27 1.27)))))",
+        at.0, at.1
+    )
+}
+
+/// A power symbol: one power input at the anchor, and its value names the net.
+fn power(name: &str) -> String {
+    symbol(
+        name,
+        "#PWR",
+        true,
+        &[("1_1", vec![pin("power_in", ("0", "0"), "270", "1", "")])],
+    )
+}
+
 /// One library symbol, from its units.
 fn symbol(name: &str, reference: &str, power: bool, units: &[(&str, Vec<String>)]) -> String {
     let bodies: String = units
@@ -386,4 +406,54 @@ fn two_labels_join_when_their_net_names_are_equal() {
     assert!(found.contains(&net(&["R3.1"])));
     assert!(found.contains(&net(&["R4.1"])));
     assert!(found.contains(&net(&["R5.1", "R6.1"])));
+}
+
+#[test]
+fn a_hidden_power_input_reaches_its_rail_with_no_wire() {
+    let mut probe = Probe::new("hidden-power-pin");
+    // One ordinary part with a hidden power input, one with a visible one.
+    probe.define(symbol(
+        "HID",
+        "U",
+        false,
+        &[(
+            "1_1",
+            vec![
+                pin("passive", ("0", "3.81"), "270", "1", "IO"),
+                hidden_pin("power_in", ("7.62", "0"), "9", "VHID"),
+            ],
+        )],
+    ));
+    probe.define(symbol(
+        "VIS",
+        "U",
+        false,
+        &[(
+            "1_1",
+            vec![
+                pin("passive", ("0", "3.81"), "270", "1", "IO"),
+                pin("power_in", ("7.62", "0"), "180", "9", "VVIS"),
+            ],
+        )],
+    ));
+    probe.define(power("VHID"));
+    probe.define(power("VVIS"));
+
+    probe.place("HID", "U1", ("50.8", "50.8"), &["1", "9"]);
+    probe.place_unit("VHID", "#PWR01", ("101.6", "50.8"), 1, "VHID", &["1"]);
+    probe.wire(("101.6", "50.8"), ("101.6", "54.61"));
+    probe.place("R", "R1", ("101.6", "58.42"), &["1", "2"]);
+
+    probe.place("VIS", "U2", ("50.8", "88.9"), &["1", "9"]);
+    probe.place_unit("VVIS", "#PWR02", ("101.6", "88.9"), 1, "VVIS", &["1"]);
+    probe.wire(("101.6", "88.9"), ("101.6", "92.71"));
+    probe.place("R", "R2", ("101.6", "96.52"), &["1", "2"]);
+
+    let found = probe.partition();
+    // The hidden input is on the rail its pin name asks for.
+    assert!(found.contains(&net(&["R1.1", "U1.9"])));
+    // The visible one is not. A power input on an ordinary symbol names a
+    // net only when the editor hides it.
+    assert!(found.contains(&net(&["R2.1"])));
+    assert!(found.contains(&net(&["U2.9"])));
 }
