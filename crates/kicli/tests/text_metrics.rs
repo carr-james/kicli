@@ -44,7 +44,7 @@ fn fixture(name: &str) -> PathBuf {
 
 /// Where the committed measurements live.
 fn oracle_path() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/text_extents.expected")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/text/calibration.textlength")
 }
 
 /// One text item of the calibration sheet.
