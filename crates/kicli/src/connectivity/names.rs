@@ -223,6 +223,7 @@ fn draft(graph: &Graph, nodes: &[usize]) -> Option<Draft> {
                         sheet: sheet.path.clone(),
                         symbol: pin.symbol.clone(),
                         power: pin.power,
+                        on_board: pin.on_board,
                     });
                 }
             }
@@ -242,7 +243,7 @@ fn draft(graph: &Graph, nodes: &[usize]) -> Option<Draft> {
     pins.dedup_by(|left, right| left.reference == right.reference && left.number == right.number);
     let listed = pins
         .iter()
-        .filter(|pin| !pin.power)
+        .filter(|pin| !pin.power && pin.on_board)
         .map(NetPin::label)
         .collect();
     Some(Draft {

@@ -72,6 +72,14 @@ pub struct NetPin {
     pub symbol: Uuid,
     /// Is this a pin of a power symbol? A netlist leaves those out.
     pub power: bool,
+    /// Does the symbol reach the board?
+    ///
+    /// `(on_board no)` marks a symbol that is drawn but not built, such as a
+    /// test point or a fitting option. The drawing still joins its pins, and
+    /// kicli still lists them, but a netlist leaves them out. `(dnp yes)` is
+    /// a different thing and does not remove a pin: an unfitted part still
+    /// has a footprint.
+    pub on_board: bool,
 }
 
 impl NetPin {

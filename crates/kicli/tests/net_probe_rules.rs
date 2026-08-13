@@ -55,7 +55,7 @@ impl Probe {
 
     /// Place a symbol, with the pin numbers it draws.
     fn place(&mut self, library: &str, reference: &str, at: (&str, &str), pins: &[&str]) {
-        self.place_unit(library, reference, at, 1, reference, pins);
+        self.place_symbol(&Placed::new(library, reference, at, pins));
     }
 
     /// Place one unit of a symbol, with a value of its own.
@@ -68,24 +68,35 @@ impl Probe {
         value: &str,
         pins: &[&str],
     ) {
+        let mut placed = Placed::new(library, reference, at, pins);
+        placed.unit = unit;
+        placed.value = value;
+        self.place_symbol(&placed);
+    }
+
+    /// Place a symbol as described.
+    fn place_symbol(&mut self, placed: &Placed) {
         let uuid = self.uuid();
-        let pin_uuids: Vec<String> = pins.iter().map(|_| self.uuid()).collect();
-        let (x, y) = at;
-        let pin_list: String = pins
+        let pin_uuids: Vec<String> = placed.pins.iter().map(|_| self.uuid()).collect();
+        let (library, reference, unit) = (placed.library, placed.reference, placed.unit);
+        let (x, y) = placed.at;
+        let attributes = placed.attributes;
+        let pin_list: String = placed
+            .pins
             .iter()
             .zip(&pin_uuids)
             .map(|(number, uuid)| format!("(pin \"{number}\" (uuid \"{uuid}\"))\n"))
             .collect();
         let fields = fields(&[
             ("Reference", reference),
-            ("Value", value),
+            ("Value", placed.value),
             ("Footprint", ""),
             ("Datasheet", ""),
             ("Description", ""),
         ]);
         self.items.push(format!(
             "(symbol (lib_id \"Probe:{library}\") (at {x} {y} 0) (unit {unit}) (body_style 1)\n\
-             (exclude_from_sim no) (in_bom yes) (on_board yes) (in_pos_files yes) (dnp no)\n\
+             {attributes}\n\
              (uuid \"{uuid}\")\n{fields}{pin_list}\
              (instances (project \"probe\" (path \"/{ROOT}\" (reference \"{reference}\") (unit {unit}))))\n)"
         ));
@@ -169,6 +180,37 @@ impl Probe {
             );
         }
         found
+    }
+}
+
+/// One placed symbol, as a probe describes it.
+struct Placed<'a> {
+    library: &'a str,
+    reference: &'a str,
+    at: (&'a str, &'a str),
+    pins: &'a [&'a str],
+    unit: u32,
+    value: &'a str,
+    /// The attributes a symbol that is built and fitted carries.
+    attributes: &'a str,
+}
+
+impl<'a> Placed<'a> {
+    fn new(
+        library: &'a str,
+        reference: &'a str,
+        at: (&'a str, &'a str),
+        pins: &'a [&'a str],
+    ) -> Self {
+        Self {
+            library,
+            reference,
+            at,
+            pins,
+            unit: 1,
+            value: reference,
+            attributes: "(exclude_from_sim no) (in_bom yes) (on_board yes) (in_pos_files yes) (dnp no)",
+        }
     }
 }
 
@@ -259,7 +301,7 @@ fn partition_of(nets: &Nets) -> Partition {
         .map(|net| {
             net.pins
                 .iter()
-                .filter(|pin| !pin.power)
+                .filter(|pin| !pin.power && pin.on_board)
                 .map(NetPin::label)
                 .collect::<Vec<String>>()
         })
@@ -418,6 +460,42 @@ fn two_labels_join_when_their_net_names_are_equal() {
     assert!(found.contains(&net(&["R1.1", "R2.1"])));
     assert!(found.contains(&net(&["R3.1"])));
     assert!(found.contains(&net(&["R4.1"])));
+    assert!(found.contains(&net(&["R5.1", "R6.1"])));
+}
+
+#[test]
+fn a_symbol_off_the_board_is_in_no_net_list() {
+    let mut probe = Probe::new("off-the-board");
+    let off_board = "(exclude_from_sim no) (in_bom yes) (on_board no) (in_pos_files yes) (dnp no)";
+    let not_fitted =
+        "(exclude_from_sim no) (in_bom yes) (on_board yes) (in_pos_files yes) (dnp yes)";
+    let not_in_bom = "(exclude_from_sim no) (in_bom no) (on_board yes) (in_pos_files yes) (dnp no)";
+
+    let clusters = [
+        ("R1", "R2", off_board, "OFFBOARD", "25.4", "29.21"),
+        ("R3", "R4", not_fitted, "NOTFITTED", "50.8", "54.61"),
+        ("R5", "R6", not_in_bom, "NOTINBOM", "76.2", "80.01"),
+    ];
+    for (left, right, attributes, name, wire_y, anchor_y) in clusters {
+        let mut placed = Placed::new("R", left, ("50.8", anchor_y), &["1", "2"]);
+        placed.attributes = attributes;
+        probe.place_symbol(&placed);
+        probe.place("R", right, ("76.2", anchor_y), &["1", "2"]);
+        probe.wire(("50.8", wire_y), ("76.2", wire_y));
+        probe.label_of_kind("label", "", name, ("63.5", wire_y));
+    }
+
+    let found = probe.partition();
+    // A symbol that does not reach the board is in no net list at all, not
+    // even the one-pin net of its unwired pin.
+    assert!(found.contains(&net(&["R2.1"])));
+    assert!(
+        !found
+            .iter()
+            .any(|pins| pins.iter().any(|pin| pin.starts_with("R1.")))
+    );
+    // Neither `dnp` nor `in_bom` removes a pin.
+    assert!(found.contains(&net(&["R3.1", "R4.1"])));
     assert!(found.contains(&net(&["R5.1", "R6.1"])));
 }
 

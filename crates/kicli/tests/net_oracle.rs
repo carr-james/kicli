@@ -26,7 +26,8 @@ fn fixtures() -> PathBuf {
 
 /// The partition kicli reads out of a hierarchy.
 ///
-/// Power symbols are left out, because a netlist leaves them out.
+/// Power symbols are left out, because a netlist leaves them out, and so are
+/// symbols that do not reach the board.
 fn kicli_partition(root: &Path) -> Partition {
     let hierarchy = Hierarchy::load(root).expect("the hierarchy loads");
     partition_of(&extract(&hierarchy))
@@ -38,7 +39,7 @@ fn partition_of(nets: &Nets) -> Partition {
         .map(|net| {
             net.pins
                 .iter()
-                .filter(|pin| !pin.power)
+                .filter(|pin| !pin.power && pin.on_board)
                 .map(NetPin::label)
                 .collect::<Vec<String>>()
         })

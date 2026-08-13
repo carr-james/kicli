@@ -72,6 +72,9 @@ pub(crate) struct PinNode {
     /// A power symbol names the net with its own value. An ordinary symbol
     /// with a hidden power input names the net with the pin's name.
     pub power_name: String,
+    /// Does the symbol reach the board? A netlist lists no pin of a symbol
+    /// that does not.
+    pub on_board: bool,
 }
 
 /// What a node is.
@@ -258,7 +261,7 @@ impl Graph {
                     self.push_at(sheet, carrier, kind, pin.at);
                 }
             }
-            Item::Symbol(symbol) => self.read_symbol(sheet, symbol, library, placement),
+            Item::Symbol(symbol) => self.read_symbol(sheet, symbol, doc, library, placement),
             Item::Text(_) | Item::Other { .. } => {}
         }
     }
@@ -268,6 +271,7 @@ impl Graph {
         &mut self,
         sheet: usize,
         symbol: &Symbol,
+        doc: &Doc,
         library: &[LibrarySymbol],
         placement: &Placement,
     ) {
@@ -281,6 +285,7 @@ impl Graph {
             .field("Value")
             .map(|field| field.value.clone())
             .unwrap_or_default();
+        let on_board = on_board(doc, symbol.node);
         for pin in resolve_pins(symbol, definition) {
             let kind = NodeKind::Pin(PinNode {
                 reference: reference.cloned(),
@@ -288,6 +293,7 @@ impl Graph {
                 symbol: symbol.uuid.clone(),
                 power,
                 power_name: power_name(&pin, power, &value),
+                on_board,
             });
             self.push_at(sheet, Carrier::Net, kind, pin.position);
         }
@@ -522,6 +528,30 @@ fn on_segment(from: Point, to: Point, point: Point) -> bool {
     }
     let along = dx * (px - ax) + dy * (py - ay);
     along >= 0 && along <= dx * dx + dy * dy
+}
+
+/// Does this symbol reach the board?
+///
+/// `(on_board no)` says it does not, and a netlist then lists no pin of it:
+/// the exporter drops the node (`NETLIST_EXPORTER_XML::makeListOfNets`, the
+/// `ResolveExcludedFromBoard` test). `(dnp yes)` and `(in_bom no)` do not:
+/// a part that is not fitted still has a footprint on the board.
+///
+/// The item model does not hold this attribute, so it is read from the tree,
+/// as a bus entry's size is.
+fn on_board(doc: &Doc, node: NodeId) -> bool {
+    let Some(list) = doc
+        .children(node)
+        .iter()
+        .copied()
+        .find(|&child| doc.head_is(child, "on_board"))
+    else {
+        return true;
+    };
+    doc.children(list)
+        .get(1)
+        .and_then(|&id| doc.atom_as_str(id))
+        .is_none_or(|said| said != "no")
 }
 
 /// The net one pin names across the project, or the empty string.
