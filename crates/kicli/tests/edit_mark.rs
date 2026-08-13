@@ -1,4 +1,4 @@
-//! Junctions, and the refusal to make a four-way one.
+//! Junctions and no-connects, and the two refusals that come with them.
 //!
 //! Every test copies a fixture into a scratch directory and mutates the copy.
 //! The committed fixture tree is never written by a test.
@@ -6,7 +6,7 @@
 use kicli::connectivity::{NetPin, Nets, extract};
 use kicli::edit::mark;
 use kicli::geometry::{GRID, Point};
-use kicli::model::{Hierarchy, SheetPath, Target, Uuid, WriteOptions};
+use kicli::model::{Hierarchy, Refdes, SheetPath, Target, Uuid, WriteOptions};
 use std::path::{Path, PathBuf};
 
 /// The root sheet of the connectivity fixture.
@@ -190,5 +190,104 @@ fn a_junction_joins_what_it_sits_on() {
         net_of(&nets_now(&root), "R11", "1"),
         ["R11.1"],
         "deleting the junction separated them again"
+    );
+}
+
+#[test]
+fn a_no_connect_on_a_connected_pin_is_refused() {
+    let root = nets_project("no_connect_refused");
+    let project = root.parent().expect("the root has a directory").to_owned();
+    let sheet = SheetPath::root(&Uuid(NETS_ROOT.to_owned()));
+    let before = std::fs::read_to_string(&root).expect("the sheet reads");
+
+    // R1 pin 1 sits on a wire that carries the label NET_A, which joins it
+    // to R2 pin 1.
+    let mut hierarchy = Hierarchy::load(&root).expect("the hierarchy loads");
+    let refused = mark::add_no_connect(
+        &mut hierarchy,
+        &mark::PinAddress::new(Refdes("R1".to_owned()), "1"),
+        &Uuid("00000000-0000-4000-8000-03000000ff02".to_owned()),
+        &target(&root, &project, &sheet),
+        "2026-01-02T03:04:05Z",
+    )
+    .expect_err("a no-connect on a joined pin is refused");
+
+    let said = refused.to_string();
+    assert!(said.contains("R1.1"), "the refusal names the pin: {said}");
+    assert!(
+        said.contains("R2.1"),
+        "and what the pin is joined to: {said}"
+    );
+    assert!(
+        said.contains("NET_A"),
+        "and the net that joins them: {said}"
+    );
+    assert!(said.contains("wire"), "and the wire it sits on: {said}");
+    assert_eq!(
+        std::fs::read_to_string(&root).expect("the sheet reads"),
+        before,
+        "the refusal wrote nothing"
+    );
+}
+
+#[test]
+fn a_no_connect_lands_on_its_pin() {
+    let root = nets_project("no_connect_lands");
+    let project = root.parent().expect("the root has a directory").to_owned();
+    let sheet = SheetPath::root(&Uuid(NETS_ROOT.to_owned()));
+
+    // R11 sits at (38.1, 92.71) and its pin 2 hangs below, joined to nothing.
+    let free = mark::PinAddress::new(Refdes("R11".to_owned()), "2");
+    let mut hierarchy = Hierarchy::load(&root).expect("the hierarchy loads");
+    let mutation = mark::add_no_connect(
+        &mut hierarchy,
+        &free,
+        &Uuid("00000000-0000-4000-8000-03000000ff03".to_owned()),
+        &target(&root, &project, &sheet),
+        "2026-01-02T03:04:05Z",
+    )
+    .expect("a free pin takes a no-connect");
+
+    assert!(
+        mutation.invariants.passed(),
+        "every invariant held: {:?}",
+        mutation.invariants.failures().collect::<Vec<_>>()
+    );
+    let written = std::fs::read_to_string(&root).expect("the sheet reads");
+    assert!(
+        written.contains("(no_connect\n\t\t(at 38.1 96.52)"),
+        "the marker is at the pin's connection point: {written}"
+    );
+    assert!(
+        Point::new(381_000, 965_200).is_on_grid(),
+        "and that point is on the grid"
+    );
+
+    // A second marker on one pin says nothing the first does not.
+    let mut hierarchy = Hierarchy::load(&root).expect("the hierarchy loads again");
+    let refused = mark::add_no_connect(
+        &mut hierarchy,
+        &free,
+        &Uuid("00000000-0000-4000-8000-03000000ff04".to_owned()),
+        &target(&root, &project, &sheet),
+        "2026-01-02T03:04:06Z",
+    )
+    .expect_err("one no-connect per pin is enough");
+    assert!(refused.to_string().contains("already"), "{refused}");
+
+    // Deleting it puts the pin back where it started.
+    let mut hierarchy = Hierarchy::load(&root).expect("the hierarchy loads again");
+    mark::delete_no_connect(
+        &mut hierarchy,
+        &free,
+        &target(&root, &project, &sheet),
+        "2026-01-02T03:04:07Z",
+    )
+    .expect("the marker is deleted");
+    assert!(
+        !std::fs::read_to_string(&root)
+            .expect("the sheet reads")
+            .contains("no_connect"),
+        "the marker is gone"
     );
 }
