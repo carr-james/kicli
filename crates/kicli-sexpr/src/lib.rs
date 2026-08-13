@@ -2,8 +2,9 @@
 //!
 //! This crate parses KiCad s-expression files into a tree. The tree keeps the
 //! exact source text of every atom. The crate emits that tree back through a
-//! port of `KICAD_FORMAT::Prettify`. The P1 and P2 round-trip properties live
-//! here.
+//! port of `KICAD_FORMAT::Prettify`. Two round-trip properties live here. An
+//! emit of an unedited KiCad-authored file reproduces its bytes exactly. A
+//! parse of any emitted file reproduces the tree it came from.
 //!
 //! This crate knows nothing about schematics. It handles s-expressions only.
 //! Schematic meaning lives in the `kicli` crate. The crate boundary enforces
@@ -11,8 +12,7 @@
 //!
 //! # Status
 //!
-//! Milestone M1 is in progress. This crate is empty. See `tasks/M1.md` T3, T4
-//! and T6.
+//! This crate is not implemented yet. It exposes no items.
 
 // Crate lints, per ENGINEERING.md "Machine-enforced gates".
 #![deny(missing_docs)]

@@ -17,7 +17,7 @@
 //!
 //! # Status
 //!
-//! Milestone M1 is in progress. All modules are empty. See `tasks/M1.md`.
+//! The modules below are empty. The crate exposes only [`version`].
 
 // Crate lints, per ENGINEERING.md "Machine-enforced gates".
 #![deny(missing_docs)]

@@ -2,7 +2,7 @@
 #
 # Constitution §9 restricts kicli to MIT/Apache/BSD-compatible dependencies.
 # MPL-2.0 and GPL are excluded. The allowlist below is the enforcement.
-# See DECISIONS-R6.md Q8 and spec/SPEC.md §2.
+# See spec/SPEC.md §2.
 
 [graph]
 all-features = true
@@ -12,8 +12,8 @@ all-features = true
 # OBSERVED, cargo-deny 0.20.2: this key changes nothing. An MPL-2.0
 # dev-dependency passes `cargo deny check licenses` with the key set either way,
 # while the same crate as a normal dependency is correctly rejected. So the
-# licence gate covers the shipped artifact only. Re-verify at T22, when the
-# first real dev-dependency lands. See tasks/M1.md T1.
+# licence gate covers the shipped artifact only. Re-verify when the first real
+# dev-dependency lands.
 exclude-dev = false
 
 [advisories]

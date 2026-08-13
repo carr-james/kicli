@@ -23,6 +23,6 @@ fn main() -> ExitCode {
         "kicli {}: no commands are implemented yet.",
         kicli::version()
     );
-    eprintln!("Milestone M1 builds the parser core. See tasks/M1.md.");
+    eprintln!("The only supported flag is --version.");
     ExitCode::from(EXIT_USAGE)
 }

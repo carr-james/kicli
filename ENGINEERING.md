@@ -91,6 +91,22 @@ a failing test reproducing it.
 - Functions small enough to read without scrolling; clippy's complexity lints
   are the backstop.
 
+## Code is plan-free
+
+Code, tests, fixtures, and rustdoc never reference project-management
+artefacts: no milestone numbers, task IDs, spec/constitution section numbers,
+phase names, or "TODO(M4)". Names describe behaviour (`roundtrip_byte_identity`,
+not `t7_roundtrip`); comments state the invariant or reason in full sentences
+rather than citing an internal document ("ERC JSON coordinates are 100× too
+small because KiCad builds the units provider with the PCB scale — see
+erc_report.cpp:161", not "see SUMMARY.md finding 5"). External references
+(KiCad source lines, upstream issues, format documentation) are encouraged;
+internal plan references are forbidden. Commit messages are the ONE place task
+IDs belong — they are project history, not code.
+
+Deferred work in code is either a tracked issue referenced by URL/number or it
+is deleted; bare TODOs do not merge.
+
 ## Prose: Simplified Technical English
 
 All rustdoc, error messages, CLI help, and markdown: STE rules. Short
