@@ -1,0 +1,11 @@
+(kicad_sch
+  (version 20260306)
+  (generator "eeschema")(generator_version "10.0")
+  (uuid "00000000-0000-4000-8000-000000000008")
+  (paper "A4")
+  (lib_symbols)
+  (text "packed with no spaces between sibling lists"(exclude_from_sim no)(at 20.32 20.32 0)
+    (effects(font(size 1.27 1.27))(justify left bottom))
+    (uuid "00000000-0000-4000-8000-000000000080"))
+  (sheet_instances(path "/"(page "1")))
+)

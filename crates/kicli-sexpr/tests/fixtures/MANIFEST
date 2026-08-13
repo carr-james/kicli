@@ -1,0 +1,20 @@
+# One record per line: path version mode canonical provenance
+#
+# version     the file's (version ...) stamp, or - when it has none
+# mode        normal | compact | library-table | json
+# canonical   yes when the file is a fixed point of its prettifier mode
+# provenance  kicad-cli when KiCad wrote the bytes, hand when we did
+#
+# Files named MANIFEST or *.manifest are records, not fixtures, and are skipped.
+sch/minimal.kicad_sch 20260306 normal yes kicad-cli
+sch/all_items.kicad_sch 20260306 normal yes kicad-cli
+sch/escapes.kicad_sch 20260306 normal yes kicad-cli
+sch/polyline_xy.kicad_sch 20260306 normal yes kicad-cli
+sch/image_data.kicad_sch 20260306 normal yes kicad-cli
+sch/attribute_dense.kicad_sch 20260306 normal yes kicad-cli
+sch/compact_save.kicad_sch 20260306 compact yes kicad-cli
+sch/commented.kicad_sch 20260306 normal no hand
+sch/noncanonical.kicad_sch 20260306 normal no hand
+sym/device.kicad_sym 20251024 normal yes kicad-cli
+tables/canonical/sym-lib-table 7 library-table yes hand
+tables/legacy/sym-lib-table 7 library-table no hand

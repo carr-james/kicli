@@ -1,0 +1,31 @@
+{
+  "board": {
+    "design_settings": {
+      "defaults": {}
+    }
+  },
+  "erc": {
+    "rule_severities": {
+      "endpoint_off_grid": "warning",
+      "four_way_junction": "ignore",
+      "pin_not_connected": "error"
+    }
+  },
+  "schematic": {
+    "bus_aliases": [
+      [
+        "DPHY",
+        [
+          "D0_N",
+          "D0_P",
+          "CLK_N",
+          "CLK_P"
+        ]
+      ]
+    ]
+  },
+  "meta": {
+    "filename": "minimal.kicad_pro",
+    "version": 3
+  }
+}

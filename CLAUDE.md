@@ -12,3 +12,20 @@ CLI tool giving LLM agents eyes and hands in KiCad 10 projects. Rust.
   for every task — run them before marking any task complete.
 - When two governing documents conflict, do not resolve by precedence — mark
   the item BLOCKED with both readings and ask.
+
+## Parallel work
+
+- Subagents doing implementation work run with worktree isolation under
+  .claude/worktrees/. One task lane per subagent, split along crate/module
+  ownership boundaries — two subagents never own the same module.
+- The orchestrator does not write code while subagents are active; it assigns,
+  reviews, merges, and resolves.
+- Merge hotspots (Cargo.toml, lib.rs module lists, xtask) are touched only by
+  the orchestrator, or by exactly one designated lane.
+- A lane is complete when its own `cargo xtask check` passes in its worktree;
+  the milestone is complete only when the check passes on the merged result in
+  the main checkout. The merged check is the orchestrator's job and is never
+  skipped.
+- The BLOCKED rule applies inside lanes: a subagent that hits a governing-
+  document conflict parks it and reports to the orchestrator; the orchestrator
+  parks it for James.
