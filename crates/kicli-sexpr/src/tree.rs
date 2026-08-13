@@ -7,7 +7,10 @@
 
 use crate::error::{SexprError, Span};
 use crate::lexer::{TokenKind, lex};
+use crate::number::parse_iu;
 use crate::prettify::{FormatMode, detect_mode, prettify};
+use crate::quote::unquote;
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 /// A handle to a node in a [`Doc`].
@@ -137,6 +140,81 @@ impl Doc {
         self.nodes
             .iter()
             .any(|node| matches!(node, Node::Comment { .. }))
+    }
+
+    /// An atom's value as an internal unit, when it is one.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let doc = kicli_sexpr::Doc::parse("(at 41.91 0)").expect("parses");
+    /// let root = doc.root().expect("has a root");
+    /// assert_eq!(doc.atom_as_iu(doc.children(root)[1]), Some(419_100));
+    /// ```
+    #[must_use]
+    pub fn atom_as_iu(&self, id: NodeId) -> Option<i32> {
+        parse_iu(self.atom_text(id)?)
+    }
+
+    /// An atom's text with its quotes and escapes resolved.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let doc = kicli_sexpr::Doc::parse(r#"(property "say \"hi\"")"#).expect("parses");
+    /// let root = doc.root().expect("has a root");
+    /// assert_eq!(doc.atom_as_str(doc.children(root)[1]).as_deref(), Some("say \"hi\""));
+    /// ```
+    #[must_use]
+    pub fn atom_as_str(&self, id: NodeId) -> Option<String> {
+        let text = self.atom_text(id)?;
+        match self.nodes[id.index()] {
+            Node::Atom {
+                kind: AtomKind::Quoted,
+                ..
+            } => Some(unquote(text)),
+            _ => Some(text.to_owned()),
+        }
+    }
+
+    /// Every `(uuid ...)` in the file, mapped to the list that owns it.
+    ///
+    /// A UUID is the one handle every object carries, so this is how a caller
+    /// finds an object it was told about earlier.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let doc = kicli_sexpr::Doc::parse(
+    ///     "(kicad_sch (junction (at 0 0) (uuid \"abc\")))",
+    /// )
+    /// .expect("parses");
+    /// let index = doc.uuid_index();
+    /// let owner = index.get("abc").copied().expect("the uuid is indexed");
+    /// assert!(doc.head_is(owner, "junction"));
+    /// ```
+    #[must_use]
+    pub fn uuid_index(&self) -> BTreeMap<String, NodeId> {
+        let mut index = BTreeMap::new();
+        self.index_uuids(&self.top, &mut index);
+        index
+    }
+
+    fn index_uuids(&self, ids: &[NodeId], index: &mut BTreeMap<String, NodeId>) {
+        for &id in ids {
+            let Node::List { children, .. } = &self.nodes[id.index()] else {
+                continue;
+            };
+            for &child in children {
+                if self.head_is(child, "uuid")
+                    && let Some(&atom) = self.children(child).get(1)
+                    && let Some(value) = self.atom_as_str(atom)
+                {
+                    index.insert(value, id);
+                }
+            }
+            self.index_uuids(children, index);
+        }
     }
 
     /// Bare atoms that start with `#`, which cannot be written safely.
