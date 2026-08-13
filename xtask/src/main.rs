@@ -4,8 +4,9 @@
 //! `.cargo/config.toml`.
 //!
 //! `check` runs every quality gate: formatting, lints, tests, documentation,
-//! and dependency licences. All gates must pass before a task is complete. A
-//! failing gate does not stop the run, so one invocation reports every problem.
+//! dependency licences, and that the run changed no file outside `target/`.
+//! All gates must pass before a task is complete. A failing gate does not stop
+//! the run, so one invocation reports every problem.
 
 #![deny(unsafe_code)]
 #![warn(clippy::pedantic)]
@@ -101,9 +102,13 @@ fn usage() {
     eprintln!("  text-metrics  Derive the glyph advance table. --verify checks it.");
 }
 
+/// The name of the gate that checks the gates changed no tracked file.
+const CLEAN: &str = "clean";
+
 /// Run every gate. Report a summary. Fail if any gate failed.
 fn run_check() -> ExitCode {
-    let mut failed: Vec<&Gate> = Vec::new();
+    let mut failed: Vec<&'static str> = Vec::new();
+    let before = tree_state();
 
     for gate in GATES {
         println!("\n=== {} ===", gate.name);
@@ -123,8 +128,13 @@ fn run_check() -> ExitCode {
         };
 
         if !outcome {
-            failed.push(gate);
+            failed.push(gate.name);
         }
+    }
+
+    println!("\n=== {CLEAN} ===");
+    if !tree_is_unchanged(before.as_deref()) {
+        failed.push(CLEAN);
     }
 
     report(&failed);
@@ -136,18 +146,68 @@ fn run_check() -> ExitCode {
     }
 }
 
+/// What git says about the working tree, or nothing when git cannot say.
+///
+/// The state is the porcelain status, which lists every file that differs from
+/// the index or is not tracked. Files under `target/` are ignored, so a build
+/// does not appear here.
+fn tree_state() -> Option<String> {
+    let output = Command::new("git")
+        .args(["status", "--porcelain"])
+        .output()
+        .ok()?;
+    output
+        .status
+        .success()
+        .then(|| String::from_utf8_lossy(&output.stdout).into_owned())
+}
+
+/// Did the gates leave the working tree as they found it?
+///
+/// A test writes its scratch files under `target/`. One that writes anywhere
+/// else — a fixture rebuilt in place, a research note overwritten — changes the
+/// repository as a side effect of running the suite, and the next reader cannot
+/// tell that change from an edit somebody meant. Comparing the tree before and
+/// after makes it a failed gate. The comparison is against the state at the
+/// start of the run rather than against a clean tree, so uncommitted work in
+/// progress is not itself a failure.
+fn tree_is_unchanged(before: Option<&str>) -> bool {
+    let Some(before) = before else {
+        println!("skipped: git cannot report the working tree here");
+        return true;
+    };
+    let Some(after) = tree_state() else {
+        println!("skipped: git cannot report the working tree here");
+        return true;
+    };
+    if before == after {
+        println!("the gates changed no file outside target/");
+        return true;
+    }
+    eprintln!("the gates changed the working tree. Before:");
+    eprintln!("{before}");
+    eprintln!("After:");
+    eprintln!("{after}");
+    eprintln!("A test must write its scratch files under target/.");
+    false
+}
+
 /// Print the summary line for every gate.
-fn report(failed: &[&Gate]) {
+fn report(failed: &[&str]) {
     println!("\n=== summary ===");
 
-    for gate in GATES {
-        let ok = !failed.iter().any(|other| other.name == gate.name);
-        let mark = if ok { "pass" } else { "FAIL" };
-        println!("  {mark}  {}", gate.name);
+    let names = GATES.iter().map(|gate| gate.name).chain([CLEAN]);
+    for name in names {
+        let mark = if failed.contains(&name) {
+            "FAIL"
+        } else {
+            "pass"
+        };
+        println!("  {mark}  {name}");
     }
 
-    for gate in failed {
-        if let Some(hint) = gate.install_hint {
+    for gate in GATES {
+        if let (true, Some(hint)) = (failed.contains(&gate.name), gate.install_hint) {
             println!("\nnote: if '{}' is not installed, run: {hint}", gate.name);
         }
     }
@@ -155,6 +215,6 @@ fn report(failed: &[&Gate]) {
     if failed.is_empty() {
         println!("\nall gates passed");
     } else {
-        println!("\n{} of {} gates failed", failed.len(), GATES.len());
+        println!("\n{} of {} gates failed", failed.len(), GATES.len() + 1);
     }
 }
