@@ -24,7 +24,7 @@ use std::fmt::Write as _;
 
 use kicli_sexpr::{Doc, NodeId, SexprError, quote};
 
-use crate::geometry::{Angle, Iu, Point, Transform, snap_point};
+use crate::geometry::{Angle, Iu, Point, Transform};
 use crate::model::items::{LibId, Mirror, Refdes, Schematic, SheetPath, Symbol, Uuid};
 use crate::model::library::read_library;
 
@@ -209,32 +209,13 @@ pub struct Placement<'a> {
     pub instances: &'a [Instance],
 }
 
-/// Round a coordinate to the nearest grid line, halves away from zero.
+/// The grid helpers this module used to define.
 ///
-/// The arithmetic is exact integer arithmetic. A grid of zero is no grid, and
-/// the value comes back unchanged.
-///
-/// # Examples
-///
-/// ```
-/// use kicli::edit::symbol::snap;
-/// use kicli::geometry::{GRID, Iu};
-///
-/// assert_eq!(snap(Iu(6_350), GRID), Iu(12_700), "a half step rounds away from zero");
-/// assert_eq!(snap(Iu(-6_350), GRID), Iu(-12_700));
-/// assert_eq!(snap(Iu(6_349), GRID), Iu(0));
-/// ```
-#[must_use]
-pub fn snap(value: Iu, grid: Iu) -> Iu {
-    if grid.0 == 0 {
-        return value;
-    }
-    let step = i64::from(grid.0).abs();
-    let size = i64::from(value.0).abs();
-    let steps = (size + step / 2) / step;
-    let rounded = steps * step * i64::from(value.0.signum());
-    Iu(i32::try_from(rounded).unwrap_or(value.0))
-}
+/// They are geometry rather than symbol editing, and the extractor and the
+/// label and marker editors ask the same questions, so they live in
+/// [`crate::geometry::grid`]. They are re-exported here because the path was
+/// public before they moved.
+pub use crate::geometry::{snap, snap_point};
 
 /// Move a symbol, and carry its fields with it.
 ///
