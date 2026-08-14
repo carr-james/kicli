@@ -516,9 +516,10 @@ for the placement they are describing, and `--sheet` picks the placement.
 ## Working beside an open editor
 
 **Eeschema does not notice that its file changed.** KiCad 10.0.5 puts no watcher
-on the schematic it has open. No prompt appears, and a save from Eeschema
-overwrites what kicli wrote, because the editor is writing the document it read
-when it opened the file.
+on the schematic it has open. No prompt appears when you write, and a save from
+Eeschema overwrites what kicli wrote — also with no prompt — because the editor
+is writing the document it read when it opened the file. Both silences are
+measured in the running editor.
 
 Tell the person at the editor to use **File → Revert**. That reloads from disk
 and is how your edit reaches their screen. Warn them first: Revert discards every
@@ -526,5 +527,9 @@ unsaved change in the **whole hierarchy**, not only the sheet on screen, and it
 clears the undo history, so nothing it throws away can be recovered. They should
 save their own work before you write.
 
-The evidence, and the two behaviours still to be watched happening, are in
+Until that Revert happens, treat your write as one you may have to make again:
+any save from the editor discards it, nothing warns anybody, and you cannot see
+the screen. Say so when you report the write.
+
+The evidence, the transcript and the recipe are in
 `research/notes/eeschema-external-changes.md`.

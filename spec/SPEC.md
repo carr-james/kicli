@@ -1008,21 +1008,27 @@ the change and may overwrite it. Before a schematic write, kicli makes a
 **best-effort** attempt to call IPC `GetOpenDocuments` and warns if the target
 document is open in a running KiCad.
 
-**Eeschema does not notice.** At 10.0.5 it holds no file-system watcher over the
-schematic it has open, checks no modification time, and has no path that reloads
-one because the file changed; the only watcher in Eeschema is over the symbol
-library of the symbol being edited. There is therefore **no external-change
-prompt**, and a save from Eeschema writes the document it read at open time,
-overwriting the change. The way to pick up a kicli write is **File → Revert**,
-which reloads from disk and discards every unsaved change of the whole hierarchy
-along with the undo history. See
+**Eeschema does not notice, and the loss is silent.** At 10.0.5 it holds no
+file-system watcher over the schematic it has open, checks no modification time,
+and has no path that reloads one because the file changed; the only watcher in
+Eeschema is over the symbol library of the symbol being edited. Measured in the
+running editor at that build: kicli's write raises **no prompt and no visible
+symptom**, and a later save from Eeschema **overwrites it, also with no prompt**,
+because the editor writes the document it read at open time. The sequence —
+write, overwrite, loss — leaves no marker; the only evidence is the file
+afterwards.
+
+The way to pick up a kicli write is **File → Revert**, which reloads from disk,
+discards every unsaved change of the whole hierarchy, and clears the undo
+history so none of it can be recovered. All of this is measured, from KiCad's
+source and from the editor: see
 [`research/notes/eeschema-external-changes.md`](../research/notes/eeschema-external-changes.md),
-which carries the source citations, the control that makes the negative results
-evidence, and the recipe for the two behaviours still to be watched happening.
+which carries the source citations, the controls that make the negative results
+evidence, the session transcript, and the recipe.
 
 The warning's job follows from that: it tells a person to press Revert. It
 cannot promise the write will survive, because nothing in the editor knows the
-write happened.
+write happened, and it cannot detect the overwrite afterwards either.
 
 Amendment (Q34): this must **never slow or break the no-KiCad-running case**.
 Concretely: attempt only when the socket path already exists; total probe budget
