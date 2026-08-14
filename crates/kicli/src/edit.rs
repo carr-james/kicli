@@ -9,6 +9,7 @@
 //! rule each command has to remember.
 
 pub mod field;
+pub mod insert;
 pub mod label;
 pub mod mark;
 pub mod net;

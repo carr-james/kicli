@@ -4,7 +4,8 @@
 //! between stdout and stderr are part of the contract, and neither is visible
 //! from inside the library.
 
-use kicli::cli::ExitCode;
+use clap::CommandFactory;
+use kicli::cli::{Cli, ExitCode};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
@@ -197,6 +198,314 @@ fn only_the_table_turns_an_exit_code_into_a_number() {
             );
         }
     }
+}
+
+/// Every noun and verb the binary has, as a caller types them.
+fn every_verb() -> Vec<(String, String)> {
+    let command = Cli::command();
+    let mut pairs = Vec::new();
+    for noun in command.get_subcommands() {
+        for verb in noun.get_subcommands() {
+            pairs.push((noun.get_name().to_owned(), verb.get_name().to_owned()));
+        }
+    }
+    pairs
+}
+
+/// Every verb of every noun answers for itself.
+///
+/// `--help` is the cheapest proof that a verb is wired: the argument parser has
+/// to build the whole subcommand to print it, so a verb whose flags do not
+/// declare cleanly fails here rather than in the field.
+#[test]
+fn every_verb_parses() {
+    let verbs = every_verb();
+    assert!(
+        verbs.len() >= 26,
+        "the binary has the read verbs and the mutation verbs: {verbs:?}"
+    );
+
+    for (noun, verb) in &verbs {
+        let run = kicli(&[noun, verb, "--help"]);
+        assert_eq!(
+            code(&run),
+            0,
+            "kicli {noun} {verb} --help: {}",
+            stderr(&run)
+        );
+        assert!(
+            stdout(&run).contains(verb.as_str()),
+            "the help names the verb: {}",
+            stdout(&run)
+        );
+    }
+}
+
+/// The mutation nouns, which the milestone exists for.
+#[test]
+fn every_mutation_noun_is_on_the_surface() {
+    let nouns: Vec<String> = every_verb().into_iter().map(|(noun, _)| noun).collect();
+    for noun in [
+        "sym",
+        "field",
+        "text",
+        "label",
+        "junction",
+        "noconnect",
+        "net",
+    ] {
+        assert!(nouns.iter().any(|had| had == noun), "kicli {noun} is wired");
+    }
+}
+
+/// A copy of a project a test may write to, in a directory of its own.
+fn scratch_project(name: &str, files: &[(&str, &str)]) -> PathBuf {
+    let directory = Path::new(env!("CARGO_TARGET_TMPDIR")).join(name);
+    let _ = std::fs::remove_dir_all(&directory);
+    std::fs::create_dir_all(&directory).expect("the scratch directory is made");
+    for (file, source) in files {
+        std::fs::write(directory.join(file), source).expect("the sheet is written");
+    }
+    directory
+}
+
+/// A scratch directory holding one copy of one fixture file.
+fn scratch_file(name: &str, relative: &str) -> PathBuf {
+    let from = fixture(relative);
+    let directory = Path::new(env!("CARGO_TARGET_TMPDIR")).join(name);
+    let _ = std::fs::remove_dir_all(&directory);
+    std::fs::create_dir_all(&directory).expect("the scratch directory is made");
+    let file = from.file_name().expect("a fixture file has a name");
+    std::fs::copy(&from, directory.join(file)).expect("the copy is written");
+    directory
+}
+
+/// A copy of one of this crate's fixture directories.
+fn scratch_copy(name: &str, relative: &str) -> PathBuf {
+    let directory = Path::new(env!("CARGO_TARGET_TMPDIR")).join(name);
+    let _ = std::fs::remove_dir_all(&directory);
+    std::fs::create_dir_all(&directory).expect("the scratch directory is made");
+    for entry in std::fs::read_dir(fixture(relative)).expect("the fixture directory reads") {
+        let path = entry.expect("a directory entry reads").path();
+        if path.is_file() {
+            let file = path.file_name().expect("a file has a name");
+            std::fs::copy(&path, directory.join(file)).expect("the copy is written");
+        }
+    }
+    directory
+}
+
+/// Four wire ends meeting at one point, and nothing else.
+const CROSSROADS: &str = concat!(
+    "(kicad_sch\n\t(version 20260306)\n\t(uuid \"root\")\n\t(paper \"A4\")\n",
+    "\t(wire\n\t\t(pts\n\t\t\t(xy 38.1 50.8) (xy 50.8 50.8)\n\t\t)\n\t\t(uuid \"wire0\")\n\t)\n",
+    "\t(wire\n\t\t(pts\n\t\t\t(xy 50.8 50.8) (xy 63.5 50.8)\n\t\t)\n\t\t(uuid \"wire1\")\n\t)\n",
+    "\t(wire\n\t\t(pts\n\t\t\t(xy 50.8 38.1) (xy 50.8 50.8)\n\t\t)\n\t\t(uuid \"wire2\")\n\t)\n",
+    "\t(wire\n\t\t(pts\n\t\t\t(xy 50.8 50.8) (xy 50.8 63.5)\n\t\t)\n\t\t(uuid \"wire3\")\n\t)\n)\n",
+);
+
+/// A sheet that already breaks the on-grid invariant.
+///
+/// Nothing a command does to this file can hold, so the invariant pass refuses
+/// the write. It is the shortest route to a verification failure through the
+/// command surface.
+const OFF_GRID: &str = concat!(
+    "(kicad_sch\n\t(version 20260306)\n\t(uuid \"root\")\n\t(paper \"A4\")\n",
+    "\t(junction\n\t\t(at 25.41 25.4)\n\t\t(uuid \"j1\")\n\t)\n)\n",
+);
+
+/// Every refusal exits with the row of the table its kind names.
+///
+/// The three the milestone gates on are here — the four-way junction, the
+/// no-connect on a connected pin and the rename of an unnamed net — with one
+/// case for each of the other rows a mutation can end on.
+#[test]
+fn every_refusal_exits_with_the_code_its_row_names() {
+    let nets = scratch_copy("surface_refusals_nets", "sch/nets");
+    let crossroads = scratch_project(
+        "surface_refusals_crossroads",
+        &[("board.kicad_sch", CROSSROADS)],
+    );
+    let off_grid = scratch_project(
+        "surface_refusals_off_grid",
+        &[("board.kicad_sch", OFF_GRID)],
+    );
+    let future = scratch_file("surface_refusals_future", "sch/future_version.kicad_sch");
+
+    let cases: [(&str, &Path, Vec<&str>, ExitCode); 8] = [
+        (
+            "a junction where four wire ends already meet",
+            &crossroads,
+            vec!["junction", "add", "--at", "50.8,50.8"],
+            ExitCode::Operation,
+        ),
+        (
+            "a no-connect on a pin something already joins",
+            &nets,
+            vec!["noconnect", "add", "--pin", "R12.2"],
+            ExitCode::Operation,
+        ),
+        (
+            "a rename of a net no label names",
+            &nets,
+            vec!["net", "rename", "#n1", "--to", "SPY"],
+            ExitCode::Operation,
+        ),
+        (
+            "an object this sheet does not hold",
+            &nets,
+            vec!["sym", "move", "R999", "--by", "0,0"],
+            ExitCode::Operation,
+        ),
+        (
+            "a flag the parser does not know",
+            &nets,
+            vec!["sym", "move", "R1", "--sideways", "1"],
+            ExitCode::Usage,
+        ),
+        (
+            "an angle that is not a quarter turn",
+            &nets,
+            vec!["sym", "rotate", "R1", "--to", "45"],
+            ExitCode::Usage,
+        ),
+        (
+            "a change that would not hold its own invariants",
+            &off_grid,
+            vec!["text", "add", "--text", "hello", "--at", "10,10"],
+            ExitCode::Verification,
+        ),
+        (
+            "a file kicli refuses to write at all",
+            &future,
+            vec!["text", "add", "--text", "hello", "--at", "10,10"],
+            ExitCode::File,
+        ),
+    ];
+
+    for (what, project, arguments, expected) in cases {
+        let before = files_of(project);
+        let mut args = arguments.clone();
+        args.push("-p");
+        let project_text = project.to_str().expect("the path is text");
+        args.push(project_text);
+
+        let run = kicli(&args);
+        assert_eq!(
+            code(&run),
+            i32::from(expected.code()),
+            "{what} exits {} ({}): {}",
+            expected.code(),
+            expected.name(),
+            stderr(&run)
+        );
+        assert!(
+            stdout(&run).is_empty(),
+            "{what} writes no result to stdout: {}",
+            stdout(&run)
+        );
+        assert_eq!(before, files_of(project), "{what} wrote nothing");
+    }
+}
+
+/// Every refusal in JSON is one object naming its row of the table.
+#[test]
+fn a_refusal_in_json_names_its_row_of_the_table() {
+    let crossroads = scratch_project("surface_refusal_json", &[("board.kicad_sch", CROSSROADS)]);
+    let run = kicli(&[
+        "junction",
+        "add",
+        "--at",
+        "50.8,50.8",
+        "-p",
+        crossroads.to_str().expect("the path is text"),
+        "--output",
+        "json",
+    ]);
+
+    assert_eq!(code(&run), 1);
+    let reported: serde_json::Value =
+        serde_json::from_str(&stderr(&run)).expect("stderr is one JSON object");
+    assert_eq!(reported["error"]["kind"], "operation");
+    assert_eq!(reported["error"]["exit_code"], 1);
+    assert!(
+        reported["error"]["message"]
+            .as_str()
+            .expect("the message is text")
+            .contains("four wire ends meet"),
+        "the refusal says what it refused: {reported}"
+    );
+}
+
+/// A mutation reports the invariants it ran, in both forms.
+#[test]
+fn a_mutation_reports_the_invariants_it_ran() {
+    let project = scratch_copy("surface_mutation_report", "sch/nets");
+    let path = project.to_str().expect("the path is text");
+
+    let run = kicli(&[
+        "label",
+        "add",
+        "--text",
+        "SPY",
+        "--at",
+        "30.48,88.9",
+        "-p",
+        path,
+        "--output",
+        "json",
+    ]);
+    assert_eq!(code(&run), 0, "{}", stderr(&run));
+
+    let reported: serde_json::Value =
+        serde_json::from_str(&stdout(&run)).expect("stdout is one JSON object");
+    let invariants = reported["invariants"]
+        .as_array()
+        .expect("the report lists the invariants");
+    assert_eq!(invariants.len(), 4, "all four ran: {reported}");
+    assert!(
+        invariants.iter().all(|check| check["passed"] == true),
+        "and all four passed: {reported}"
+    );
+    assert_eq!(reported["reformatted"], false);
+
+    let text = kicli(&[
+        "label",
+        "add",
+        "--text",
+        "SPY2",
+        "--at",
+        "30.48,80.01",
+        "-p",
+        path,
+    ]);
+    assert_eq!(code(&text), 0, "{}", stderr(&text));
+    assert!(
+        stdout(&text).contains("checked: every invariant passed"),
+        "the text form says so too: {}",
+        stdout(&text)
+    );
+}
+
+/// Every file of a directory, by name and content.
+fn files_of(directory: &Path) -> Vec<(String, Vec<u8>)> {
+    let mut found: Vec<(String, Vec<u8>)> = std::fs::read_dir(directory)
+        .expect("the directory reads")
+        .filter_map(Result::ok)
+        .map(|entry| entry.path())
+        .filter(|path| path.is_file())
+        .map(|path| {
+            (
+                path.file_name()
+                    .expect("a file has a name")
+                    .to_string_lossy()
+                    .into_owned(),
+                std::fs::read(&path).expect("the file reads"),
+            )
+        })
+        .collect();
+    found.sort();
+    found
 }
 
 /// One of this crate's fixture directories.

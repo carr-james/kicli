@@ -7,6 +7,7 @@
 
 mod args;
 mod check;
+pub mod edit;
 mod exit;
 mod locate;
 mod output;
@@ -14,7 +15,10 @@ mod project;
 mod tools;
 mod view;
 
-pub use args::{Cli, Command, Global, OutputFormat, ProjectVerb, SchVerb};
+pub use args::{
+    Cli, Command, FieldVerb, Global, JunctionVerb, LabelVerb, NetVerb, NoconnectVerb, OutputFormat,
+    PinArg, PointArg, ProjectVerb, SchVerb, SizeArg, SymVerb, TextVerb,
+};
 pub use exit::ExitCode;
 pub use output::{Failure, Report, Reporter};
 
@@ -67,13 +71,14 @@ where
 
 /// Send one parsed command to the code that answers it.
 fn dispatch(parsed: &Cli, reporter: &Reporter) -> Result<Report, Failure> {
-    match parsed.command {
+    let global = &parsed.global;
+    match &parsed.command {
         Command::Project {
             verb: ProjectVerb::Info,
-        } => project::info(&parsed.global, reporter),
+        } => project::info(global, reporter),
         Command::Project {
             verb: ProjectVerb::Check,
-        } => check::check(&parsed.global, reporter),
+        } => check::check(global, reporter),
         Command::Sch {
             verb:
                 SchVerb::View {
@@ -82,7 +87,14 @@ fn dispatch(parsed: &Cli, reporter: &Reporter) -> Result<Report, Failure> {
                     uuids,
                     stats,
                 },
-        } => view::view(&parsed.global, which, include_power, uuids, stats, reporter),
+        } => view::view(global, *which, *include_power, *uuids, *stats, reporter),
+        Command::Sym { verb } => edit::symbol::run(global, verb),
+        Command::Field { verb } => edit::field::run(global, verb),
+        Command::Text { verb } => edit::text::run(global, verb),
+        Command::Label { verb } => edit::label::run(global, verb),
+        Command::Junction { verb } => edit::mark::junction(global, verb),
+        Command::Noconnect { verb } => edit::mark::no_connect(global, verb),
+        Command::Net { verb } => edit::net::run(global, verb),
     }
 }
 

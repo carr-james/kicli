@@ -352,6 +352,27 @@ pub fn delete_no_connect(
 }
 
 /// Where one pin of one placed symbol connects.
+///
+/// A junction is addressed by a point, and a caller who means "the point where
+/// `R11.2` connects" should not have to work it out. The answer is a property of
+/// the sheet path: a symbol on a sheet placed twice draws a different unit on
+/// each placement, so each has its own pin positions.
+///
+/// # Errors
+///
+/// Returns [`MarkError::UnknownFile`] when the target names no file of this
+/// project, and [`MarkError::NoSuchSymbol`], [`MarkError::NoSuchPin`] or
+/// [`MarkError::NoDefinition`] when the pin cannot be found or cannot be placed.
+pub fn pin_point(
+    hierarchy: &Hierarchy,
+    target: &Target<'_>,
+    pin: &PinAddress,
+) -> Result<Point, MarkError> {
+    let file = file_of(hierarchy, target.path)?;
+    pin_position(&hierarchy.files[file], target.sheet_path, pin)
+}
+
+/// Where one pin of one placed symbol connects.
 fn pin_position(
     loaded: &LoadedFile,
     sheet: &SheetPath,

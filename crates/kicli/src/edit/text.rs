@@ -4,11 +4,9 @@
 //! reach, so these commands never snap a position to the grid. A text box also
 //! carries a size, which `resize` changes and no other command touches.
 
-use std::fmt::Write as _;
-
 use kicli_sexpr::{Doc, NodeId, SexprError, quote};
-use sha2::{Digest, Sha256};
 
+use crate::edit::insert::{fresh_uuid, insertion_index};
 use crate::geometry::{Angle, Point, Size};
 use crate::model::items::{ReadError, Schematic, Uuid};
 use crate::model::mutate::{Mutation, MutationError, Target, commit, state_before};
@@ -265,60 +263,9 @@ fn fragment_of(request: &NewText, uuid: &Uuid) -> String {
     )
 }
 
-/// Where a new object goes among a sheet's children.
-///
-/// It goes before the trailing metadata, so the file keeps the shape KiCad
-/// writes: the objects of the drawing, then `sheet_instances`, then the
-/// embedded fonts.
-pub(crate) fn insertion_index(doc: &Doc, root: NodeId) -> usize {
-    let children = doc.children(root);
-    children
-        .iter()
-        .position(|&child| {
-            doc.head_is(child, "sheet_instances") || doc.head_is(child, "embedded_fonts")
-        })
-        .unwrap_or(children.len())
-}
-
-/// An identifier for a new object that no object of this file already has.
-///
-/// The value is a function of `seed`, so one command run twice over one file
-/// gives one answer and a test is repeatable. The shape is the version-4 shape
-/// KiCad writes, because KiCad's reader rejects anything else.
-pub(crate) fn fresh_uuid(doc: &Doc, seed: &str) -> Uuid {
-    let taken = doc.uuid_index();
-    for attempt in 0..u32::MAX {
-        let candidate = uuid_from(&format!("{seed} {attempt}"));
-        if !taken.contains_key(&candidate) {
-            return Uuid(candidate);
-        }
-    }
-    Uuid(uuid_from(seed))
-}
-
-/// One identifier, derived from text.
-fn uuid_from(seed: &str) -> String {
-    let digest = Sha256::digest(seed.as_bytes());
-    let mut hex = String::with_capacity(32);
-    for byte in digest.iter().take(16) {
-        let _ = write!(hex, "{byte:02x}");
-    }
-    // The version and variant nibbles, which KiCad's reader expects to find.
-    hex.replace_range(12..13, "4");
-    hex.replace_range(16..17, "8");
-    format!(
-        "{}-{}-{}-{}-{}",
-        &hex[0..8],
-        &hex[8..12],
-        &hex[12..16],
-        &hex[16..20],
-        &hex[20..32]
-    )
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{NewText, fragment_of, fresh_uuid, uuid_from};
+    use super::{NewText, fragment_of};
     use crate::geometry::{Angle, Point, Size};
     use crate::model::items::Uuid;
     use kicli_sexpr::Doc;
@@ -354,27 +301,5 @@ mod tests {
         let fragment = fragment_of(&request, &Uuid("abc".to_owned()));
         assert!(fragment.starts_with("(text_box "), "{fragment}");
         assert!(fragment.contains("(size 50.8 25.4)"), "{fragment}");
-    }
-
-    #[test]
-    fn an_identifier_has_the_shape_kicad_writes() {
-        let value = uuid_from("anything");
-        let parts: Vec<&str> = value.split('-').collect();
-        assert_eq!(
-            parts.iter().map(|part| part.len()).collect::<Vec<_>>(),
-            vec![8, 4, 4, 4, 12]
-        );
-        assert!(value.chars().all(|c| c.is_ascii_hexdigit() || c == '-'));
-        assert!(parts[2].starts_with('4'), "{value}");
-        assert!(parts[3].starts_with('8'), "{value}");
-    }
-
-    #[test]
-    fn a_new_identifier_avoids_the_ones_the_file_holds() {
-        let first = uuid_from("seed 0");
-        let source = format!("(kicad_sch (junction (at 0 0) (uuid \"{first}\")))");
-        let doc = Doc::parse(&source).expect("parses");
-        let fresh = fresh_uuid(&doc, "seed");
-        assert_ne!(fresh.0, first);
     }
 }

@@ -19,7 +19,7 @@ use std::path::Path;
 use kicli_sexpr::{Doc, NodeId, SexprError, quote};
 
 use crate::connectivity::{Net, NetPin, Nets, extract};
-use crate::edit::text::{fresh_uuid, insertion_index};
+use crate::edit::insert::{fresh_uuid, insertion_index};
 use crate::geometry::{Angle, Point, on_segment, resolve_pins, snap_point};
 use crate::model::hierarchy::{Hierarchy, LoadError};
 use crate::model::items::{Item, LabelKind, ReadError, Schematic, Symbol, Uuid};
