@@ -106,6 +106,17 @@ pub enum ObjectKind {
 
 impl ObjectKind {
     /// The word the snapshot file writes for this kind.
+    ///
+    /// These are **KiCad's own record names** — `label`, `global_label`,
+    /// `no_connect`, `bus_entry` — and not the words the views print or the
+    /// commands take. A snapshot is a wire format: it is keyed by identifier
+    /// rather than read by hand, and it must round-trip a record kind this
+    /// version has never seen, which [`ObjectKind::Other`] does by keeping the
+    /// file's own token. The one-term-per-concept rule governs the surface an
+    /// agent reads and types — the views, the verbs and the documentation —
+    /// where a view's word must be the word the command takes. Translating a
+    /// few of these tokens would leave the set half in one vocabulary and half
+    /// in the other, and would stale every snapshot already written.
     #[must_use]
     pub fn token(&self) -> &str {
         match self {
