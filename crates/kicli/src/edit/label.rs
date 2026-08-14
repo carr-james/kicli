@@ -20,7 +20,7 @@ use kicli_sexpr::{Doc, NodeId, SexprError, quote};
 
 use crate::connectivity::{Net, NetPin, Nets, extract};
 use crate::edit::text::{fresh_uuid, insertion_index};
-use crate::geometry::{Angle, Iu, Point, resolve_pins};
+use crate::geometry::{Angle, Point, on_segment, resolve_pins, snap_point};
 use crate::model::hierarchy::{Hierarchy, LoadError};
 use crate::model::items::{Item, LabelKind, ReadError, Schematic, Symbol, Uuid};
 use crate::model::library::{definition_of, read_library};
@@ -273,7 +273,7 @@ pub fn add(
     }
     let schematic = Schematic::read(doc)?;
     let sheet = doc.root().ok_or(ReadError::Empty)?;
-    let at = snapped(request.at, target.grid);
+    let at = snap_point(request.at, target.grid);
 
     let mut notes = grid_note(request.at, at);
     notes.extend(anchor_notes(doc, &schematic, at, None));
@@ -329,7 +329,7 @@ pub fn move_to(
     to: Point,
     taken: &str,
 ) -> Result<LabelChange, LabelError> {
-    let at = snapped(to, target.grid);
+    let at = snap_point(to, target.grid);
     let mut notes = grid_note(to, at);
     let plan = Plan {
         target,
@@ -465,30 +465,6 @@ fn nets_of(root: &Path) -> Result<Nets, LabelError> {
     Ok(extract(&Hierarchy::load(root)?))
 }
 
-/// A position on the grid: round half away from zero, in integers.
-fn snapped(point: Point, grid: Iu) -> Point {
-    Point {
-        x: snap(point.x, grid),
-        y: snap(point.y, grid),
-    }
-}
-
-/// One coordinate on the grid.
-fn snap(value: Iu, grid: Iu) -> Iu {
-    let step = i64::from(grid.0).abs();
-    if step == 0 {
-        return value;
-    }
-    let raw = i64::from(value.0);
-    let half = step / 2;
-    let steps = if raw >= 0 {
-        (raw + half) / step
-    } else {
-        -((-raw + half) / step)
-    };
-    Iu(i32::try_from(steps * step).unwrap_or(value.0))
-}
-
 /// The note a snap leaves, when the anchor moved.
 fn grid_note(requested: Point, at: Point) -> Vec<String> {
     if requested == at {
@@ -570,22 +546,6 @@ fn pin_at(doc: &Doc, schematic: &Schematic, at: Point) -> bool {
             })
         })
     })
-}
-
-/// Is a point on a segment, ends included?
-///
-/// Exact integer arithmetic in 64 bits: the cross product decides whether the
-/// point is on the line, and the dot product whether it is between the ends.
-fn on_segment(from: Point, to: Point, point: Point) -> bool {
-    let (ax, ay) = (i64::from(from.x.0), i64::from(from.y.0));
-    let (bx, by) = (i64::from(to.x.0), i64::from(to.y.0));
-    let (px, py) = (i64::from(point.x.0), i64::from(point.y.0));
-    let (dx, dy) = (bx - ax, by - ay);
-    if dx * (py - ay) - dy * (px - ax) != 0 {
-        return false;
-    }
-    let along = dx * (px - ax) + dy * (py - ay);
-    along >= 0 && along <= dx * dx + dy * dy
 }
 
 /// What changed between two readings of a project's nets.
@@ -715,10 +675,7 @@ fn intersheet_refs(at: Point, version: FormatVersion) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        Angle, Iu, LabelKind, NewLabel, Point, PortShape, Uuid, fragment_of, justification, snapped,
-    };
-    use crate::geometry::GRID;
+    use super::{Angle, LabelKind, NewLabel, Point, PortShape, Uuid, fragment_of, justification};
     use crate::model::version::FormatVersion;
     use kicli_sexpr::Doc;
 
@@ -782,18 +739,6 @@ mod tests {
         );
         assert!(text.contains("(hide yes)))"), "{text}");
         assert!(!text.contains("(hide yes) (show_name no)"), "{text}");
-    }
-
-    #[test]
-    fn an_anchor_rounds_half_away_from_zero() {
-        assert_eq!(
-            snapped(Point::new(304_900, 0), GRID),
-            Point::new(304_800, 0)
-        );
-        assert_eq!(snapped(Point::new(6_350, 0), GRID), Point::new(12_700, 0));
-        assert_eq!(snapped(Point::new(-6_350, 0), GRID), Point::new(-12_700, 0));
-        // A grid of zero divides nothing.
-        assert_eq!(snapped(Point::new(1, 2), Iu(0)), Point::new(1, 2));
     }
 
     #[test]

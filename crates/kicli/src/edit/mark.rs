@@ -20,7 +20,7 @@ use std::path::Path;
 use kicli_sexpr::{Doc, NodeId, SexprError, quote};
 
 use crate::connectivity::extract;
-use crate::geometry::{Iu, Point, resolve_pins};
+use crate::geometry::{Point, resolve_pins, snap_point};
 use crate::model::hierarchy::{Hierarchy, LoadedFile};
 use crate::model::items::{
     Item, LabelKind, Line, LineKind, ReadError, Refdes, Schematic, SheetPath, Uuid,
@@ -229,7 +229,7 @@ pub fn add_junction(
     taken: &str,
 ) -> Result<Mutation, MarkError> {
     let file = file_of(hierarchy, target.path)?;
-    let at = snapped(at, target.grid);
+    let at = snap_point(at, target.grid);
     let schematic = &hierarchy.files[file].schematic;
 
     if schematic.junctions().any(|junction| junction.at == at) {
@@ -267,7 +267,7 @@ pub fn delete_junction(
     taken: &str,
 ) -> Result<Mutation, MarkError> {
     let file = file_of(hierarchy, target.path)?;
-    let at = snapped(at, target.grid);
+    let at = snap_point(at, target.grid);
     let node = hierarchy.files[file]
         .schematic
         .junctions()
@@ -534,30 +534,6 @@ fn file_of(hierarchy: &Hierarchy, path: &Path) -> Result<usize, MarkError> {
         })
 }
 
-/// The nearest grid point, rounding half away from zero.
-fn snapped(point: Point, grid: Iu) -> Point {
-    Point {
-        x: snap(point.x, grid),
-        y: snap(point.y, grid),
-    }
-}
-
-/// One coordinate on the grid, by exact integer arithmetic.
-fn snap(value: Iu, grid: Iu) -> Iu {
-    if grid.0 <= 0 {
-        return value;
-    }
-    let step = i64::from(grid.0);
-    let raw = i64::from(value.0);
-    let half = step / 2;
-    let steps = if raw >= 0 {
-        (raw + half) / step
-    } else {
-        (raw - half) / step
-    };
-    Iu(i32::try_from(steps * step).unwrap_or(value.0))
-}
-
 /// The first eight characters of an identifier, which is the handle a delta
 /// prints.
 fn short(uuid: &str) -> String {
@@ -575,28 +551,7 @@ fn listed<T: fmt::Display>(items: &[T]) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{Iu, Point, listed, short, snap, snapped};
-    use crate::geometry::GRID;
-
-    #[test]
-    fn a_point_snaps_to_the_nearest_grid_step() {
-        assert_eq!(snap(Iu(0), GRID), Iu(0));
-        assert_eq!(snap(Iu(12_700), GRID), Iu(12_700));
-        // Half a step rounds away from zero, in both directions.
-        assert_eq!(snap(Iu(6_350), GRID), Iu(12_700));
-        assert_eq!(snap(Iu(-6_350), GRID), Iu(-12_700));
-        assert_eq!(snap(Iu(6_349), GRID), Iu(0));
-        assert_eq!(snap(Iu(-6_349), GRID), Iu(0));
-        assert_eq!(
-            snapped(Point::new(6_350, -6_350), GRID),
-            Point::new(12_700, -12_700)
-        );
-    }
-
-    #[test]
-    fn a_grid_of_nothing_leaves_a_point_alone() {
-        assert_eq!(snap(Iu(3), Iu(0)), Iu(3));
-    }
+    use super::{listed, short};
 
     #[test]
     fn a_handle_is_the_first_eight_characters() {

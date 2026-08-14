@@ -49,7 +49,7 @@
 
 use super::names::{net_name, unescape_net_name};
 use super::{MergeRules, NetWarning, NetWarningKind};
-use crate::geometry::{Point, ResolvedPin, resolve_pins};
+use crate::geometry::{Point, ResolvedPin, on_segment, resolve_pins};
 use crate::model::hierarchy::{Hierarchy, Placement};
 use crate::model::items::{Item, LabelKind, LineKind, Refdes, SheetPath, Symbol, Uuid};
 use crate::model::library::{LibrarySymbol, definition_of, read_library};
@@ -711,22 +711,6 @@ fn find(parent: &mut [usize], node: usize) -> usize {
         current = parent[current];
     }
     current
-}
-
-/// Is a point on a segment, ends included?
-///
-/// Exact integer arithmetic in 64 bits: the cross product decides whether the
-/// point is on the line, and the dot product whether it is between the ends.
-fn on_segment(from: Point, to: Point, point: Point) -> bool {
-    let (ax, ay) = (i64::from(from.x.0), i64::from(from.y.0));
-    let (bx, by) = (i64::from(to.x.0), i64::from(to.y.0));
-    let (px, py) = (i64::from(point.x.0), i64::from(point.y.0));
-    let (dx, dy) = (bx - ax, by - ay);
-    if dx * (py - ay) - dy * (px - ax) != 0 {
-        return false;
-    }
-    let along = dx * (px - ax) + dy * (py - ay);
-    along >= 0 && along <= dx * dx + dy * dy
 }
 
 /// One item that names a net, as the name merges need it.

@@ -6,11 +6,13 @@
 //! `kicad-cli`.
 
 pub mod font;
+pub mod grid;
 pub mod pins;
 pub mod symbol_box;
 pub mod text;
 pub mod transform;
 
+pub use grid::{on_segment, snap, snap_point};
 pub use pins::{ResolvedPin, resolve_pins};
 pub use symbol_box::{SymbolBoxes, symbol_boxes};
 pub use text::{TextBox, TextStyle, text_box};

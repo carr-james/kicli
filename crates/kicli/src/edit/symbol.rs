@@ -24,7 +24,7 @@ use std::fmt::Write as _;
 
 use kicli_sexpr::{Doc, NodeId, SexprError, quote};
 
-use crate::geometry::{Angle, Iu, Point, Transform};
+use crate::geometry::{Angle, Iu, Point, Transform, snap_point};
 use crate::model::items::{LibId, Mirror, Refdes, Schematic, SheetPath, Symbol, Uuid};
 use crate::model::library::read_library;
 
@@ -234,24 +234,6 @@ pub fn snap(value: Iu, grid: Iu) -> Iu {
     let steps = (size + step / 2) / step;
     let rounded = steps * step * i64::from(value.0.signum());
     Iu(i32::try_from(rounded).unwrap_or(value.0))
-}
-
-/// Round both coordinates of a point to the nearest grid line.
-///
-/// # Examples
-///
-/// ```
-/// use kicli::edit::symbol::snap_point;
-/// use kicli::geometry::{GRID, Point};
-///
-/// assert_eq!(snap_point(Point::new(6_350, 0), GRID), Point::new(12_700, 0));
-/// ```
-#[must_use]
-pub fn snap_point(point: Point, grid: Iu) -> Point {
-    Point {
-        x: snap(point.x, grid),
-        y: snap(point.y, grid),
-    }
 }
 
 /// Move a symbol, and carry its fields with it.
