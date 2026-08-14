@@ -173,6 +173,11 @@ scoring.
 Legend — **T**: tier (1 = blocking, 2 = scored). **W**: default weight (penalty
 points per occurrence before normalisation). **Knob**: `kicli.toml [rules]` key.
 
+The knob names below are this note's drafts. Where a rule shares a setting with
+something outside the score, the shared key wins and is named here — see
+`KI-LBL-001`. The rest are settled when the scorer is built, against
+`spec/SPEC.md` §15's `[rules."KI-…"]` tables.
+
 ### Tier 1 — blocking (fail `sch score --gate`, weight n/a)
 
 #### KI-GRID-001 — connectable geometry off grid
@@ -318,7 +323,9 @@ points per occurrence before normalisation). **Knob**: `kicli.toml [rules]` key.
   label.
 - **Interaction with R9**: this threshold is the same one the router uses to
   decide "emit paired net labels instead of a wire". They must be one knob.
-- **Knob**: `labels.distance_threshold = "30G"`.
+- **Knob**: `routing.label_threshold = "30G"` — the key the router reads, and
+  the only one. C14 resolved this rule's threshold and the router's into one
+  key; `spec/SPEC.md` §15 carries it, and neither side may grow one of its own.
 
 #### KI-LBL-002 — auto-generated net name on a significant net
 - **T** 2. **W** 1.5. **Source**: Olin ("significant nets get short

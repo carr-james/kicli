@@ -1054,7 +1054,8 @@ warning — agents typo silently.
 [view]        max_bytes = 32768        # whole-project vs index+summaries (Q11)
 [libraries]   shared_path = "../shared"; shared_nick = "Eurorack Common"; …
 [routing]     label_threshold = "30G"  # shared with rules.KI-LBL-001 (C14)
-              w_turn = 6; w_cross = 20; w_text = 12; w_near = 2; margin = "8G"
+              w_len = 1; w_turn = 6; w_cross = 20; w_text = 12; w_near = 2
+              margin = "8G"; u_max = "6G"    # window inflation; U-shape reach
 [rules]       default_tier2_enabled = true; gate_on_tier1 = true; consume_erc = true
 [rules."KI-XING-001"] enabled = true; weight = 1.0; free_allowance = 2
 [render]      max_px = 1600; min_px_per_mm = 6; style = "auto"; cache = true
@@ -1064,7 +1065,14 @@ warning — agents typo silently.
 ```
 
 `routing.label_threshold` is read by both the router and `KI-LBL-001`. It is one
-knob (C14); duplicating it is a bug. The routing weights beside it are judged by
+knob (C14); duplicating it is a bug, and a test over the sources holds that.
+
+Every routing weight is a **whole number, never negative**, because the router's
+cost is `i64` and a negative term would make a longer route cheaper than a
+shorter one. The three distances — `label_threshold`, `margin`, `u_max` — are
+lengths in the usual forms (`"30G"`, `"381mm"`, `"15000mil"`) and are never
+negative either. Both are refused when the file is read, not when the router
+finally runs. The routing weights beside it are judged by
 the calibration gate in §9 and again by the score calibration in §11.6, so they
 are changed by a decision about both and never by one alone.
 

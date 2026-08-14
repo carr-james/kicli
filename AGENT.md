@@ -506,7 +506,9 @@ above says.
 ## Configuration
 
 `kicli.toml`, in the project directory. **An unknown key is an error**, not a
-warning, so a misspelled setting tells you rather than doing nothing.
+warning, so a misspelled setting tells you rather than doing nothing. kicli
+validates every section it knows, including ones no command reads yet, so a typo
+is an error the moment you write it.
 
 ```toml
 [grid]     step = "50mil"       # also "1.27mm" or "8G", whole grid steps

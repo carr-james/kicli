@@ -97,6 +97,42 @@ pub struct Tools {
     pub kicad_cli_path: Option<String>,
 }
 
+/// Router settings, and the weights the score reads with it.
+///
+/// Every weight is a whole number, because the router's cost is an `i64` and
+/// there is no floating point anywhere in it. A weight is a cost, so none of
+/// them may be negative: a negative term would make a longer route cheaper and
+/// would break the search's own arithmetic.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Routing {
+    /// The distance above which a connection is proposed as a pair of labels
+    /// rather than drawn as a wire.
+    ///
+    /// **One knob, read twice.** The router decides with it, and the long-wire
+    /// style rule judges with it. A router that draws at one distance while the
+    /// rule penalises at another argues with itself.
+    pub label_threshold: Iu,
+    /// The cost of one grid step of wire. The base unit.
+    pub w_len: i64,
+    /// The cost of one corner.
+    ///
+    /// The measured median segment is five grid steps, so a corner must cost
+    /// more than a modest detour or the router zig-zags.
+    pub w_turn: i64,
+    /// The cost of crossing another net, which is the most visible defect.
+    pub w_cross: i64,
+    /// The cost of one grid step inside a label or text box.
+    ///
+    /// Routing through a label is nearly as bad as a crossing.
+    pub w_text: i64,
+    /// The cost of one grid step within one grid step of a symbol body.
+    pub w_near: i64,
+    /// How far outside the two terminals the router may look for a route.
+    pub margin: Iu,
+    /// How far outward a U-shaped route may reach.
+    pub u_max: Iu,
+}
+
 /// Inter-process settings.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Ipc {
@@ -116,6 +152,8 @@ pub struct Config {
     pub formats: Formats,
     /// View settings.
     pub view: View,
+    /// Router settings.
+    pub routing: Routing,
     /// External tool locations.
     pub tools: Tools,
     /// Inter-process settings.
@@ -133,6 +171,16 @@ impl Default for Config {
                 max_schematic_version: MAX_SCHEMATIC_VERSION,
             },
             view: View { max_bytes: 32_768 },
+            routing: Routing {
+                label_threshold: Iu(30 * GRID.0),
+                w_len: 1,
+                w_turn: 6,
+                w_cross: 20,
+                w_text: 12,
+                w_near: 2,
+                margin: Iu(8 * GRID.0),
+                u_max: Iu(6 * GRID.0),
+            },
             tools: Tools::default(),
             ipc: Ipc {
                 probe_timeout_ms: 250,
@@ -164,11 +212,13 @@ const SECTIONS: &[(&str, &[&str])] = &[
         "routing",
         &[
             "label_threshold",
+            "w_len",
             "w_turn",
             "w_cross",
             "w_text",
             "w_near",
             "margin",
+            "u_max",
         ],
     ),
     (
@@ -236,6 +286,7 @@ impl Config {
 
         let mut config = Self::default();
         config.read_grid(&table)?;
+        config.read_routing(&table)?;
         config.read_limits(&table)?;
         Ok(config)
     }
@@ -250,6 +301,34 @@ impl Config {
         }
         if let Some(exempt) = grid.get("exempt_text") {
             self.grid.exempt_text = boolean("grid", "exempt_text", exempt)?;
+        }
+        Ok(())
+    }
+
+    /// Read the router's distances and weights.
+    fn read_routing(&mut self, table: &toml::Table) -> Result<(), ConfigError> {
+        let routing = &mut self.routing;
+        for (key, field) in [
+            ("label_threshold", &mut routing.label_threshold),
+            ("margin", &mut routing.margin),
+            ("u_max", &mut routing.u_max),
+        ] {
+            let Some(value) = section_value(table, "routing", key) else {
+                continue;
+            };
+            *field = distance("routing", key, value)?;
+        }
+        for (key, field) in [
+            ("w_len", &mut routing.w_len),
+            ("w_turn", &mut routing.w_turn),
+            ("w_cross", &mut routing.w_cross),
+            ("w_text", &mut routing.w_text),
+            ("w_near", &mut routing.w_near),
+        ] {
+            let Some(value) = section_value(table, "routing", key) else {
+                continue;
+            };
+            *field = weight("routing", key, value)?;
         }
         Ok(())
     }
@@ -395,6 +474,39 @@ fn length(section: &str, key: &str, value: &Value) -> Result<Iu, ConfigError> {
     Ok(Iu(units.round() as i32))
 }
 
+/// Read a length that may not be negative.
+///
+/// A negative routing distance describes nothing: a window cannot be inflated
+/// inwards, and a threshold below zero would propose labels for every route.
+fn distance(section: &str, key: &str, value: &Value) -> Result<Iu, ConfigError> {
+    let measured = length(section, key, value)?;
+    if measured.0 < 0 {
+        return Err(ConfigError::WrongType {
+            section: section.to_owned(),
+            key: key.to_owned(),
+            expected: "a distance of zero or more".to_owned(),
+        });
+    }
+    Ok(measured)
+}
+
+/// Read a cost weight: a whole number, never negative.
+///
+/// A negative weight would make a longer route cheaper than a shorter one and
+/// would break the search's own arithmetic, so it is refused where it is read
+/// rather than found later as a route nobody can explain.
+fn weight(section: &str, key: &str, value: &Value) -> Result<i64, ConfigError> {
+    let number = integer(section, key, value)?;
+    if number < 0 {
+        return Err(ConfigError::WrongType {
+            section: section.to_owned(),
+            key: key.to_owned(),
+            expected: "a cost of zero or more".to_owned(),
+        });
+    }
+    Ok(number)
+}
+
 /// Which unit a length was written in.
 enum Scale {
     Mils,
@@ -472,6 +584,70 @@ mod tests {
     fn a_section_nothing_reads_is_an_error() {
         let error = Config::parse("[grod]\nstep = \"50mil\"\n").expect_err("is an error");
         assert!(matches!(error, ConfigError::UnknownSection(name) if name == "grod"));
+    }
+
+    #[test]
+    fn config_reads_every_routing_key() {
+        // Each key parses to the value the specification documents.
+        let defaults = Config::default().routing;
+        assert_eq!(defaults.label_threshold, Iu(381_000), "30 grid steps");
+        assert_eq!(defaults.margin, Iu(101_600), "8 grid steps");
+        assert_eq!(defaults.u_max, Iu(76_200), "6 grid steps");
+        assert_eq!(
+            (
+                defaults.w_len,
+                defaults.w_turn,
+                defaults.w_cross,
+                defaults.w_text,
+                defaults.w_near
+            ),
+            (1, 6, 20, 12, 2)
+        );
+
+        let config = Config::parse(concat!(
+            "[routing]\n",
+            "label_threshold = \"20G\"\n",
+            "margin = \"25.4mm\"\n",
+            "u_max = \"400mil\"\n",
+            "w_len = 2\nw_turn = 9\nw_cross = 30\nw_text = 15\nw_near = 0\n",
+        ))
+        .expect("every routing key reads");
+        // A distance reads in grid steps, millimetres or mils alike.
+        assert_eq!(config.routing.label_threshold, Iu(254_000));
+        assert_eq!(config.routing.margin, Iu(254_000));
+        assert_eq!(config.routing.u_max, Iu(101_600));
+        assert_eq!(config.routing.w_len, 2);
+        assert_eq!(config.routing.w_turn, 9);
+        assert_eq!(config.routing.w_cross, 30);
+        assert_eq!(config.routing.w_text, 15);
+        assert_eq!(config.routing.w_near, 0);
+
+        // A misspelled key is still an error rather than a silent default.
+        let error =
+            Config::parse("[routing]\nlabel_treshold = \"20G\"\n").expect_err("a typo is an error");
+        assert!(matches!(error, ConfigError::UnknownKey { key, .. } if key == "label_treshold"));
+    }
+
+    #[test]
+    fn a_cost_that_would_break_the_search_is_refused() {
+        // A negative weight makes a longer route cheaper. A negative distance
+        // describes nothing. Both are refused where they are read.
+        for text in [
+            "[routing]\nw_turn = -1\n",
+            "[routing]\nmargin = \"-8G\"\n",
+            "[routing]\nlabel_threshold = \"-1mm\"\n",
+        ] {
+            let error = Config::parse(text).expect_err("a negative cost is an error");
+            assert!(
+                matches!(&error, ConfigError::WrongType { expected, .. } if expected.contains("zero or more")),
+                "{error}"
+            );
+        }
+        // The control: the same keys at zero are accepted.
+        let config = Config::parse("[routing]\nw_turn = 0\nmargin = \"0mm\"\n")
+            .expect("zero is a cost like any other");
+        assert_eq!(config.routing.w_turn, 0);
+        assert_eq!(config.routing.margin, Iu(0));
     }
 
     #[test]
