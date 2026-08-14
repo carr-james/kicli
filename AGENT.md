@@ -437,6 +437,27 @@ as KiCad's next save would. The key named after the noun — `symbol`, `field`,
 `text`, `label`, `junction`, `no_connect` — carries the handles you need to
 address what was just made.
 
+### "What changed?" is two questions
+
+Read this before you go looking for a command that replays your own edits. There
+isn't one, and there should not be.
+
+| Question | Answered by | Empty when |
+|---|---|---|
+| What did **this command** change? | the result the command just printed | never |
+| What has touched the file **since kicli last wrote it**? | a comparison against the `@last-write` state under `.kicli/` | right after any kicli command, **by design** |
+
+Every mutating command reports its own changes. **Keep that output** if you need
+it later; nothing re-derives it for you.
+
+`.kicli/@last-write` records the file **after** kicli's write, so a comparison
+against it is empty until something *else* touches the file — a person editing in
+KiCad beside you, another tool, a checkout or a merge. That is what it is for.
+Making it replay your own edits would make it a copy of the report you already
+have, and would leave you no way to notice the person editing beside you.
+
+The command that prints that comparison is not in this build.
+
 ## Exit codes
 
 | Code | Name | Meaning |

@@ -23,7 +23,15 @@ pub enum Invariant {
     Reparses,
     /// Every identifier a file refers to belongs to an object of that file.
     ReferencesResolve,
-    /// Pins, wire ends, junctions, no-connects and label anchors are on grid.
+    /// Wire ends, junctions, no-connects, bus entries, label anchors and sheet
+    /// pins are on grid.
+    ///
+    /// A symbol's resolved pin positions are deliberately not here. They are the
+    /// lint's jurisdiction, under the blocking rule `KI-GRID-001`, because a
+    /// caller may put a symbol anchor off the grid with a flag that says so and
+    /// a hard refusal here would make that flag useless. The boundary is: this
+    /// check judges the standalone connectable geometry a mutation wrote, and
+    /// the lint judges the drawing that results.
     GeometryOnGrid,
     /// No symbol carries instance data for a sheet path that is not there.
     InstancesResolve,
@@ -55,7 +63,7 @@ impl Invariant {
         match self {
             Self::Reparses => "the file kicli wrote reads back as a schematic",
             Self::ReferencesResolve => "every identifier the file refers to is an object in it",
-            Self::GeometryOnGrid => "everything that connects sits on the grid",
+            Self::GeometryOnGrid => "the connection points this file draws sit on the grid",
             Self::InstancesResolve => "no symbol carries instance data for a sheet that is gone",
         }
     }
@@ -198,10 +206,18 @@ fn references_resolve(schematic: &Schematic) -> Vec<String> {
     faults
 }
 
-/// Everything that connects sits on the grid.
+/// The connection points this file draws sit on the grid.
 ///
-/// Field and graphic text are exempt: KiCad's own autoplacement puts them on
-/// arbitrary units, so a blanket rule would fail KiCad's own output.
+/// Wire and bus ends, junctions, no-connects, bus entries, label anchors and
+/// sheet pins. Two things are outside it, for different reasons.
+///
+/// Field and graphic text are exempt because KiCad's own autoplacement puts them
+/// on arbitrary units, so a blanket rule would fail KiCad's own output.
+///
+/// A symbol's resolved pin positions are the lint's, under `KI-GRID-001`. A
+/// caller may put a symbol anchor off the grid with a flag that says so, and a
+/// refusal here would make that flag useless. This check judges the geometry a
+/// mutation wrote; the lint judges the drawing that results.
 fn geometry_on_grid(schematic: &Schematic, grid: Iu) -> Vec<String> {
     let on_grid = |point: Point| -> bool {
         grid.0 != 0 && point.x.0 % grid.0 == 0 && point.y.0 % grid.0 == 0

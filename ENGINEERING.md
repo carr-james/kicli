@@ -28,6 +28,16 @@ No `#[allow(...)]` without an adjacent comment justifying it. No `unwrap()` or
 (`thiserror`), the CLI layer renders them (`anyhow` acceptable there only).
 `panic!` is a bug.
 
+## Rules earn their place
+
+A rule that matters wants an executable twin: a gate, a lint, or a
+workspace-reading test that fails when the rule is broken. Prose alone decays.
+When a new rule is proposed, name its enforcement — or the incident that
+demonstrated the need. A rule with neither does not go in. The same test
+applies to growth of this document and the Constitution: the binding set stays
+small enough to read in full at the start of every session, and that property
+outranks completeness.
+
 ## Structure (SOLID, translated)
 
 - **Single responsibility** holds as-is: one module = one concern. The

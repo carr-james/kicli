@@ -438,11 +438,11 @@ The line carries a **display column** after the two hashes: the handle, the
 position, and a short summary. Without it a comparison against a saved state can
 only say that an object changed, and the worked example below — which names a
 removed symbol and reports an old position — cannot be produced from a file at
-all. Since `@last-write` is written by every mutation and read by the next
-command, "what did my last command change?" would have been answerable only in
-the session that made the change. The column runs to the end of the line,
-because a summary holds spaces, and it carries no identity: a reader comparing
-hashes alone can ignore it.
+all. A saved state outlives the session that took it, so "what has touched this
+file since kicli last wrote it?" must be answerable from the file alone; without
+the column the answer would degrade to a list of hashes. The column runs to the
+end of the line, because a summary holds spaces, and it carries no identity: a
+reader comparing hashes alone can ignore it.
 
 `content-hash` is **SHA-256 truncated to 16 hex chars** (Q13) over a canonical
 semantic encoding: kind, own fields in fixed order, coordinates as integer IU,
@@ -468,6 +468,30 @@ byte-identical output (Constitution §4). Snapshots live in
 mutation; `.kicli/` is gitignored by default. Every mutation echoes a delta
 fragment for exactly the objects it touched, satisfying Constitution §5 with no
 extra vocabulary.
+
+#### Two questions, two mechanisms (ruled 2026-08-14)
+
+An earlier reading of this section said `@last-write` exists so that the next
+command can answer "what did my last command change?". **That is the wrong
+question for this mechanism**, and the wording is corrected here because an
+agent reading it would expect the other behaviour.
+
+| Question | Answered by | Empty when |
+|---|---|---|
+| What did **this command** change? | the mutation result the command itself returns | never — a command that changed nothing does not run |
+| What has touched this file **since kicli last wrote it**? | a delta against `@last-write` | immediately after any kicli mutation, **by design** |
+
+`@last-write` holds the state **after** kicli's write. A delta against it is
+therefore empty the moment a mutation finishes, and fills only when something
+else touched the file: a person editing in KiCad alongside, another tool, a
+checkout or a merge. That is the question the editor-coexistence workflow
+(§14.4) and `sch watch` (§12.1) need answered, and it is the one a per-command
+report cannot answer.
+
+Making the delta restate the mutation's own changes would make it redundant with
+the report every mutating command already prints, and would leave the
+external-change question with no mechanism at all. The two do not overlap and
+neither replaces the other.
 
 ### 7.4 Budgets (`representation.md` §6)
 

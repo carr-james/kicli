@@ -12,6 +12,9 @@ CLI tool giving LLM agents eyes and hands in KiCad 10 projects. Rust.
   for every task — run them before marking any task complete.
 - When two governing documents conflict, do not resolve by precedence — mark
   the item BLOCKED with both readings and ask.
+- Large builds start fresh sessions. Sessions end at task boundaries; stopping
+  early to hand over a clean state beats pushing through — the task file is
+  the handoff, and it is updated before the session ends, not after.
 
 ## Parallel work
 
