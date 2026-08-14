@@ -259,6 +259,33 @@ impl Probe {
         )
     }
 
+    /// Every number in the drawing, as KiCad would write it.
+    ///
+    /// A coordinate with more than four decimals is not a KiCad coordinate.
+    /// kicli's reader rejects one and the caller reads it as zero, which puts
+    /// phantom items at the origin and joins nets that share nothing. A probe
+    /// that does that measures its own defect and calls it a finding, so the
+    /// drawing is checked before it is ever handed to a tool.
+    fn check_precision(&self, text: &str) {
+        for token in text.split(|c: char| !(c.is_ascii_digit() || c == '.' || c == '-')) {
+            // Only plain decimals are coordinates. A bundle name carries a
+            // range, `0..7`, which is not one and is left alone.
+            let Some((whole, fraction)) = token.split_once('.') else {
+                continue;
+            };
+            let digits = |part: &str| part.bytes().all(|byte| byte.is_ascii_digit());
+            if !digits(whole.strip_prefix('-').unwrap_or(whole)) || !digits(fraction) {
+                continue;
+            }
+            assert!(
+                fraction.len() <= 4,
+                "probe {} writes {token}, which is not a number KiCad writes. \
+                 Round it with millimetres().",
+                self.name
+            );
+        }
+    }
+
     /// Write the probe to the scratch directory and return its path.
     fn write(&self) -> PathBuf {
         let directory = Path::new(env!("CARGO_TARGET_TMPDIR"))
@@ -266,7 +293,9 @@ impl Probe {
             .join(self.name);
         std::fs::create_dir_all(&directory).expect("the scratch directory is writable");
         let path = directory.join(format!("{}.kicad_sch", self.file));
-        std::fs::write(&path, self.text()).expect("the probe file is writable");
+        let text = self.text();
+        self.check_precision(&text);
+        std::fs::write(&path, text).expect("the probe file is writable");
         path
     }
 
@@ -429,6 +458,18 @@ fn partition_of(nets: &Nets) -> Partition {
         })
         .filter(|pins| !pins.is_empty())
         .collect()
+}
+
+/// A coordinate in millimetres, written the way KiCad writes one.
+///
+/// KiCad's own files carry at most four decimals, and kicli's reader rejects
+/// more. A probe that computes a position in floating point must round it, or
+/// `38.1 + 12.7 * 3.0` reaches the file as `76.19999999999999` and describes a
+/// drawing nobody meant.
+fn millimetres(value: f64) -> String {
+    let text = format!("{value:.4}");
+    let trimmed = text.trim_end_matches('0').trim_end_matches('.');
+    trimmed.to_owned()
 }
 
 /// One expected net.
@@ -641,8 +682,8 @@ fn bundled_members_named(
     probe.bus(("127", "20.32"), ("127", "101.6"));
     probe.label_of_kind(head, shape, bundle, ("127", "20.32"));
     for (index, (reference, member)) in members.iter().enumerate() {
-        let wire_y = format!("{}", 38.1 + 12.7 * index as f64);
-        let anchor_y = format!("{}", 41.91 + 12.7 * index as f64);
+        let wire_y = millimetres(38.1 + 12.7 * index as f64);
+        let anchor_y = millimetres(41.91 + 12.7 * index as f64);
         probe.bus_entry(("124.46", &wire_y), ("2.54", "2.54"));
         probe.wire(("99.06", &wire_y), ("124.46", &wire_y));
         probe.label_of_kind("label", "", member, ("101.6", &wire_y));
@@ -864,15 +905,6 @@ fn two_bundles_in_different_scopes_keep_their_members_apart() {
     assert!(found.contains(&net(&["R4.1"])));
 }
 
-// KiCad's answer below is measured, and kicli does not yet reproduce it. A
-// bundle member keeps the name its own sheet gives it instead of taking the
-// name of the bundle that carries it, so a sub-range that renames at a port
-// does not carry its members through. The drawing is the smallest form of what
-// vme-wren draws, which is the one corpus hierarchy still unmatched. The defect
-// is older than the two bundle rules beside it: it reproduces on the commit
-// before either landed. The test is kept whole and does not run, so that
-// closing it is a matter of deleting one attribute.
-#[ignore = "measured against KiCad; kicli does not yet rename a bundle member through a port. See research/notes/bundle-members.md"]
 #[test]
 fn a_wide_bundle_splits_into_sub_ranges_that_rename_at_each_port() {
     let mut probe = Probe::new("subrange-chain");
@@ -894,8 +926,8 @@ fn a_wide_bundle_splits_into_sub_ranges_that_rename_at_each_port() {
     probe.bus(("228.6", "20.32"), ("228.6", "152.4"));
     probe.label_of_kind("label", "", "AA[0..3]", ("228.6", "20.32"));
     for (index, member) in ["AA0", "AA1", "AA2", "AA3"].iter().enumerate() {
-        let wire_y = format!("{}", 38.1 + 12.7 * index as f64);
-        let anchor_y = format!("{}", 41.91 + 12.7 * index as f64);
+        let wire_y = millimetres(38.1 + 12.7 * index as f64);
+        let anchor_y = millimetres(41.91 + 12.7 * index as f64);
         probe.bus_entry(("226.06", &wire_y), ("2.54", "2.54"));
         probe.wire(("200.66", &wire_y), ("226.06", &wire_y));
         probe.label_of_kind("label", "", member, ("203.2", &wire_y));

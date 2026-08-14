@@ -168,35 +168,48 @@ local label is the stronger driver.
 
 With both rules, 34 of the 35 corpus hierarchies match KiCad exactly.
 
-## Still open: `vme-wren`, and it is not a new rule
+## Still open: `vme-wren`
 
-`vme-wren` is the one left. It needs no rule KiCad has not already shown us: it
-needs kicli to finish carrying a bundle member through a port.
+`vme-wren` is the one hierarchy left. Its difference has a very clean shape:
+**96 nets, each missing exactly one pin.** For every one of them kicli has the
+net minus a pin and that pin as a net of its own. The strays are connector and
+FPGA pins — `J6.32`, `JFP2.4`, `IC14.B1`.
 
-The measurement is `a_wide_bundle_splits_into_sub_ranges_that_rename_at_each_port`
-in `net_probe_rules.rs`, which is ignored because kicli fails it. A wide bundle
-`AA[0..3]` is split into `AA[0..1]` and `AA[2..3]`, and each sub-range feeds a
-child whose own port bundle is `BB[0..1]`, starting its range again at zero.
-KiCad joins `AA0` to the first child's `BB0`, `AA1` to its `BB1`, `AA2` to the
-second child's `BB0` and `AA3` to its `BB1`. kicli does not.
+The cause is a bundle chain that stops one level short. `D100.1` sits on the net
+KiCad calls `/PP_OUT31`; kicli calls it `/io_drivers_pp/bank3/PP_OUT7`. The
+drawing renames at every port: the leaf's own port is `PP_OUT[0..1]`, its bank
+carries `PP_OUT[0..7]`, the bus feeding that bank is labelled `PP_OUT[24..31]`,
+and the root carries `PP_OUT[0..31]`. kicli follows that chain as far as the
+bank and stops, so its member never reaches the root's `PP_OUT31`, where `J6.32`
+is waiting under the right name.
 
-Two things are wrong, and both are older than the rules above — the drawing
-fails the same way on the commit before either landed:
+**The chain itself is not the defect.** `a_wide_bundle_splits_into_sub_ranges_that_rename_at_each_port`
+draws exactly that shape — a wide bundle split into sub-ranges, each feeding a
+child whose port bundle starts at zero again — and kicli matches KiCad on it.
+What that probe does not draw is the one thing left: `vme-wren` places **one
+child file four times**, once per bank, so the same hierarchical label appears
+on four sheet paths at once. That is the untested variable.
 
-- **A member keeps its own sheet's name.** With no wide bundle at all, KiCad
-  renames the first child's `BB1` to `/AA1`; kicli calls it `/child1/BB1`. The
-  rename through a port is what the scope rule needs in order to reach a member
-  drawn under a different name, and it is missing.
-- **Unrelated members merge.** On the same drawing kicli joins `AA0` to `AA3`
-  and `AA1` to `AA2`, including the unconnected second pins of their resistors,
-  which no geometry explains. That one is a defect on its own and should be cut
-  down further before anything is written against it.
+### A probe measured its own defect, and how that was caught
 
-`vme-wren` draws this shape at depth: `PP_OUT[0..31]` on the root, split into
-`PP_OUT[0..7]` through `PP_OUT[24..31]`, feeding sheets whose ports start at
-`PP_OUT0` again and which are instantiated four times each. kicli names the
-root's own nets correctly — `J6.1` sits on `/PP_OUT0`, as KiCad has it — and
-simply fails to join them to the driver side.
+An earlier reading of this had two defects in it, and both were the instrument.
+The probe generator wrote coordinates straight from floating point, so
+`38.1 + 12.7 * 3.0` reached the file as `76.19999999999999`. KiCad reads that;
+kicli's number reader rejects more than four decimals and the caller reads the
+rejection as zero. Phantom items appeared at the origin, every label lay on
+them, and nets that shared nothing were joined. It looked exactly like a merge
+bug, and it was a drawing nobody meant.
+
+Two things came out of it. `Probe::check_precision` now refuses to write a
+drawing carrying a number KiCad would not write, so no probe can make this
+mistake again quietly. And a real kicli defect is recorded: **a coordinate the
+reader cannot parse becomes zero rather than an error**, which is the
+wrong-and-confident failure this project exists to avoid. That one is not a
+bundle rule and belongs in its own task.
+
+The lesson is the one the sheet-pin angle already taught: a probe needs a
+control that fails loudly, and an instrument needs checking before its readings
+are believed.
 
 ## Reproduction
 
