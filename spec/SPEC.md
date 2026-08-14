@@ -641,7 +641,31 @@ pair, routing 100 times and across a shuffled input item order (KiCad reorders
 items) must yield byte-identical output.
 
 **Calibration gate (Q17):** re-route every net of a known-good sheet from
-scratch; assert total cost is within **15 %** of the original.
+scratch; assert total cost is within **15 %** of the original. "Every net from
+scratch" needs an operational definition, because the router joins two terminals
+and a net may hold many. The gate is defined as follows, and the definition is
+part of the gate:
+
+1. Take each net with two or more pins on one sheet and no bus involvement.
+2. Cost the net's **existing** wires with the router's own cost function,
+   against the sheet with that net's own wires removed. The original and the
+   re-route then see the same obstacles.
+3. Re-route: build a spanning tree over the net's pins by Manhattan distance,
+   ties broken by `(x, y)`; route each tree edge in order; add each result to
+   the obstacle map before routing the next edge.
+4. Sum both over the sheet, and require the deviation to be within 15 % **in
+   either direction**. A total far under the original is evidence of divergence
+   and not a success: the likely cause is a cost function that fails to price
+   something the person was avoiding, such as a crossing or a label the route
+   runs through. A cheap result is an anomaly to explain.
+5. Report the per-net deviation, and name every net the gate skipped with the
+   reason. The skipped pins must be under a quarter of the sheet's pins, so the
+   gate cannot pass by skipping the hard nets.
+
+The weights are read from `[routing]` (§15) and are shared with the rules of
+§11.4. A failing gate is therefore not licence to tune them: it is reported and
+escalated, because the same numbers are judged again by the score calibration
+(§11.6).
 
 Out of scope for v1: rip-up-and-reroute, global net optimisation, bus routing,
 cross-sheet routing.
@@ -1027,7 +1051,9 @@ warning — agents typo silently.
 ```
 
 `routing.label_threshold` is read by both the router and `KI-LBL-001`. It is one
-knob (C14); duplicating it is a bug.
+knob (C14); duplicating it is a bug. The routing weights beside it are judged by
+the calibration gate in §9 and again by the score calibration in §11.6, so they
+are changed by a decision about both and never by one alone.
 
 ## 16. Agent documentation (deliverable)
 
