@@ -1,0 +1,18 @@
+[package]
+name = "kicli-probe"
+description = "The instruments kicli's measurement probes are built from."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[lib]
+name = "kicli_probe"
+path = "src/lib.rs"
+
+# This crate is a test instrument. It is a dev-dependency of `kicli` and of
+# nothing else, so it reaches no shipped artefact. The licence allowlist does
+# not govern a dev-dependency; the advisory database still does.
+[dependencies]

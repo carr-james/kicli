@@ -37,6 +37,12 @@ sha2 = "0.10"
 thiserror = "2"
 
 [dev-dependencies]
+# The probe harness: drawing builders and oracle readers the tests measure
+# with. A dev-dependency reaches no shipped artefact, so the licence allowlist
+# does not govern it; the advisory database still does. The edge from kicli-probe
+# back to kicli is what lets the builder own the measurement helpers, and cargo
+# resolves the dev-only cycle.
+kicli-probe = { path = "../kicli-probe", version = "0.0.0" }
 
 [features]
 # Tests that read KiCad's GPL demo files from target/.

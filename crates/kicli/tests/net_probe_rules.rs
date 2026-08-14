@@ -12,458 +12,50 @@
 
 use kicli::connectivity::{NetPin, Nets, extract};
 use kicli::model::Hierarchy;
+use kicli_probe::{Placed, Probe, hidden_pin, millimetres, pin, power, symbol};
 use kicli_sexpr::Doc;
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
+/// Where this binary writes the drawings it builds.
+///
+/// `CARGO_TARGET_TMPDIR` is under `target/`, so a probe is scratch by
+/// construction. The builder cannot read the variable itself: a library sees it
+/// at compile time only in a test or a bench target.
+fn scratch() -> PathBuf {
+    Path::new(env!("CARGO_TARGET_TMPDIR")).join("net-probes")
+}
+
+/// A probe named for the question it asks.
+fn probe(name: &'static str) -> Probe {
+    Probe::new(name, scratch())
+}
+
+/// kicli's partition of a probe, checked against KiCad when it is there.
+fn partition(probe: &Probe) -> Partition {
+    partition_with(probe, &[])
+}
+
+/// The same, of a probe that draws child sheets.
+fn partition_with(probe: &Probe, children: &[&Probe]) -> Partition {
+    let path = probe.write_all(children);
+    let hierarchy = Hierarchy::load(&path).expect("the probe loads");
+    let found = partition_of(&extract(&hierarchy));
+    if let Some(tool) = kicad_cli() {
+        let netlist = export_netlist(&tool, &path).expect("kicad-cli exported a netlist");
+        assert_eq!(
+            found,
+            kicad_partition(&netlist),
+            "kicli and KiCad disagree about {}",
+            probe.name()
+        );
+    }
+    found
+}
+
 /// A net partition: one sorted pin list per net.
 type Partition = BTreeSet<Vec<String>>;
-
-/// The root sheet uuid every probe uses.
-const ROOT: &str = "00000000-0000-4000-8000-999999999999";
-
-/// The uuid of the sheet symbol a probe with a child sheet draws.
-const CHILD: &str = "00000000-0000-4000-8000-cccccccccccc";
-
-/// One probe drawing, built item by item.
-struct Probe {
-    name: &'static str,
-    /// The file name, without the extension.
-    file: &'static str,
-    /// Where this file is placed, and what each placement calls its symbols.
-    ///
-    /// A sheet placed twice gives every symbol on it two instance records, one
-    /// per sheet path, with a different reference designator each time. The
-    /// suffix distinguishes them, so `R1` on the second placement is `R1b`.
-    paths: Vec<(String, &'static str)>,
-    /// The uuid prefix, so a child's uuids differ from its parent's.
-    series: u32,
-    /// The uuid of the sheet this file is.
-    sheet_uuid: String,
-    symbols: Vec<String>,
-    items: Vec<String>,
-    next_uuid: u32,
-}
-
-impl Probe {
-    fn new(name: &'static str) -> Self {
-        Self {
-            name,
-            file: "probe",
-            paths: vec![(format!("/{ROOT}"), "")],
-            series: 1,
-            sheet_uuid: ROOT.to_owned(),
-            symbols: vec![resistor()],
-            items: Vec::new(),
-            next_uuid: 0,
-        }
-    }
-
-    /// A probe for the child sheet this one draws.
-    fn child_of(parent: &Probe) -> Self {
-        Self::named_child_of(parent, "child", CHILD, 2)
-    }
-
-    /// The same, for a probe that draws more than one child.
-    fn named_child_of(parent: &Probe, file: &'static str, uuid: &str, series: u32) -> Self {
-        Self {
-            name: parent.name,
-            file,
-            paths: vec![(format!("/{ROOT}/{uuid}"), "")],
-            series,
-            sheet_uuid: uuid.to_owned(),
-            symbols: vec![resistor()],
-            items: Vec::new(),
-            next_uuid: 0,
-        }
-    }
-
-    /// Place this file again, under a second sheet symbol of the parent.
-    ///
-    /// The suffix names the second placement's symbols, so one drawing carries
-    /// `R1` and `R1b`. Call it before placing any symbol.
-    fn also_placed_at(&mut self, uuid: &str, suffix: &'static str) {
-        self.paths.push((format!("/{ROOT}/{uuid}"), suffix));
-    }
-
-    /// A fresh uuid. The counter makes every probe file reproducible.
-    fn uuid(&mut self) -> String {
-        self.next_uuid += 1;
-        format!(
-            "00000000-0000-4000-800{}-{:012}",
-            self.series, self.next_uuid
-        )
-    }
-
-    /// Draw the sheet symbol that places the child, with one port on it.
-    fn sheet(&mut self, port: &str, at: (&str, &str)) {
-        self.sheet_named(CHILD, "child", port, at, "0");
-    }
-
-    /// The same, for a named child, with the port on the edge the angle says.
-    ///
-    /// The angle is which way the port points: 0 puts it on the right edge of
-    /// the sheet symbol, 180 on the left. KiCad moves a port whose angle
-    /// disagrees with its position, which takes it off the wire that was drawn
-    /// to meet it, so a probe that gets the angle wrong measures a drawing it
-    /// did not intend.
-    fn sheet_named(
-        &mut self,
-        uuid: &str,
-        name: &str,
-        port: &str,
-        at: (&str, &str),
-        angle: &str,
-    ) -> String {
-        let pin_uuid = self.uuid();
-        let justify = if angle == "0" { "right" } else { "left" };
-        self.items.push(format!(
-            "(sheet (at {} {}) (size 25.4 25.4)\n\
-             (exclude_from_sim no) (in_bom yes) (on_board yes) (dnp no)\n\
-             (stroke (width 0) (type solid)) (fill (color 0 0 0 0.0000))\n\
-             (uuid \"{uuid}\")\n\
-             (property \"Sheetname\" \"{name}\" (at {} {} 0)\n\
-             (effects (font (size 1.27 1.27)) (justify left bottom)))\n\
-             (property \"Sheetfile\" \"{name}.kicad_sch\" (at {} {} 0)\n\
-             (effects (font (size 1.27 1.27)) (justify left top)))\n\
-             (pin \"{port}\" bidirectional (at {} {} {angle})\n\
-             (effects (font (size 1.27 1.27)) (justify {justify})) (uuid \"{pin_uuid}\"))\n\
-             (instances (project \"probe\" (path \"/{ROOT}\" (page \"2\"))))\n)",
-            at.0, at.1, at.0, at.1, at.0, at.1, at.0, at.1
-        ));
-        uuid.to_owned()
-    }
-
-    /// Add a library symbol the probe places.
-    fn define(&mut self, symbol: String) -> &mut Self {
-        self.symbols.push(symbol);
-        self
-    }
-
-    /// Place a symbol, with the pin numbers it draws.
-    fn place(&mut self, library: &str, reference: &str, at: (&str, &str), pins: &[&str]) {
-        self.place_symbol(&Placed::new(library, reference, at, pins));
-    }
-
-    /// Place one unit of a symbol, with a value of its own.
-    fn place_unit(
-        &mut self,
-        library: &str,
-        reference: &str,
-        at: (&str, &str),
-        unit: u32,
-        value: &str,
-        pins: &[&str],
-    ) {
-        let mut placed = Placed::new(library, reference, at, pins);
-        placed.unit = unit;
-        placed.value = value;
-        self.place_symbol(&placed);
-    }
-
-    /// Place a symbol as described.
-    fn place_symbol(&mut self, placed: &Placed) {
-        let uuid = self.uuid();
-        let pin_uuids: Vec<String> = placed.pins.iter().map(|_| self.uuid()).collect();
-        let (library, reference, unit) = (placed.library, placed.reference, placed.unit);
-        let instance_unit = placed.instance_unit.unwrap_or(unit);
-        let (x, y) = placed.at;
-        let attributes = placed.attributes;
-        let pin_list: String = placed
-            .pins
-            .iter()
-            .zip(&pin_uuids)
-            .map(|(number, uuid)| format!("(pin \"{number}\" (uuid \"{uuid}\"))\n"))
-            .collect();
-        let fields = fields(&[
-            ("Reference", reference),
-            ("Value", placed.value),
-            ("Footprint", ""),
-            ("Datasheet", ""),
-            ("Description", ""),
-        ]);
-        let instances: String = self
-            .paths
-            .iter()
-            .map(|(path, suffix)| {
-                format!(
-                    "(path \"{path}\" (reference \"{reference}{suffix}\") (unit {instance_unit}))"
-                )
-            })
-            .collect();
-        self.items.push(format!(
-            "(symbol (lib_id \"Probe:{library}\") (at {x} {y} 0) (unit {unit}) (body_style 1)\n\
-             {attributes}\n\
-             (uuid \"{uuid}\")\n{fields}{pin_list}\
-             (instances (project \"probe\" {instances}))\n)"
-        ));
-    }
-
-    /// Draw a wire between two points.
-    fn wire(&mut self, from: (&str, &str), to: (&str, &str)) {
-        let uuid = self.uuid();
-        self.items.push(format!(
-            "(wire (pts (xy {} {}) (xy {} {})) (stroke (width 0) (type default)) (uuid \"{uuid}\"))",
-            from.0, from.1, to.0, to.1
-        ));
-    }
-
-    /// Draw a bundle between two points.
-    fn bus(&mut self, from: (&str, &str), to: (&str, &str)) {
-        let uuid = self.uuid();
-        self.items.push(format!(
-            "(bus (pts (xy {} {}) (xy {} {})) (stroke (width 0) (type default)) (uuid \"{uuid}\"))",
-            from.0, from.1, to.0, to.1
-        ));
-    }
-
-    /// Draw a bus entry: a stub from a wire end to a bundle.
-    fn bus_entry(&mut self, at: (&str, &str), size: (&str, &str)) {
-        let uuid = self.uuid();
-        self.items.push(format!(
-            "(bus_entry (at {} {}) (size {} {}) (stroke (width 0) (type default))\n\
-             (uuid \"{uuid}\"))",
-            at.0, at.1, size.0, size.1
-        ));
-    }
-
-    /// Draw a label of any of the three kinds.
-    fn label_of_kind(&mut self, head: &str, shape: &str, text: &str, at: (&str, &str)) {
-        let uuid = self.uuid();
-        self.items.push(format!(
-            "({head} \"{text}\" {shape} (at {} {} 0)\n\
-             (effects (font (size 1.27 1.27)) (justify left bottom)) (uuid \"{uuid}\"))",
-            at.0, at.1
-        ));
-    }
-
-    /// Draw a wire with a resistor on one end and a label on the other.
-    ///
-    /// This is the shape every naming probe needs: the label names the net,
-    /// and the resistor pin makes the net visible in a netlist. The resistor
-    /// anchor sits one pin length below the wire, so pin 1 lands on it.
-    fn named_strand(&mut self, reference: &str, wire_y: &str, anchor_y: &str, text: &str) {
-        self.strand_of_kind("label", "", reference, wire_y, anchor_y, text);
-    }
-
-    /// The same strand, named by a label of the kind asked for.
-    fn strand_of_kind(
-        &mut self,
-        head: &str,
-        shape: &str,
-        reference: &str,
-        wire_y: &str,
-        anchor_y: &str,
-        text: &str,
-    ) {
-        self.place("R", reference, ("50.8", anchor_y), &["1", "2"]);
-        self.wire(("50.8", wire_y), ("76.2", wire_y));
-        self.label_of_kind(head, shape, text, ("76.2", wire_y));
-    }
-
-    /// The file text.
-    fn text(&self) -> String {
-        let uuid = &self.sheet_uuid;
-        let instances = if self.series == 1 {
-            "(sheet_instances (path \"/\" (page \"1\")))"
-        } else {
-            ""
-        };
-        format!(
-            "(kicad_sch (version 20260306) (generator \"eeschema\") (generator_version \"10.0\")\n\
-             (uuid \"{uuid}\") (paper \"A4\")\n(lib_symbols\n{}\n)\n{}\n{instances}\n\
-             (embedded_fonts no)\n)",
-            self.symbols.join("\n"),
-            self.items.join("\n")
-        )
-    }
-
-    /// Every number in the drawing, as KiCad would write it.
-    ///
-    /// A coordinate with more than four decimals is not a KiCad coordinate.
-    /// kicli's reader rejects one and the caller reads it as zero, which puts
-    /// phantom items at the origin and joins nets that share nothing. A probe
-    /// that does that measures its own defect and calls it a finding, so the
-    /// drawing is checked before it is ever handed to a tool.
-    fn check_precision(&self, text: &str) {
-        for token in text.split(|c: char| !(c.is_ascii_digit() || c == '.' || c == '-')) {
-            // Only plain decimals are coordinates. A bundle name carries a
-            // range, `0..7`, which is not one and is left alone.
-            let Some((whole, fraction)) = token.split_once('.') else {
-                continue;
-            };
-            let digits = |part: &str| part.bytes().all(|byte| byte.is_ascii_digit());
-            if !digits(whole.strip_prefix('-').unwrap_or(whole)) || !digits(fraction) {
-                continue;
-            }
-            assert!(
-                fraction.len() <= 4,
-                "probe {} writes {token}, which is not a number KiCad writes. \
-                 Round it with millimetres().",
-                self.name
-            );
-        }
-    }
-
-    /// Write the probe to the scratch directory and return its path.
-    fn write(&self) -> PathBuf {
-        let directory = Path::new(env!("CARGO_TARGET_TMPDIR"))
-            .join("net-probes")
-            .join(self.name);
-        std::fs::create_dir_all(&directory).expect("the scratch directory is writable");
-        let path = directory.join(format!("{}.kicad_sch", self.file));
-        let text = self.text();
-        self.check_precision(&text);
-        std::fs::write(&path, text).expect("the probe file is writable");
-        path
-    }
-
-    /// kicli's partition of the probe, checked against KiCad when it is there.
-    fn partition(&self) -> Partition {
-        self.partition_with(&[])
-    }
-
-    /// Write this probe and its children, and return the root's path.
-    fn write_all(&self, children: &[&Probe]) -> PathBuf {
-        for child in children {
-            child.write();
-        }
-        self.write()
-    }
-
-    /// The same, of a probe that draws child sheets.
-    fn partition_with(&self, children: &[&Probe]) -> Partition {
-        let path = self.write_all(children);
-        let hierarchy = Hierarchy::load(&path).expect("the probe loads");
-        let found = partition_of(&extract(&hierarchy));
-        if let Some(tool) = kicad_cli() {
-            let netlist = export_netlist(&tool, &path).expect("kicad-cli exported a netlist");
-            assert_eq!(
-                found,
-                kicad_partition(&netlist),
-                "kicli and KiCad disagree about {}",
-                self.name
-            );
-        }
-        found
-    }
-}
-
-/// One placed symbol, as a probe describes it.
-struct Placed<'a> {
-    library: &'a str,
-    reference: &'a str,
-    at: (&'a str, &'a str),
-    pins: &'a [&'a str],
-    /// The unit written beside the `lib_id`, which is only a cache.
-    unit: u32,
-    /// The unit written in the instance record, which is the truth.
-    instance_unit: Option<u32>,
-    value: &'a str,
-    /// The attributes a symbol that is built and fitted carries.
-    attributes: &'a str,
-}
-
-impl<'a> Placed<'a> {
-    fn new(
-        library: &'a str,
-        reference: &'a str,
-        at: (&'a str, &'a str),
-        pins: &'a [&'a str],
-    ) -> Self {
-        Self {
-            library,
-            reference,
-            at,
-            pins,
-            unit: 1,
-            instance_unit: None,
-            value: reference,
-            attributes: "(exclude_from_sim no) (in_bom yes) (on_board yes) (in_pos_files yes) (dnp no)",
-        }
-    }
-}
-
-/// The five fields every placed symbol carries.
-fn fields(values: &[(&str, &str)]) -> String {
-    values
-        .iter()
-        .map(|(name, value)| {
-            format!(
-                "(property \"{name}\" \"{value}\" (at 0 0 0) (show_name no) (do_not_autoplace no)\n\
-                 (effects (font (size 1.27 1.27))))\n"
-            )
-        })
-        .collect()
-}
-
-/// One library pin.
-fn pin(electrical: &str, at: (&str, &str), angle: &str, number: &str, name: &str) -> String {
-    format!(
-        "(pin {electrical} line (at {} {} {angle}) (length 2.54)\n\
-         (name \"{name}\" (effects (font (size 1.27 1.27))))\n\
-         (number \"{number}\" (effects (font (size 1.27 1.27)))))",
-        at.0, at.1
-    )
-}
-
-/// One library pin the editor does not draw.
-fn hidden_pin(electrical: &str, at: (&str, &str), number: &str, name: &str) -> String {
-    format!(
-        "(pin {electrical} line (at {} {} 180) (length 2.54) (hide yes)\n\
-         (name \"{name}\" (effects (font (size 1.27 1.27))))\n\
-         (number \"{number}\" (effects (font (size 1.27 1.27)))))",
-        at.0, at.1
-    )
-}
-
-/// A power symbol: one power input at the anchor, and its value names the net.
-fn power(name: &str) -> String {
-    symbol(
-        name,
-        "#PWR",
-        true,
-        &[("1_1", vec![pin("power_in", ("0", "0"), "270", "1", "")])],
-    )
-}
-
-/// One library symbol, from its units.
-fn symbol(name: &str, reference: &str, power: bool, units: &[(&str, Vec<String>)]) -> String {
-    let bodies: String = units
-        .iter()
-        .map(|(unit, pins)| format!("(symbol \"{name}_{unit}\"\n{}\n)\n", pins.join("\n")))
-        .collect();
-    let power = if power { "(power global)" } else { "" };
-    format!(
-        "(symbol \"Probe:{name}\" {power} (pin_names (offset 0))\n\
-         (exclude_from_sim no) (in_bom yes) (on_board yes) (in_pos_files yes)\n\
-         (duplicate_pin_numbers_are_jumpers no)\n{}{bodies})",
-        fields(&[
-            ("Reference", reference),
-            ("Value", name),
-            ("Footprint", ""),
-            ("Datasheet", ""),
-            ("Description", ""),
-        ])
-    )
-}
-
-/// A resistor: pin 1 above the anchor, pin 2 below it.
-fn resistor() -> String {
-    symbol(
-        "R",
-        "R",
-        false,
-        &[(
-            "1_1",
-            vec![
-                pin("passive", ("0", "3.81"), "270", "1", ""),
-                pin("passive", ("0", "-3.81"), "90", "2", ""),
-            ],
-        )],
-    )
-}
 
 /// The partition kicli reads, the way a netlist reports it.
 fn partition_of(nets: &Nets) -> Partition {
@@ -478,18 +70,6 @@ fn partition_of(nets: &Nets) -> Partition {
         })
         .filter(|pins| !pins.is_empty())
         .collect()
-}
-
-/// A coordinate in millimetres, written the way KiCad writes one.
-///
-/// KiCad's own files carry at most four decimals, and kicli's reader rejects
-/// more. A probe that computes a position in floating point must round it, or
-/// `38.1 + 12.7 * 3.0` reaches the file as `76.19999999999999` and describes a
-/// drawing nobody meant.
-fn millimetres(value: f64) -> String {
-    let text = format!("{value:.4}");
-    let trimmed = text.trim_end_matches('0').trim_end_matches('.');
-    trimmed.to_owned()
 }
 
 /// One expected net.
@@ -596,7 +176,7 @@ fn dual_unit() -> String {
 
 #[test]
 fn a_pin_shared_by_two_units_is_listed_once_per_net() {
-    let mut probe = Probe::new("shared-unit-pin");
+    let mut probe = probe("shared-unit-pin");
     probe.define(dual_unit());
 
     // Both units of U1 draw pin 9. One wire joins the two copies.
@@ -615,7 +195,7 @@ fn a_pin_shared_by_two_units_is_listed_once_per_net() {
     probe.place("R", "R2", ("88.9", "118.11"), &["1", "2"]);
     probe.place("R", "R3", ("88.9", "143.51"), &["1", "2"]);
 
-    let found = probe.partition();
+    let found = partition(&probe);
     // One net, one entry for U1 pin 9, though two pins reach it.
     assert!(found.contains(&net(&["R1.1", "U1.9"])));
     // The rule is per net: wired apart, the pin number is on both nets.
@@ -625,7 +205,7 @@ fn a_pin_shared_by_two_units_is_listed_once_per_net() {
 
 #[test]
 fn two_labels_join_when_their_net_names_are_equal() {
-    let mut probe = Probe::new("escaped-label-names");
+    let mut probe = probe("escaped-label-names");
 
     // A slash may not stand in a net name, so KiCad writes it `{slash}`.
     // The raw form and the written form are one name.
@@ -639,7 +219,7 @@ fn two_labels_join_when_their_net_names_are_equal() {
     probe.named_strand("R5", "76.2", "80.01", "EE/FF");
     probe.named_strand("R6", "88.9", "92.71", "EE/FF");
 
-    let found = probe.partition();
+    let found = partition(&probe);
     assert!(found.contains(&net(&["R1.1", "R2.1"])));
     assert!(found.contains(&net(&["R3.1"])));
     assert!(found.contains(&net(&["R4.1"])));
@@ -648,7 +228,7 @@ fn two_labels_join_when_their_net_names_are_equal() {
 
 #[test]
 fn a_bundle_carries_its_members_to_every_sheet_it_reaches() {
-    let mut probe = Probe::new("bundle-members");
+    let mut probe = probe("bundle-members");
     let mut child = Probe::child_of(&probe);
 
     // The bundle leaves the root sheet through the port of the child.
@@ -668,7 +248,7 @@ fn a_bundle_carries_its_members_to_every_sheet_it_reaches() {
     child.named_strand("R2", "25.4", "29.21", "AN0");
     child.named_strand("R6", "88.9", "92.71", "ZZ9");
 
-    let found = probe.partition_with(&[&child]);
+    let found = partition_with(&probe, &[&child]);
     // The two sheets' AN0 are one net, though no wire joins them.
     assert!(found.contains(&net(&["R1.1", "R2.1"])));
     // A name the bundle does not carry stays local to its sheet.
@@ -713,7 +293,7 @@ fn bundled_members_named(
 
 #[test]
 fn two_bundles_on_one_bus_join_their_corresponding_members() {
-    let mut probe = Probe::new("linked-bundles");
+    let mut probe = probe("linked-bundles");
     let first = "00000000-0000-4000-8000-cccccccccc01";
     let second = "00000000-0000-4000-8000-cccccccccc02";
     let mut left = Probe::named_child_of(&probe, "child1", first, 2);
@@ -742,7 +322,7 @@ fn two_bundles_on_one_bus_join_their_corresponding_members() {
         &[("R4", "UART_TRG.TX"), ("R5", "UART_TRG.RX")],
     );
 
-    let found = probe.partition_with(&[&left, &right]);
+    let found = partition_with(&probe, &[&left, &right]);
     // A group member corresponds by its own name, so TX joins TX and RX joins
     // RX, though the two bundles are named differently and no wire joins the
     // member nets.
@@ -754,7 +334,7 @@ fn two_bundles_on_one_bus_join_their_corresponding_members() {
 
 #[test]
 fn two_vector_bundles_on_one_bus_join_by_place_and_not_by_index() {
-    let mut probe = Probe::new("linked-vectors");
+    let mut probe = probe("linked-vectors");
     let first = "00000000-0000-4000-8000-cccccccccc01";
     let second = "00000000-0000-4000-8000-cccccccccc02";
     let mut left = Probe::named_child_of(&probe, "child1", first, 2);
@@ -772,7 +352,7 @@ fn two_vector_bundles_on_one_bus_join_by_place_and_not_by_index() {
     );
     bundled_members(&mut right, "BB[5..6]", &[("R4", "BB5"), ("R5", "BB6")]);
 
-    let found = probe.partition_with(&[&left, &right]);
+    let found = partition_with(&probe, &[&left, &right]);
     // The first member of one range joins the first of the other, so the
     // number written in the name is not what corresponds.
     assert!(found.contains(&net(&["R1.1", "R4.1"])));
@@ -782,7 +362,7 @@ fn two_vector_bundles_on_one_bus_join_by_place_and_not_by_index() {
 
 #[test]
 fn a_vector_against_a_group_is_reported_and_not_reproduced() {
-    let mut probe = Probe::new("mixed-bundle-kinds");
+    let mut probe = probe("mixed-bundle-kinds");
     let first = "00000000-0000-4000-8000-cccccccccc01";
     let second = "00000000-0000-4000-8000-cccccccccc02";
     let mut left = Probe::named_child_of(&probe, "child1", first, 2);
@@ -828,7 +408,7 @@ fn a_bus_of_one_bundle_kind_is_not_reported() {
         ("AA[0..1]", "BB[0..1]", [("AA0", "AA1"), ("BB0", "BB1")]),
         ("AA{P, Q}", "BB{P, Q}", [("AA.P", "AA.Q"), ("BB.P", "BB.Q")]),
     ] {
-        let mut probe = Probe::new("one-bundle-kind");
+        let mut probe = probe("one-bundle-kind");
         let first = "00000000-0000-4000-8000-cccccccccc01";
         let second = "00000000-0000-4000-8000-cccccccccc02";
         let mut left = Probe::named_child_of(&probe, "child1", first, 2);
@@ -856,7 +436,7 @@ fn a_bus_of_one_bundle_kind_is_not_reported() {
 
 #[test]
 fn two_bundles_in_one_scope_share_the_members_they_both_name() {
-    let mut probe = Probe::new("bundle-scope");
+    let mut probe = probe("bundle-scope");
     let first = "00000000-0000-4000-8000-cccccccccc01";
     let second = "00000000-0000-4000-8000-cccccccccc02";
     let mut left = Probe::named_child_of(&probe, "child1", first, 2);
@@ -879,7 +459,7 @@ fn two_bundles_in_one_scope_share_the_members_they_both_name() {
     );
     bundled_members(&mut right, "DQ[0..1]", &[("R4", "DQ0"), ("R5", "DQ1")]);
 
-    let found = probe.partition_with(&[&left, &right]);
+    let found = partition_with(&probe, &[&left, &right]);
     // The members both bundles name are one net each, though no bus joins the
     // two bundles and the members are drawn on different sheets.
     assert!(found.contains(&net(&["R1.1", "R4.1"])));
@@ -891,7 +471,7 @@ fn two_bundles_in_one_scope_share_the_members_they_both_name() {
 
 #[test]
 fn two_bundles_in_different_scopes_keep_their_members_apart() {
-    let mut probe = Probe::new("bundle-scopes-apart");
+    let mut probe = probe("bundle-scopes-apart");
     let first = "00000000-0000-4000-8000-cccccccccc01";
     let second = "00000000-0000-4000-8000-cccccccccc02";
     let mut left = Probe::named_child_of(&probe, "child1", first, 2);
@@ -917,7 +497,7 @@ fn two_bundles_in_different_scopes_keep_their_members_apart() {
         &[("R3", "DQ0"), ("R4", "DQ1")],
     );
 
-    let found = probe.partition_with(&[&left, &right]);
+    let found = partition_with(&probe, &[&left, &right]);
     // Each sheet is its own scope, so an equal member name is two nets.
     assert!(found.contains(&net(&["R1.1"])));
     assert!(found.contains(&net(&["R2.1"])));
@@ -927,7 +507,7 @@ fn two_bundles_in_different_scopes_keep_their_members_apart() {
 
 #[test]
 fn a_wide_bundle_splits_into_sub_ranges_that_rename_at_each_port() {
-    let mut probe = Probe::new("subrange-chain");
+    let mut probe = probe("subrange-chain");
     let first = "00000000-0000-4000-8000-cccccccccc01";
     let second = "00000000-0000-4000-8000-cccccccccc02";
     let mut left = Probe::named_child_of(&probe, "child1", first, 2);
@@ -958,7 +538,7 @@ fn a_wide_bundle_splits_into_sub_ranges_that_rename_at_each_port() {
     bundled_members(&mut left, "BB[0..1]", &[("R5", "BB0"), ("R6", "BB1")]);
     bundled_members(&mut right, "BB[0..1]", &[("R7", "BB0"), ("R8", "BB1")]);
 
-    let found = probe.partition_with(&[&left, &right]);
+    let found = partition_with(&probe, &[&left, &right]);
     // Each child's members correspond by place to its own sub-range, and the
     // sub-ranges correspond by name to the wide bundle.
     assert!(found.contains(&net(&["R1.1", "R5.1"])));
@@ -969,7 +549,7 @@ fn a_wide_bundle_splits_into_sub_ranges_that_rename_at_each_port() {
 
 #[test]
 fn one_child_placed_twice_carries_each_sub_range_to_its_own_placement() {
-    let mut probe = Probe::new("subrange-one-file-twice");
+    let mut probe = probe("subrange-one-file-twice");
     let first = "00000000-0000-4000-8000-cccccccccc01";
     let second = "00000000-0000-4000-8000-cccccccccc02";
     // One file, placed twice. This is what vme-wren draws and what the
@@ -998,7 +578,7 @@ fn one_child_placed_twice_carries_each_sub_range_to_its_own_placement() {
 
     bundled_members(&mut child, "BB[0..1]", &[("R5", "BB0"), ("R6", "BB1")]);
 
-    let found = probe.partition_with(&[&child]);
+    let found = partition_with(&probe, &[&child]);
     // The first placement answers to the first sub-range, the second to the
     // second, though both are the same drawing under the same member names.
     assert!(found.contains(&net(&["R1.1", "R5.1"])));
@@ -1009,7 +589,7 @@ fn one_child_placed_twice_carries_each_sub_range_to_its_own_placement() {
 
 #[test]
 fn two_bus_entries_that_meet_do_not_join() {
-    let mut probe = Probe::new("bus-entries");
+    let mut probe = probe("bus-entries");
 
     // Two entries whose bus ends land on one point of a bundle.
     probe.bus(("127", "25.4"), ("127", "76.2"));
@@ -1033,7 +613,7 @@ fn two_bus_entries_that_meet_do_not_join() {
     probe.place("R", "R3", ("99.06", "115.57"), &["1", "2"]);
     probe.place("R", "R4", ("99.06", "120.65"), &["1", "2"]);
 
-    let found = probe.partition();
+    let found = partition(&probe);
     // Each member keeps its own net, on the bundle and off it.
     assert!(found.contains(&net(&["R1.1"])));
     assert!(found.contains(&net(&["R2.1"])));
@@ -1043,7 +623,7 @@ fn two_bus_entries_that_meet_do_not_join() {
 
 #[test]
 fn the_instance_record_says_which_unit_a_symbol_draws() {
-    let mut probe = Probe::new("instance-unit");
+    let mut probe = probe("instance-unit");
     probe.define(symbol(
         "PAIR",
         "U",
@@ -1082,7 +662,7 @@ fn the_instance_record_says_which_unit_a_symbol_draws() {
     probe.label_of_kind("label", "", "CTRLNET", ("76.2", "85.09"));
     probe.place("R", "R2", ("76.2", "88.9"), &["1", "2"]);
 
-    let found = probe.partition();
+    let found = partition(&probe);
     // Unit 2 is drawn, so the pin on the wire is pin 3 and not pin 1.
     assert!(found.contains(&net(&["R1.1", "U1.3"])));
     assert!(found.contains(&net(&["R2.1", "U2.3"])));
@@ -1092,7 +672,7 @@ fn the_instance_record_says_which_unit_a_symbol_draws() {
 
 #[test]
 fn a_symbol_off_the_board_is_in_no_net_list() {
-    let mut probe = Probe::new("off-the-board");
+    let mut probe = probe("off-the-board");
     let off_board = "(exclude_from_sim no) (in_bom yes) (on_board no) (in_pos_files yes) (dnp no)";
     let not_fitted =
         "(exclude_from_sim no) (in_bom yes) (on_board yes) (in_pos_files yes) (dnp yes)";
@@ -1112,7 +692,7 @@ fn a_symbol_off_the_board_is_in_no_net_list() {
         probe.label_of_kind("label", "", name, ("63.5", wire_y));
     }
 
-    let found = probe.partition();
+    let found = partition(&probe);
     // A symbol that does not reach the board is in no net list at all, not
     // even the one-pin net of its unwired pin.
     assert!(found.contains(&net(&["R2.1"])));
@@ -1128,7 +708,7 @@ fn a_symbol_off_the_board_is_in_no_net_list() {
 
 #[test]
 fn one_sheet_is_one_namespace() {
-    let mut probe = Probe::new("one-namespace");
+    let mut probe = probe("one-namespace");
     probe.define(power("PWRX"));
 
     // A local label against a hierarchical label of the same text.
@@ -1174,7 +754,7 @@ fn one_sheet_is_one_namespace() {
         "HGL",
     );
 
-    let found = probe.partition();
+    let found = partition(&probe);
     assert!(found.contains(&net(&["R1.1", "R2.1"])));
     assert!(found.contains(&net(&["R3.1", "R4.1"])));
     assert!(found.contains(&net(&["R5.1", "R6.1"])));
@@ -1183,7 +763,7 @@ fn one_sheet_is_one_namespace() {
 
 #[test]
 fn a_hidden_power_input_reaches_its_rail_with_no_wire() {
-    let mut probe = Probe::new("hidden-power-pin");
+    let mut probe = probe("hidden-power-pin");
     // One ordinary part with a hidden power input, one with a visible one.
     probe.define(symbol(
         "HID",
@@ -1222,7 +802,7 @@ fn a_hidden_power_input_reaches_its_rail_with_no_wire() {
     probe.wire(("101.6", "88.9"), ("101.6", "92.71"));
     probe.place("R", "R2", ("101.6", "96.52"), &["1", "2"]);
 
-    let found = probe.partition();
+    let found = partition(&probe);
     // The hidden input is on the rail its pin name asks for.
     assert!(found.contains(&net(&["R1.1", "U1.9"])));
     // The visible one is not. A power input on an ordinary symbol names a

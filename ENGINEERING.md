@@ -41,12 +41,19 @@ outranks completeness.
 ## Structure (SOLID, translated)
 
 - **Single responsibility** holds as-is: one module = one concern. The
-  workspace is three crates: `kicli-sexpr` (tokens/tree/prettify — minimal
+  workspace is four crates: `kicli-sexpr` (tokens/tree/prettify — minimal
   dependencies, no knowledge of schematics), `kicli` (modules: `model`,
   `geometry`, `connectivity`, `view`, `lint`, `render`, `libraries`, `kicad`,
-  `pcb`, `cli`), and `xtask`. `cli` depends on everything; nothing depends on
-  `cli`; `kicli-sexpr` depends on nothing of ours. Crate boundaries enforce the
+  `pcb`, `cli`), `kicli-probe` (the test instruments: probe drawings and oracle
+  readers), and `xtask`. `cli` depends on everything; nothing depends on `cli`;
+  `kicli-sexpr` depends on nothing of ours. Crate boundaries enforce the
   dependency direction — do not merge them for convenience.
+- **One edge is a cycle, and it is dev-only.** `kicli-probe` depends on `kicli`,
+  because a probe measures what the extractor reads; `kicli` dev-depends on
+  `kicli-probe`, because its tests are what probe. Cargo resolves a dev-only
+  cycle. The edge back must stay under `[dev-dependencies]`, or a test
+  instrument ships inside the binary — `probe_crate_is_dev_only` is the
+  enforcement, because the licence gate cannot see a dev-dependency.
 - **Two of those modules exist because the spec needs them, and the list above
   is not closed.** `view` owns the compact text and JSON representations, which
   are a separate concern from `render`: views are the truth an agent acts on,

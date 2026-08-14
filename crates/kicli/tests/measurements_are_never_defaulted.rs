@@ -34,7 +34,12 @@ fn no_measurement_read_falls_back_to_a_default() {
         .canonicalize()
         .expect("the workspace root resolves");
     let mut files = Vec::new();
-    for crate_name in ["crates/kicli/src", "crates/kicli-sexpr/src", "xtask/src"] {
+    for crate_name in [
+        "crates/kicli/src",
+        "crates/kicli-sexpr/src",
+        "crates/kicli-probe/src",
+        "xtask/src",
+    ] {
         sources(&workspace.join(crate_name), &mut files);
     }
     files.sort();
