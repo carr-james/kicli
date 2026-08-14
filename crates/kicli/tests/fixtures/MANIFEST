@@ -20,6 +20,7 @@
 sch/multi_instance/multi_instance.kicad_sch 20260306 normal yes kicad-cli
 sch/multi_instance/channel.kicad_sch 20260306 normal yes kicad-cli
 sch/lib_name_redirect.kicad_sch 20260306 normal yes kicad-cli
+sch/unreadable_coordinate.kicad_sch 20260306 normal yes hand
 sch/v9_legacy.kicad_sch 20250114 normal yes hand
 sch/future_version.kicad_sch 20260803 normal yes hand
 project/minimal.kicad_pro - json no hand

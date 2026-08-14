@@ -156,6 +156,137 @@ impl Doc {
         parse_iu(self.atom_text(id)?)
     }
 
+    /// The same, telling a missing number apart from an unreadable one.
+    ///
+    /// `Ok(None)` says the node is not an atom, which a caller may treat as an
+    /// absent field. `Err` says the atom is there and kicli cannot represent
+    /// it, which is never a zero.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SexprError::BadNumber`] with the text and its byte offset.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let doc = kicli_sexpr::Doc::parse("(at 41.91 1.234567)").expect("parses");
+    /// let root = doc.root().expect("has a root");
+    /// let children = doc.children(root);
+    /// assert_eq!(doc.atom_as_iu_checked(children[1])?, Some(419_100));
+    /// assert!(doc.atom_as_iu_checked(children[2]).is_err());
+    /// # Ok::<(), kicli_sexpr::SexprError>(())
+    /// ```
+    pub fn atom_as_iu_checked(&self, id: NodeId) -> Result<Option<i32>, SexprError> {
+        let Some(text) = self.atom_text(id) else {
+            return Ok(None);
+        };
+        match parse_iu(text) {
+            Some(units) => Ok(Some(units)),
+            None => Err(SexprError::BadNumber {
+                text: text.to_owned(),
+                at: self.offset_of(id),
+            }),
+        }
+    }
+
+    /// The byte offset a node starts at in the source text.
+    #[must_use]
+    pub fn offset_of(&self, id: NodeId) -> usize {
+        match &self.nodes[id.index()] {
+            Node::Atom { span, .. } | Node::Comment { span } | Node::List { span, .. } => {
+                span.start
+            }
+        }
+    }
+
+    /// Check the measurements a reader will interpret, and refuse a bad one.
+    ///
+    /// A bare atom holding a decimal fraction is a millimetre value: KiCad
+    /// writes coordinates, sizes, stroke widths and colour alphas that way, and
+    /// writes text as a quoted string. Whole numbers are left alone, because a
+    /// version stamp and a page number are not measurements.
+    ///
+    /// `keep_verbatim` names the objects the caller copies rather than reads.
+    /// Their subtrees are skipped whole. kicli refuses a measurement it would
+    /// have to interpret; a value it never interprets is written back from the
+    /// bytes it came from, so its precision is preserved by not touching it.
+    /// KiCad's own `image` object is one of these: it carries a placement and a
+    /// scale at full float precision, which no internal unit holds exactly.
+    ///
+    /// This is the one place a file is refused for a number, so that no reader
+    /// below has to decide what an unreadable coordinate means. None of them
+    /// could decide well: the honest answers are all wrong, and zero — the one
+    /// a default gives — silently moves the item to the origin.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SexprError::BadNumber`] for the first value it cannot read,
+    /// with the text as the file spells it and its byte offset.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let good = kicli_sexpr::Doc::parse("(wire (xy 41.91 0))").expect("parses");
+    /// assert!(good.check_measurements(&[]).is_ok());
+    /// let bad = kicli_sexpr::Doc::parse("(wire (xy 76.19999999999999 0))").expect("parses");
+    /// assert!(bad.check_measurements(&[]).is_err());
+    /// // An object the caller keeps verbatim is not checked.
+    /// let sheet = kicli_sexpr::Doc::parse("(kicad_sch (image (scale 0.472441)))")
+    ///     .expect("parses");
+    /// assert!(sheet.check_measurements(&[]).is_err());
+    /// assert!(sheet.check_measurements(&["image"]).is_ok());
+    /// ```
+    pub fn check_measurements(&self, keep_verbatim: &[&str]) -> Result<(), SexprError> {
+        for &id in &self.top {
+            self.check_subtree(id, keep_verbatim)?;
+        }
+        Ok(())
+    }
+
+    /// Check one node and everything under it.
+    fn check_subtree(&self, id: NodeId, keep_verbatim: &[&str]) -> Result<(), SexprError> {
+        match &self.nodes[id.index()] {
+            Node::List { children, .. } => {
+                if self
+                    .head(id)
+                    .is_some_and(|head| keep_verbatim.contains(&head))
+                {
+                    return Ok(());
+                }
+                for &child in children {
+                    self.check_subtree(child, keep_verbatim)?;
+                }
+                Ok(())
+            }
+            Node::Atom { kind, .. } => {
+                // A quoted atom is text. A property value may hold anything.
+                if *kind == AtomKind::Quoted {
+                    return Ok(());
+                }
+                let Some(text) = self.atom_text(id) else {
+                    return Ok(());
+                };
+                let body = text.strip_prefix('-').unwrap_or(text);
+                let Some((whole, fraction)) = body.split_once('.') else {
+                    return Ok(());
+                };
+                let digits =
+                    |part: &str| !part.is_empty() && part.bytes().all(|b| b.is_ascii_digit());
+                if (!digits(whole) && !whole.is_empty()) || !digits(fraction) {
+                    return Ok(());
+                }
+                if parse_iu(text).is_none() {
+                    return Err(SexprError::BadNumber {
+                        text: text.to_owned(),
+                        at: self.offset_of(id),
+                    });
+                }
+                Ok(())
+            }
+            Node::Comment { .. } => Ok(()),
+        }
+    }
+
     /// An atom's text with its quotes and escapes resolved.
     ///
     /// # Examples

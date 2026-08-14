@@ -29,6 +29,20 @@ pub enum SexprError {
         /// Where it looked.
         at: usize,
     },
+
+    /// A number was in the file that kicli cannot represent exactly.
+    ///
+    /// KiCad writes millimetres with at most four decimals. A value with more,
+    /// or one too large for the internal unit, cannot be round-tripped, so it
+    /// is refused. It is never read as zero: a coordinate kicli invents moves
+    /// an item somewhere its author never put it.
+    #[error("{text} at byte {at} is not a number KiCad writes")]
+    BadNumber {
+        /// The text as the file spells it.
+        text: String,
+        /// Where it sits.
+        at: usize,
+    },
 }
 
 impl SexprError {
@@ -39,7 +53,8 @@ impl SexprError {
             Self::UnterminatedString(at)
             | Self::UnmatchedClose(at)
             | Self::UnclosedList(at)
-            | Self::Unexpected { at, .. } => Some(*at),
+            | Self::Unexpected { at, .. }
+            | Self::BadNumber { at, .. } => Some(*at),
             Self::Empty => None,
         }
     }

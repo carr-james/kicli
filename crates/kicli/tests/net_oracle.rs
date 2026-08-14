@@ -222,6 +222,38 @@ mod corpus {
         }
     }
 
+    /// Every corpus hierarchy loads.
+    ///
+    /// kicli refuses a file carrying a measurement it cannot represent, which
+    /// is the only honest answer for a value it would have to interpret. That
+    /// refusal must never fall on a drawing KiCad itself wrote and kicli
+    /// handles: `image` carries a placement and a scale at full float
+    /// precision, and kicli copies both rather than reading them. This test is
+    /// what keeps the list of objects kept verbatim complete — it failed on
+    /// `jetson-agx-thor-baseboard` the first time the check was too broad.
+    #[test]
+    fn every_corpus_hierarchy_loads() {
+        let mut projects = Vec::new();
+        roots(&corpus_root(), &mut projects);
+        projects.sort();
+        if projects.is_empty() {
+            eprintln!("skipped: the corpus is not there. Run `cargo xtask corpus` first.");
+            return;
+        }
+        let mut refused = Vec::new();
+        for root in &projects {
+            if let Err(error) = Hierarchy::load(root) {
+                refused.push(format!("{}: {error}", root.display()));
+            }
+        }
+        assert!(
+            refused.is_empty(),
+            "kicli refused a drawing KiCad wrote:\n{}",
+            refused.join("\n")
+        );
+        eprintln!("{} hierarchies loaded", projects.len());
+    }
+
     /// No corpus hierarchy draws the one bundle shape kicli declines to join.
     ///
     /// kicli reports a bus that carries a vector bundle and a group bundle at

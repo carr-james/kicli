@@ -42,6 +42,9 @@ pub(crate) fn natural_key(reference: &str) -> (String, u64, String) {
     let rest = &reference[head.len()..];
     let digits: String = rest.chars().take_while(char::is_ascii_digit).collect();
     let tail = rest[digits.len()..].to_owned();
+    // Only digits reach the parse, so it fails only on a run too long for a
+    // u64. That is a sort key and nothing else, and a designer who numbers a
+    // part past 18 quintillion has a different problem.
     (head, digits.parse().unwrap_or(0), tail)
 }
 

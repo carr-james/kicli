@@ -8,7 +8,7 @@
 
 use crate::geometry::{Angle, Iu, Point};
 use crate::model::version::{FormatVersion, pin_text};
-use kicli_sexpr::{Doc, NodeId};
+use kicli_sexpr::{Doc, NodeId, SexprError};
 
 /// An object's own identifier, as KiCad writes it.
 ///
@@ -455,6 +455,15 @@ pub struct Schematic {
     pub library_symbols: Vec<(String, NodeId)>,
 }
 
+/// Objects kicli copies rather than reads, so their numbers are not its own.
+///
+/// KiCad's `image` carries a placement and a scale at full float precision,
+/// which no internal unit holds exactly. kicli never interprets either: the
+/// object is kept as [`Item::Other`] and written back from the bytes it came
+/// from, so refusing the file would refuse a drawing kicli handles correctly.
+/// Every other object in KiCad's demo corpus measures in units kicli holds.
+const KEPT_VERBATIM: &[&str] = &["image"];
+
 /// Why a schematic could not be read.
 #[derive(Debug, thiserror::Error)]
 pub enum ReadError {
@@ -467,6 +476,12 @@ pub enum ReadError {
     /// The file carries no `(version ...)` stamp, so its tokens cannot be read.
     #[error("this schematic has no version stamp")]
     NoVersion,
+    /// A measurement in the file is not one kicli can represent exactly.
+    ///
+    /// Reading it as zero would move the item somewhere its author never put
+    /// it, and a later write would save that move as though it were meant.
+    #[error("{0}")]
+    BadNumber(#[from] SexprError),
 }
 
 impl Schematic {
@@ -475,8 +490,9 @@ impl Schematic {
     /// # Errors
     ///
     /// Returns [`ReadError`] when the document is not a schematic, or carries
-    /// no version stamp. Objects the module does not name are kept as
-    /// [`Item::Other`] rather than refused.
+    /// no version stamp, or carries a measurement kicli cannot represent
+    /// exactly. Objects the module does not name are kept as [`Item::Other`]
+    /// rather than refused.
     pub fn read(doc: &Doc) -> Result<Self, ReadError> {
         let root = doc.root().ok_or(ReadError::Empty)?;
         match doc.head(root) {
@@ -484,6 +500,10 @@ impl Schematic {
             Some(other) => return Err(ReadError::NotASchematic(other.to_owned())),
             None => return Err(ReadError::Empty),
         }
+        // Every measurement is checked before any of them is read. Below this
+        // line a reader may treat a missing number as absent, because an
+        // unreadable one has already stopped the load.
+        doc.check_measurements(KEPT_VERBATIM)?;
 
         let version = FormatVersion::new(
             child_atom(doc, root, "version")
@@ -729,18 +749,10 @@ fn read_label(
 }
 
 fn read_sheet(doc: &Doc, node: NodeId, uuid: Option<Uuid>, version: FormatVersion) -> Item {
-    let size = doc
-        .children(node)
-        .iter()
-        .find(|&&child| doc.head_is(child, "size"))
-        .and_then(|&child| {
-            let values = doc.children(child);
-            Some((
-                Iu(doc.atom_as_iu(*values.get(1)?)?),
-                Iu(doc.atom_as_iu(*values.get(2)?)?),
-            ))
-        })
-        .unwrap_or_default();
+    // A sheet symbol with no size is drawn as a point, which is what KiCad
+    // shows for one. A size that is there and unreadable never reaches this:
+    // the file is refused when it is read.
+    let size = child_size(doc, node).unwrap_or_default();
 
     let mut pins = Vec::new();
     for &child in doc.children(node) {
@@ -963,7 +975,12 @@ fn child_atom_string(doc: &Doc, node: NodeId, head: &str) -> Option<String> {
         .and_then(|&id| doc.atom_as_str(id))
 }
 
-/// The first value of a named child list, as a number.
+/// The first value of a named child list, as a whole number.
+///
+/// `None` covers both an absent list and one holding something that is not a
+/// count. A count is not a measurement, so [`Doc::check_measurements`] does not
+/// look at it; the callers each say what an absent one means, and every one of
+/// them means "the KiCad default" rather than zero.
 fn child_number(doc: &Doc, node: NodeId, head: &str) -> Option<u32> {
     child_atom(doc, node, head)?.parse().ok()
 }

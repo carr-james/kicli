@@ -1069,13 +1069,12 @@ fn entry_end(doc: &Doc, node: NodeId, at: Point) -> Point {
         return at;
     };
     let values = doc.children(size);
-    let read = |index: usize| -> i32 {
-        values
-            .get(index)
-            .and_then(|&id| doc.atom_as_iu(id))
-            .unwrap_or_default()
+    let read = |index: usize| values.get(index).and_then(|&id| doc.atom_as_iu(id));
+    let (Some(across), Some(down)) = (read(1), read(2)) else {
+        // A bus entry with no size has no reach: both its ends are its anchor.
+        return at;
     };
-    Point::new(at.x.0 + read(1), at.y.0 + read(2))
+    Point::new(at.x.0 + across, at.y.0 + down)
 }
 
 #[cfg(test)]

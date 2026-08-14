@@ -210,7 +210,15 @@ fn unit_of(name: &str) -> (u32, u32) {
     let Some((_, unit)) = rest.rsplit_once('_') else {
         return (0, 0);
     };
-    (unit.parse().unwrap_or(0), style.parse().unwrap_or(0))
+    // Both numbers or neither. Unit 0 is not a fallback: it means "drawn by
+    // every unit of the part", so reading half a name as unit 0 would put one
+    // unit's pins on all of them. A name that is not `NAME_<unit>_<style>` is
+    // not a body at all, and `(0, 0)` is what this function already says for
+    // one.
+    match (unit.parse(), style.parse()) {
+        (Ok(unit), Ok(style)) => (unit, style),
+        _ => (0, 0),
+    }
 }
 
 fn read_pins(doc: &Doc, unit: NodeId, version: FormatVersion) -> Vec<LibraryPin> {

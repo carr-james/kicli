@@ -648,15 +648,17 @@ fn clear_autoplace(doc: &mut Doc, owner: NodeId) -> bool {
 }
 
 /// The first two numbers of an `(at ...)` list.
+///
+/// An `(at)` with no numbers is the origin, which is what KiCad draws for one.
+/// A number that is there and unreadable never reaches this: the file is
+/// refused when it is read.
 fn point_of(doc: &Doc, list: NodeId) -> Point {
     let values = doc.children(list);
-    let number = |index: usize| {
-        values
-            .get(index)
-            .and_then(|&atom| doc.atom_as_iu(atom))
-            .unwrap_or_default()
+    let number = |index: usize| values.get(index).and_then(|&atom| doc.atom_as_iu(atom));
+    let (Some(x), Some(y)) = (number(1), number(2)) else {
+        return Point::new(0, 0);
     };
-    Point::new(number(1), number(2))
+    Point::new(x, y)
 }
 
 /// The third number of an `(at ...)` list, which is the angle.

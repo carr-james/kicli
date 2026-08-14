@@ -155,6 +155,11 @@ fn invariants_pass_on_every_fixture() {
         if path.contains("project/broken") || path.contains("project/cycle") {
             continue;
         }
+        // This one exists to be refused, and unreadable_numbers checks that it
+        // is. It never reaches the invariant check because it never loads.
+        if path.contains("unreadable_coordinate") {
+            continue;
+        }
         let source = std::fs::read_to_string(root.join(path)).expect("fixture reads");
         let doc = Doc::parse(&source).expect("fixture parses");
         let schematic = Schematic::read(&doc).expect("fixture reads");

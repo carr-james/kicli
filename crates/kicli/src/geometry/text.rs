@@ -150,19 +150,16 @@ impl TextStyle {
         for &setting in doc.children(node) {
             match doc.head(setting) {
                 Some("size") => {
-                    // KiCad writes the height first, then the width.
+                    // KiCad writes the height first, then the width. A size
+                    // list that carries neither leaves the size as it was.
                     let values = doc.children(setting);
-                    let read = |index: usize| {
-                        values
-                            .get(index)
-                            .and_then(|&id| doc.atom_as_iu(id))
-                            .map(Iu)
-                            .unwrap_or_default()
-                    };
-                    self.size = Size {
-                        x: read(2),
-                        y: read(1),
-                    };
+                    let read = |index: usize| values.get(index).and_then(|&id| doc.atom_as_iu(id));
+                    if let (Some(height), Some(width)) = (read(1), read(2)) {
+                        self.size = Size {
+                            x: Iu(width),
+                            y: Iu(height),
+                        };
+                    }
                 }
                 Some("thickness") => {
                     self.thickness = doc
