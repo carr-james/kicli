@@ -9,10 +9,9 @@
 //! The oracle half runs `kicad-cli` and is off unless `KICLI_TEST_KICAD_CLI` is
 //! set, so the default run needs no KiCad install.
 
-use kicli_probe::oracle::Kicad;
+use kicli_probe::oracle::{Change, Kicad};
 use kicli_sexpr::Doc;
 use serde_json::Value;
-use std::collections::BTreeSet;
 use std::path::PathBuf;
 use std::process::{Command, Output};
 
@@ -256,16 +255,12 @@ fn kicad_reads_what_the_loop_wrote() {
     };
     let project = Project::new("mutation_loop_oracle");
 
-    // What KiCad says about the drawing before kicli touches it. The control
-    // for the comparison below: a report parser that read nothing would make
-    // "nothing else moved" true and meaningless.
+    // What KiCad says about the drawing before kicli touches it. `Change`
+    // refuses an empty before-reading, because "nothing else moved" is true of
+    // a report that was never read.
     let before = tool
         .rule_check_into(&project.root, &project.directory.join("before.txt"))
         .items();
-    assert!(
-        !before.is_empty(),
-        "the rule check reported items on the fixture as it stands"
-    );
 
     project.json(&[
         "sym",
@@ -286,25 +281,19 @@ fn kicad_reads_what_the_loop_wrote() {
     let after = tool
         .rule_check_into(&project.root, &project.directory.join("after.txt"))
         .items();
+    let change = Change::measured(before, after);
     assert!(
-        after.iter().any(|item| item.contains("Symbol R900 Pin")),
-        "the rule check found the placed symbol: {after:?}"
+        change
+            .after()
+            .iter()
+            .any(|item| item.contains("Symbol R900 Pin")),
+        "the rule check found the placed symbol: {:?}",
+        change.after()
     );
 
-    // And nothing else moved. Every item that does not name the new symbol is
-    // exactly the item the drawing had before the loop ran.
-    let mine = |items: &BTreeSet<String>| -> BTreeSet<String> {
-        items
-            .iter()
-            .filter(|item| !item.contains("R900"))
-            .cloned()
-            .collect()
-    };
-    assert_eq!(
-        mine(&after),
-        mine(&before),
-        "the loop raised no fault of its own"
-    );
+    // And nothing else moved. Placing an unconnected symbol adds findings of
+    // its own, and they are the point rather than a regression.
+    change.nothing_moved_but("R900");
 
     // KiCad's netlist carries the net the label report claimed.
     let netlist = tool.netlist(&project.root, &project.directory.join("after.net"));

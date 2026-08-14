@@ -506,6 +506,105 @@ pub fn differences(kicli: &Partition, kicad: &Partition) -> Option<String> {
     ))
 }
 
+/// Measure one drawing twice: with the item under test, and without it.
+///
+/// A merge that survives the removal was not caused by the item. This is the
+/// control a causal claim needs, and it is why the drawing is built by a
+/// function rather than written twice: two hand-written drawings differ in more
+/// than the one item, and the difference is what the claim rests on.
+///
+/// The callback draws the probe. Its second argument says whether to include
+/// the item whose effect is being measured.
+///
+/// # Panics
+///
+/// If either probe does not load, or if KiCad disagrees about either.
+#[must_use]
+pub fn with_and_without(
+    name: &str,
+    directory: &Path,
+    draw: impl Fn(&mut Probe, bool),
+) -> (Partition, Partition) {
+    let mut with = Probe::new(name, directory.to_path_buf());
+    draw(&mut with, true);
+    let mut without = Probe::new(&format!("{name}-without"), directory.to_path_buf());
+    draw(&mut without, false);
+    (with.partition(), without.partition())
+}
+
+/// Two readings of one measurement, before a change and after it.
+///
+/// The before-reading must carry something. A comparison against an empty
+/// reading succeeds and says nothing, so "nothing else moved" would be true of
+/// a report that was never read.
+pub struct Change {
+    before: BTreeSet<String>,
+    after: BTreeSet<String>,
+}
+
+impl Change {
+    /// Hold two readings together, refusing an empty control.
+    ///
+    /// # Panics
+    ///
+    /// If the before-reading is empty.
+    #[must_use]
+    pub fn measured(before: BTreeSet<String>, after: BTreeSet<String>) -> Self {
+        assert!(
+            !before.is_empty(),
+            "the before-reading is empty, so a comparison against it says nothing"
+        );
+        Self { before, after }
+    }
+
+    /// What the reading said before the change.
+    #[must_use]
+    pub fn before(&self) -> &BTreeSet<String> {
+        &self.before
+    }
+
+    /// What it says after it.
+    #[must_use]
+    pub fn after(&self) -> &BTreeSet<String> {
+        &self.after
+    }
+
+    /// Everything the after-reading carries and the before-reading did not.
+    #[must_use]
+    pub fn added(&self) -> BTreeSet<String> {
+        self.after.difference(&self.before).cloned().collect()
+    }
+
+    /// Everything that has gone.
+    #[must_use]
+    pub fn removed(&self) -> BTreeSet<String> {
+        self.before.difference(&self.after).cloned().collect()
+    }
+
+    /// Assert that nothing changed except entries naming the subject.
+    ///
+    /// The subject is what the change was about, so its own entries are the
+    /// point rather than a regression. Everything else must read as it did.
+    ///
+    /// # Panics
+    ///
+    /// If any entry that does not name the subject was added or removed.
+    pub fn nothing_moved_but(&self, subject: &str) {
+        let others = |entries: &BTreeSet<String>| -> BTreeSet<String> {
+            entries
+                .iter()
+                .filter(|entry| !entry.contains(subject))
+                .cloned()
+                .collect()
+        };
+        assert_eq!(
+            others(&self.after),
+            others(&self.before),
+            "something that does not name {subject} moved"
+        );
+    }
+}
+
 impl Probe {
     /// kicli's partition of this probe, checked against KiCad when it is there.
     ///

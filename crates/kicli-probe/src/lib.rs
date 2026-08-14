@@ -41,5 +41,7 @@ pub mod oracle;
 pub mod scratch;
 
 pub use drawing::{Placed, Probe, hidden_pin, millimetres, pin, power, resistor, symbol};
-pub use oracle::{Kicad, NamedNet, Netlist, Partition, Report, ReportPin, net};
+pub use oracle::{
+    Change, Kicad, NamedNet, Netlist, Partition, Report, ReportPin, net, with_and_without,
+};
 pub use scratch::Fixtures;

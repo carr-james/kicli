@@ -19,7 +19,7 @@ const CHILD: &str = "00000000-0000-4000-8000-cccccccccccc";
 
 /// One probe drawing, built item by item.
 pub struct Probe {
-    name: &'static str,
+    name: String,
     /// Where the probe's files go. A probe writes into a sub-directory of this
     /// named for itself.
     ///
@@ -46,9 +46,9 @@ pub struct Probe {
 impl Probe {
     /// A probe named for the question it asks, writing under a directory.
     #[must_use]
-    pub fn new(name: &'static str, directory: PathBuf) -> Self {
+    pub fn new(name: &str, directory: PathBuf) -> Self {
         Self {
-            name,
+            name: name.to_owned(),
             directory,
             file: "probe",
             paths: vec![(format!("/{ROOT}"), "")],
@@ -70,7 +70,7 @@ impl Probe {
     #[must_use]
     pub fn named_child_of(parent: &Probe, file: &'static str, uuid: &str, series: u32) -> Self {
         Self {
-            name: parent.name,
+            name: parent.name.clone(),
             directory: parent.directory.clone(),
             file,
             paths: vec![(format!("/{ROOT}/{uuid}"), "")],
@@ -234,6 +234,15 @@ impl Probe {
         ));
     }
 
+    /// Draw a junction, which makes a crossing a connection.
+    pub fn junction(&mut self, at: (&str, &str)) {
+        let uuid = self.uuid();
+        self.items.push(format!(
+            "(junction (at {} {}) (diameter 0) (color 0 0 0 0)\n(uuid \"{uuid}\"))",
+            at.0, at.1
+        ));
+    }
+
     /// Draw a label of any of the three kinds.
     pub fn label_of_kind(&mut self, head: &str, shape: &str, text: &str, at: (&str, &str)) {
         let uuid = self.uuid();
@@ -322,7 +331,7 @@ impl Probe {
     /// instrument, and a test standing on one must stop.
     #[allow(clippy::must_use_candidate, reason = "written for the file it leaves")]
     pub fn write(&self) -> PathBuf {
-        let directory = self.directory.join(self.name);
+        let directory = self.directory.join(&self.name);
         std::fs::create_dir_all(&directory).expect("the scratch directory is writable");
         let path = directory.join(format!("{}.kicad_sch", self.file));
         let text = self.text();
@@ -346,8 +355,8 @@ impl Probe {
 
     /// The name this probe answers to, which names its directory too.
     #[must_use]
-    pub fn name(&self) -> &'static str {
-        self.name
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
     /// The directory this probe writes its files in.
