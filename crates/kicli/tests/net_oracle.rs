@@ -195,8 +195,8 @@ fn netlist_oracle_is_current() {
 #[cfg(feature = "corpus")]
 mod corpus {
     use super::{
-        Path, PathBuf, differences, export_netlist, kicad_cli, kicad_partition, kicli_partition,
-        scratch,
+        Hierarchy, Path, PathBuf, differences, export_netlist, extract, kicad_cli, kicad_partition,
+        kicli_partition, scratch,
     };
 
     fn corpus_root() -> PathBuf {
@@ -220,6 +220,45 @@ mod corpus {
                 }
             }
         }
+    }
+
+    /// No corpus hierarchy draws the one bundle shape kicli declines to join.
+    ///
+    /// kicli reports a bus that carries a vector bundle and a group bundle at
+    /// once rather than reproducing KiCad's answer for it, which is degenerate.
+    /// "Degenerate" is a claim about real drawings, so it is checked against
+    /// them: if a demo ever draws one, the shape is not degenerate, the rule
+    /// has to be implemented, and this test says so by failing.
+    #[test]
+    fn no_corpus_hierarchy_mixes_bundle_kinds() {
+        let mut projects = Vec::new();
+        roots(&corpus_root(), &mut projects);
+        projects.sort();
+        if projects.is_empty() {
+            eprintln!("skipped: the corpus is not there. Run `cargo xtask corpus` first.");
+            return;
+        }
+
+        let mut found = Vec::new();
+        for root in &projects {
+            let hierarchy = Hierarchy::load(root).expect("a corpus hierarchy loads");
+            for warning in extract(&hierarchy).warnings() {
+                found.push(format!(
+                    "{}: {}",
+                    root.file_stem().unwrap_or_default().to_string_lossy(),
+                    warning.message()
+                ));
+            }
+        }
+        assert!(
+            found.is_empty(),
+            "a corpus hierarchy draws a bundle shape kicli only reports:\n{}",
+            found.join("\n")
+        );
+        eprintln!(
+            "{} hierarchies checked, none mixes bundle kinds",
+            projects.len()
+        );
     }
 
     // 34 of 35 hierarchies of KiCad's demo corpus match exactly. The one that

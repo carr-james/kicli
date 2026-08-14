@@ -97,6 +97,17 @@ pub fn render(hierarchy: &Hierarchy, nets: &Nets, options: &ViewOptions) -> Stri
             .filter(|line| line.starts_with("N "))
             .count()
     );
+    // A warning qualifies every net below it, so it goes first. A reader that
+    // stops at the top of the view still sees that the partition is in doubt.
+    for warning in nets.warnings() {
+        let _ = writeln!(
+            out,
+            "W {} {}: {}",
+            warning.kind.code(),
+            warning.sheet.0,
+            warning.message()
+        );
+    }
     out.push_str(&sheet_blocks);
     out.push_str(&nets_shown);
     out
@@ -316,6 +327,7 @@ pub fn to_json(hierarchy: &Hierarchy, nets: &Nets, options: &ViewOptions) -> ser
     let text = render(hierarchy, nets, options);
     let mut sheets = Vec::new();
     let mut net_records = Vec::new();
+    let mut warnings = Vec::new();
 
     for line in text.lines() {
         if let Some(rest) = line.strip_prefix("sheet ") {
@@ -354,11 +366,20 @@ pub fn to_json(hierarchy: &Hierarchy, nets: &Nets, options: &ViewOptions) -> ser
                 "crosses_sheets": leaves,
                 "pins": pins.split_whitespace().collect::<Vec<_>>(),
             }));
+        } else if let Some(rest) = line.strip_prefix("W ") {
+            let (head, message) = rest.split_once(": ").unwrap_or((rest, ""));
+            let (code, sheet) = head.split_once(' ').unwrap_or((head, ""));
+            warnings.push(serde_json::json!({
+                "code": code,
+                "sheet": sheet,
+                "message": message,
+            }));
         }
     }
 
     serde_json::json!({
         "scope": if options.sheet.is_some() { "sheet" } else { "project" },
+        "warnings": warnings,
         "sheets": sheets,
         "nets": net_records,
     })

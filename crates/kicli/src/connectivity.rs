@@ -134,13 +134,78 @@ pub struct Net {
     pub sheets: Vec<SheetPath>,
 }
 
+/// A construct kicli does not join the way KiCad does.
+///
+/// A warning never changes the partition. It reports a drawing kicli declines
+/// to reproduce, so that a difference from KiCad is announced rather than
+/// silent. Silence is the failure that costs an agent most: a net list that is
+/// wrong and confident reads exactly like one that is right.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum NetWarningKind {
+    /// One bus carries a vector bundle and a plain group at once.
+    ///
+    /// KiCad matches a vector member by index and a group member by name, so a
+    /// vector against a group puts every group member on the vector's first
+    /// net and leaves the rest of the vector alone. That falls out of comparing
+    /// an index against members that have none, and KiCad's own comment above
+    /// the loop calls the algorithm hacky. kicli joins corresponding members
+    /// only between two vectors or two groups, and reports this instead.
+    MixedBundleKinds,
+}
+
+impl NetWarningKind {
+    /// A stable name for the kind, for a machine to match on.
+    #[must_use]
+    pub fn code(self) -> &'static str {
+        match self {
+            Self::MixedBundleKinds => "mixed-bundle-kinds",
+        }
+    }
+}
+
+/// One warning, and the drawing that raised it.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct NetWarning {
+    /// Which construct this is.
+    pub kind: NetWarningKind,
+    /// The sheet path the construct is drawn on.
+    pub sheet: SheetPath,
+    /// The bundle names on the bus, sorted.
+    pub names: Vec<String>,
+}
+
+impl NetWarning {
+    /// One sentence for a person, naming the construct.
+    #[must_use]
+    pub fn message(&self) -> String {
+        match self.kind {
+            NetWarningKind::MixedBundleKinds => format!(
+                "One bus carries a vector bundle and a group bundle: {}. \
+                 KiCad joins their members in a way kicli does not reproduce, \
+                 so these nets may differ from a KiCad net list.",
+                self.names.join(", ")
+            ),
+        }
+    }
+}
+
 /// The nets of one project.
 #[derive(Clone, Debug, Default)]
 pub struct Nets {
     nets: Vec<Net>,
+    warnings: Vec<NetWarning>,
 }
 
 impl Nets {
+    /// What kicli noticed but does not reproduce, sorted and without repeats.
+    ///
+    /// An empty list is the normal case. A reader that ignores this list may
+    /// be reading a partition that differs from KiCad's.
+    #[must_use]
+    pub fn warnings(&self) -> &[NetWarning] {
+        &self.warnings
+    }
+
     /// The nets, ordered by descending pin count then by pin list.
     ///
     /// The order is a property of the design, so two runs over one project
@@ -190,7 +255,9 @@ pub fn extract(hierarchy: &Hierarchy) -> Nets {
 #[must_use]
 pub fn extract_with(hierarchy: &Hierarchy, rules: MergeRules) -> Nets {
     let mut graph = graph::Graph::build(hierarchy, rules);
-    Nets {
-        nets: names::nets_of(&mut graph),
-    }
+    let nets = names::nets_of(&mut graph);
+    let mut warnings = std::mem::take(&mut graph.warnings);
+    warnings.sort();
+    warnings.dedup();
+    Nets { nets, warnings }
 }

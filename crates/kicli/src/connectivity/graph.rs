@@ -44,8 +44,8 @@
 //!
 //! All arithmetic is integer. A point is on a segment or it is not.
 
-use super::MergeRules;
 use super::names::{net_name, unescape_net_name};
+use super::{MergeRules, NetWarning, NetWarningKind};
 use crate::geometry::{Point, ResolvedPin, resolve_pins};
 use crate::model::hierarchy::{Hierarchy, Placement};
 use crate::model::items::{Item, LabelKind, LineKind, Refdes, SheetPath, Symbol, Uuid};
@@ -147,6 +147,8 @@ pub(crate) struct Graph {
     pub nodes: Vec<Node>,
     /// Every placement of every sheet.
     pub sheets: Vec<Sheet>,
+    /// What the extractor noticed but does not reproduce.
+    pub warnings: Vec<NetWarning>,
     parent: Vec<usize>,
 }
 
@@ -156,6 +158,7 @@ impl Graph {
         let mut graph = Self {
             nodes: Vec::new(),
             sheets: Vec::new(),
+            warnings: Vec::new(),
             parent: Vec::new(),
         };
         graph.collect(hierarchy);
@@ -495,6 +498,18 @@ impl Graph {
         let mut groups = Vec::new();
         let mut by_scope: BTreeMap<(String, String), Vec<usize>> = BTreeMap::new();
         for bus in buses.values() {
+            // A bus that mixes the two kinds of bundle is reported rather than
+            // reproduced. Say so before joining anything, so that a reader of
+            // the nets below knows they may differ from KiCad's.
+            if bus.mixes_bundle_kinds() {
+                if let Some(&sheet) = bus.reaches.iter().next() {
+                    self.warnings.push(NetWarning {
+                        kind: NetWarningKind::MixedBundleKinds,
+                        sheet: self.sheets[sheet].path.clone(),
+                        names: bus.bundles.iter().cloned().collect(),
+                    });
+                }
+            }
             // The driver that names the bus names its members too. A member of
             // any other bundle on that bus is an alias of the corresponding
             // one, so it is filed under the driver's name and not its own.
@@ -547,6 +562,9 @@ impl Graph {
                     .entry(member.corresponds)
                     .or_default()
                     .insert(net_name(&member.name));
+            }
+            if !bus_members_of(&name).is_empty() {
+                bus.bundles.insert(name);
             }
         }
         buses
@@ -751,6 +769,8 @@ fn name_of(node: &Node) -> Option<String> {
 /// One bus of the graph: what it carries, where it reaches, what names it.
 #[derive(Default)]
 struct Bus {
+    /// The bundle names drawn on it, sorted and without repeats.
+    bundles: BTreeSet<String>,
     /// The member net names it carries, by what they correspond to.
     carried: BTreeMap<Correspondence, BTreeSet<String>>,
     /// The sheets its items are drawn on.
@@ -769,6 +789,37 @@ impl Bus {
             .into_iter()
             .map(|member| (member.corresponds, net_name(&member.name)))
             .collect()
+    }
+
+    /// Does this bus carry a vector bundle and a plain group at once?
+    ///
+    /// Two bundles correspond only where their members correspond the same
+    /// way. Where one bundle offers a member matched by place and another
+    /// offers one matched by name, no key of kicli's ever pairs the two, and
+    /// KiCad pairs them in the degenerate way [`NetWarningKind`] describes. One
+    /// bundle whose own members are of both kinds is not this: it has nothing
+    /// to correspond with.
+    fn mixes_bundle_kinds(&self) -> bool {
+        let kinds: Vec<(bool, bool)> = self
+            .bundles
+            .iter()
+            .map(|bundle| {
+                bus_members_of(bundle)
+                    .iter()
+                    .fold((false, false), |(place, name), member| {
+                        match member.corresponds {
+                            Correspondence::Place(_) => (true, name),
+                            Correspondence::Name(_) => (place, true),
+                        }
+                    })
+            })
+            .collect();
+        kinds.iter().enumerate().any(|(one, left)| {
+            kinds
+                .iter()
+                .enumerate()
+                .any(|(other, right)| one != other && left.0 && right.1)
+        })
     }
 }
 

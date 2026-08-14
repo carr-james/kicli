@@ -94,13 +94,29 @@ This is `CONNECTION_GRAPH::matchBusMember` (`eeschema/connection_graph.cpp`,
 tag 10.0.5), which compares `VectorIndex()` for a vector and `LocalName()`
 otherwise.
 
-**One measured case is deliberately not implemented.** A vector against a plain
-group, `AA[0..1]` against `BB{P, Q}`, puts `AA0`, `BB.P` and `BB.Q` all on one
-net and leaves `AA1` alone. That follows from comparing a vector index against
-members that have none, and it is degenerate rather than designed — KiCad's own
-comment above the loop is "This feels a bit hacky, perhaps this algorithm should
-be revisited in the future". kicli corresponds only between two vectors or two
-groups, so it differs from KiCad on that drawing. No corpus project draws one.
+**One measured case is deliberately not implemented, and is reported instead.**
+A vector against a plain group, `AA[0..1]` against `BB{P, Q}`, puts `AA0`,
+`BB.P` and `BB.Q` all on one net and leaves `AA1` alone. That follows from
+comparing a vector index against members that have none, and it is degenerate
+rather than designed — KiCad's own comment above the loop is "This feels a bit
+hacky, perhaps this algorithm should be revisited in the future". kicli
+corresponds only between two vectors or two groups, so it differs from KiCad on
+that drawing.
+
+Differing is acceptable; differing in silence is not. A net list that is wrong
+and confident reads exactly like one that is right, so kicli **detects the shape
+it declines to reproduce**: a bus carrying a bundle whose members match by place
+and another whose members match by name raises the `mixed-bundle-kinds` warning,
+which names both bundles and says the nets may differ from KiCad's. The warning
+rides on `Nets::warnings`, and the connectivity view prints it as a `W` record
+above the nets it qualifies, because a warning that arrives after the data it
+qualifies has already been skipped.
+
+"Degenerate" is a claim about real drawings, so it is checked against them:
+`no_corpus_hierarchy_mixes_bundle_kinds` walks all 35 demo hierarchies and
+asserts none raises the warning. It passes. If a demo ever draws one, the shape
+is not degenerate, the rule has to be implemented, and that test fails to say
+so.
 
 ## Why five probes missed it: the probes were wrong, not the rule
 

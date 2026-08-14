@@ -275,12 +275,17 @@ impl Probe {
         self.partition_with(&[])
     }
 
-    /// The same, of a probe that draws child sheets.
-    fn partition_with(&self, children: &[&Probe]) -> Partition {
+    /// Write this probe and its children, and return the root's path.
+    fn write_all(&self, children: &[&Probe]) -> PathBuf {
         for child in children {
             child.write();
         }
-        let path = self.write();
+        self.write()
+    }
+
+    /// The same, of a probe that draws child sheets.
+    fn partition_with(&self, children: &[&Probe]) -> Partition {
+        let path = self.write_all(children);
         let hierarchy = Hierarchy::load(&path).expect("the probe loads");
         let found = partition_of(&extract(&hierarchy));
         if let Some(tool) = kicad_cli() {
@@ -712,6 +717,80 @@ fn two_vector_bundles_on_one_bus_join_by_place_and_not_by_index() {
     assert!(found.contains(&net(&["R1.1", "R4.1"])));
     assert!(found.contains(&net(&["R2.1", "R5.1"])));
     assert!(found.contains(&net(&["R3.1"])));
+}
+
+#[test]
+fn a_vector_against_a_group_is_reported_and_not_reproduced() {
+    let mut probe = Probe::new("mixed-bundle-kinds");
+    let first = "00000000-0000-4000-8000-cccccccccc01";
+    let second = "00000000-0000-4000-8000-cccccccccc02";
+    let mut left = Probe::named_child_of(&probe, "child1", first, 2);
+    let mut right = Probe::named_child_of(&probe, "child2", second, 3);
+
+    // One bus, carrying a vector bundle and a group bundle at once.
+    probe.sheet_named(first, "child1", "AA[0..1]", ("101.6", "50.8"), "0");
+    probe.sheet_named(second, "child2", "BB{P, Q}", ("152.4", "50.8"), "180");
+    probe.bus(("101.6", "50.8"), ("152.4", "50.8"));
+
+    bundled_members(&mut left, "AA[0..1]", &[("R1", "AA0"), ("R2", "AA1")]);
+    bundled_members(&mut right, "BB{P, Q}", &[("R3", "BB.P"), ("R4", "BB.Q")]);
+
+    let path = probe.write_all(&[&left, &right]);
+    let hierarchy = Hierarchy::load(&path).expect("the probe loads");
+    let nets = extract(&hierarchy);
+
+    // KiCad puts R1, R3 and R4 on one net and leaves R2 alone: it matches a
+    // vector member by index against group members that have none. kicli
+    // declines to reproduce that, so its answer differs here on purpose.
+    if let Some(tool) = kicad_cli() {
+        let netlist = export_netlist(&tool, &path).expect("kicad-cli exported a netlist");
+        let kicad = kicad_partition(&netlist);
+        assert!(kicad.contains(&net(&["R1.1", "R3.1", "R4.1"])));
+        assert!(kicad.contains(&net(&["R2.1"])));
+        assert_ne!(partition_of(&nets), kicad);
+    }
+
+    // What kicli must never do is differ in silence.
+    let warnings = nets.warnings();
+    assert_eq!(warnings.len(), 1, "one bus, one warning");
+    assert_eq!(warnings[0].kind.code(), "mixed-bundle-kinds");
+    assert_eq!(warnings[0].names, ["AA[0..1]", "BB{P, Q}"]);
+    assert!(warnings[0].message().contains("AA[0..1]"));
+    assert!(warnings[0].message().contains("BB{P, Q}"));
+}
+
+#[test]
+fn a_bus_of_one_bundle_kind_is_not_reported() {
+    // The control: two vectors, and two groups, each pair on one bus. Neither
+    // mixes kinds, so neither raises a warning.
+    for (left_name, right_name, members) in [
+        ("AA[0..1]", "BB[0..1]", [("AA0", "AA1"), ("BB0", "BB1")]),
+        ("AA{P, Q}", "BB{P, Q}", [("AA.P", "AA.Q"), ("BB.P", "BB.Q")]),
+    ] {
+        let mut probe = Probe::new("one-bundle-kind");
+        let first = "00000000-0000-4000-8000-cccccccccc01";
+        let second = "00000000-0000-4000-8000-cccccccccc02";
+        let mut left = Probe::named_child_of(&probe, "child1", first, 2);
+        let mut right = Probe::named_child_of(&probe, "child2", second, 3);
+
+        probe.sheet_named(first, "child1", left_name, ("101.6", "50.8"), "0");
+        probe.sheet_named(second, "child2", right_name, ("152.4", "50.8"), "180");
+        probe.bus(("101.6", "50.8"), ("152.4", "50.8"));
+        bundled_members(
+            &mut left,
+            left_name,
+            &[("R1", members[0].0), ("R2", members[0].1)],
+        );
+        bundled_members(
+            &mut right,
+            right_name,
+            &[("R3", members[1].0), ("R4", members[1].1)],
+        );
+
+        let path = probe.write_all(&[&left, &right]);
+        let hierarchy = Hierarchy::load(&path).expect("the probe loads");
+        assert!(extract(&hierarchy).warnings().is_empty());
+    }
 }
 
 #[test]
