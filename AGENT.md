@@ -491,3 +491,19 @@ and is not will be a blocking finding when the style rules land.
 **A reference designator belongs to a sheet path, not to a symbol.** A sheet
 placed twice has one symbol object and two references. Views show the reference
 for the placement they are describing, and `--sheet` picks the placement.
+
+## Working beside an open editor
+
+**Eeschema does not notice that its file changed.** KiCad 10.0.5 puts no watcher
+on the schematic it has open. No prompt appears, and a save from Eeschema
+overwrites what kicli wrote, because the editor is writing the document it read
+when it opened the file.
+
+Tell the person at the editor to use **File → Revert**. That reloads from disk
+and is how your edit reaches their screen. Warn them first: Revert discards every
+unsaved change in the **whole hierarchy**, not only the sheet on screen, and it
+clears the undo history, so nothing it throws away can be recovered. They should
+save their own work before you write.
+
+The evidence, and the two behaviours still to be watched happening, are in
+`research/notes/eeschema-external-changes.md`.

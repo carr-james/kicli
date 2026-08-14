@@ -960,11 +960,21 @@ the change and may overwrite it. Before a schematic write, kicli makes a
 **best-effort** attempt to call IPC `GetOpenDocuments` and warns if the target
 document is open in a running KiCad.
 
-**What Eeschema actually does when its open file changes underneath it is not
-yet measured**, so the warning text is written from assumption. A research note
-is owed: revert semantics, what happens with unsaved changes, and whether any
-external-change prompt appears at all. `AGENT.md`'s guidance on working beside
-an open editor, and the wording of this warning, both wait on it.
+**Eeschema does not notice.** At 10.0.5 it holds no file-system watcher over the
+schematic it has open, checks no modification time, and has no path that reloads
+one because the file changed; the only watcher in Eeschema is over the symbol
+library of the symbol being edited. There is therefore **no external-change
+prompt**, and a save from Eeschema writes the document it read at open time,
+overwriting the change. The way to pick up a kicli write is **File → Revert**,
+which reloads from disk and discards every unsaved change of the whole hierarchy
+along with the undo history. See
+[`research/notes/eeschema-external-changes.md`](../research/notes/eeschema-external-changes.md),
+which carries the source citations, the control that makes the negative results
+evidence, and the recipe for the two behaviours still to be watched happening.
+
+The warning's job follows from that: it tells a person to press Revert. It
+cannot promise the write will survive, because nothing in the editor knows the
+write happened.
 
 Amendment (Q34): this must **never slow or break the no-KiCad-running case**.
 Concretely: attempt only when the socket path already exists; total probe budget
