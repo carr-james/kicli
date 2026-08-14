@@ -11,7 +11,12 @@ use kicli_probe::oracle::Kicad;
 use kicli_sexpr::Doc;
 use std::path::{Path, PathBuf};
 
-mod support;
+use kicli_probe::scratch::Fixtures;
+
+/// The committed fixtures this binary reads, and the scratch it writes in.
+fn fixtures() -> Fixtures {
+    Fixtures::new(env!("CARGO_TARGET_TMPDIR"), env!("CARGO_MANIFEST_DIR"))
+}
 
 /// The objects of the fixture that own fields, one field each.
 const OWNERS: [(&str, &str, &str); 4] = [
@@ -42,7 +47,7 @@ const LEGACY_SYMBOL: &str = "00000000-0000-4000-8000-0000000000e1";
 ///
 /// A test never writes inside the committed fixture tree.
 fn scratch_copy(name: &str, fixture: &str) -> PathBuf {
-    support::scratch_file(name, &format!("sch/{fixture}"))
+    fixtures().scratch_file(name, &format!("sch/{fixture}"))
 }
 
 fn read(path: &Path) -> Doc {

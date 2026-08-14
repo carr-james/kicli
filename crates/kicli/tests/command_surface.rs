@@ -9,7 +9,12 @@ use kicli::cli::{Cli, ExitCode};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
-mod support;
+use kicli_probe::scratch::Fixtures;
+
+/// The committed fixtures this binary reads, and the scratch it writes in.
+fn fixtures() -> Fixtures {
+    Fixtures::new(env!("CARGO_TARGET_TMPDIR"), env!("CARGO_MANIFEST_DIR"))
+}
 
 /// A path no `kicad-cli` is at.
 ///
@@ -117,7 +122,7 @@ fn help_lists_the_global_flags_and_hides_the_variant_flag() {
 
 #[test]
 fn the_variant_flag_is_accepted_and_says_it_does_nothing() {
-    let project = support::fixture("project/healthy");
+    let project = fixtures().fixture("project/healthy");
     let project = project.to_str().expect("the path is text");
 
     let run = kicli(&["project", "info", "--variant", "assembled", "-p", project]);
@@ -262,7 +267,7 @@ fn every_mutation_noun_is_on_the_surface() {
 
 /// A project a test may write to, in a scratch directory of its own.
 fn scratch_project(name: &str, files: &[(&str, &str)]) -> PathBuf {
-    let directory = support::scratch(name);
+    let directory = fixtures().scratch(name);
     for (file, source) in files {
         std::fs::write(directory.join(file), source).expect("the sheet is written");
     }
@@ -295,7 +300,7 @@ const OFF_GRID: &str = concat!(
 /// case for each of the other rows a mutation can end on.
 #[test]
 fn every_refusal_exits_with_the_code_its_row_names() {
-    let nets = support::scratch_directory("surface_refusals_nets", "sch/nets");
+    let nets = fixtures().scratch_directory("surface_refusals_nets", "sch/nets");
     let crossroads = scratch_project(
         "surface_refusals_crossroads",
         &[("board.kicad_sch", CROSSROADS)],
@@ -304,8 +309,8 @@ fn every_refusal_exits_with_the_code_its_row_names() {
         "surface_refusals_off_grid",
         &[("board.kicad_sch", OFF_GRID)],
     );
-    let future = support::scratch("surface_refusals_future");
-    support::copy_file(&future, "sch/future_version.kicad_sch");
+    let future = fixtures().scratch("surface_refusals_future");
+    let _copy = fixtures().copy_file(&future, "sch/future_version.kicad_sch");
 
     let cases: [(&str, &Path, Vec<&str>, ExitCode); 8] = [
         (
@@ -415,7 +420,7 @@ fn a_refusal_in_json_names_its_row_of_the_table() {
 /// A mutation reports the invariants it ran, in both forms.
 #[test]
 fn a_mutation_reports_the_invariants_it_ran() {
-    let project = support::scratch_directory("surface_mutation_report", "sch/nets");
+    let project = fixtures().scratch_directory("surface_mutation_report", "sch/nets");
     let path = project.to_str().expect("the path is text");
 
     let run = kicli(&[

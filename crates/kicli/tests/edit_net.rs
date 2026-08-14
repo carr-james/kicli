@@ -10,11 +10,18 @@ use kicli::model::{Hierarchy, WriteOptions};
 use kicli_probe::oracle::{Kicad, kicli_partition};
 use std::path::{Path, PathBuf};
 
-mod support;
+use kicli_probe::scratch::Fixtures;
+
+/// The committed fixtures this binary reads, and the scratch it writes in.
+fn fixtures() -> Fixtures {
+    Fixtures::new(env!("CARGO_TARGET_TMPDIR"), env!("CARGO_MANIFEST_DIR"))
+}
 
 /// Copy the connectivity fixture into a scratch directory, and name its root.
 fn nets_project(name: &str) -> PathBuf {
-    support::scratch_directory(name, "sch/nets").join("nets.kicad_sch")
+    fixtures()
+        .scratch_directory(name, "sch/nets")
+        .join("nets.kicad_sch")
 }
 
 fn scope(project: &Path) -> Scope<'_> {

@@ -3,10 +3,14 @@
 use kicli::model::{Sink, WriteError, WriteOptions, write_document, write_document_with};
 use kicli_sexpr::Doc;
 
-mod support;
-
 use std::path::{Path, PathBuf};
-use support::scratch;
+
+use kicli_probe::scratch::Fixtures;
+
+/// The committed fixtures this binary reads, and the scratch it writes in.
+fn fixtures() -> Fixtures {
+    Fixtures::new(env!("CARGO_TARGET_TMPDIR"), env!("CARGO_MANIFEST_DIR"))
+}
 
 const SHEET: &str = "(kicad_sch\n\t(version 20260306)\n\t(paper \"A4\")\n)\n";
 
@@ -49,7 +53,7 @@ impl Sink for Refusing {
 
 #[test]
 fn atomic_write_leaves_the_original_alone() {
-    let directory = scratch("atomic_write");
+    let directory = fixtures().scratch("atomic_write");
     let target = directory.join("board.kicad_sch");
     std::fs::write(&target, SHEET).expect("the file is written");
 
@@ -77,7 +81,7 @@ fn atomic_write_leaves_the_original_alone() {
 
 #[test]
 fn a_write_verifies_the_bytes_and_not_the_tree() {
-    let directory = scratch("verify_bytes");
+    let directory = fixtures().scratch("verify_bytes");
     let target = directory.join("board.kicad_sch");
     std::fs::write(&target, SHEET).expect("the file is written");
 
@@ -100,7 +104,7 @@ fn a_write_verifies_the_bytes_and_not_the_tree() {
 
 #[test]
 fn a_file_kicli_refuses_is_a_file_kicli_does_not_touch() {
-    let directory = scratch("refusals");
+    let directory = fixtures().scratch("refusals");
 
     // A stamp above the ceiling.
     let future = "(kicad_sch\n\t(version 20260803)\n)\n";
@@ -145,7 +149,7 @@ fn a_file_kicli_refuses_is_a_file_kicli_does_not_touch() {
 
 #[test]
 fn a_reformatted_file_says_so_and_why() {
-    let directory = scratch("reformat");
+    let directory = fixtures().scratch("reformat");
     let target = directory.join("loose.kicad_sch");
     // Hand-indented, which KiCad would lay out again on its next save.
     let loose = "(kicad_sch\n  (version 20260306)\n  (paper \"A4\"))\n";

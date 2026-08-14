@@ -9,7 +9,12 @@ use kicli::model::{Item, Schematic, SheetPath, Target, WriteOptions};
 use kicli_sexpr::Doc;
 use std::path::PathBuf;
 
-mod support;
+use kicli_probe::scratch::Fixtures;
+
+/// The committed fixtures this binary reads, and the scratch it writes in.
+fn fixtures() -> Fixtures {
+    Fixtures::new(env!("CARGO_TARGET_TMPDIR"), env!("CARGO_MANIFEST_DIR"))
+}
 
 /// A sheet with one text item already on it, so the file is not empty.
 const SHEET: &str = concat!(
@@ -47,7 +52,7 @@ struct Sheet {
 impl Sheet {
     /// Write the sheet into its own scratch directory, in canonical form.
     fn new(name: &str) -> Self {
-        let project = support::scratch(name);
+        let project = fixtures().scratch(name);
         let file = project.join("sheet.kicad_sch");
         let canonical = Doc::parse(SHEET).expect("the sheet parses").emit();
         std::fs::write(&file, &canonical).expect("the sheet is written");

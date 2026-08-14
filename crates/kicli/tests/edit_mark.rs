@@ -9,9 +9,12 @@ use kicli::geometry::{GRID, Point};
 use kicli::model::{Hierarchy, Refdes, SheetPath, Target, Uuid, WriteOptions};
 use std::path::{Path, PathBuf};
 
-mod support;
+use kicli_probe::scratch::Fixtures;
 
-use support::scratch;
+/// The committed fixtures this binary reads, and the scratch it writes in.
+fn fixtures() -> Fixtures {
+    Fixtures::new(env!("CARGO_TARGET_TMPDIR"), env!("CARGO_MANIFEST_DIR"))
+}
 
 /// The root sheet of the connectivity fixture.
 const NETS_ROOT: &str = "00000000-0000-4000-8000-030000000000";
@@ -22,7 +25,9 @@ const MID_SPAN: Point = Point::new(381_000, 889_000);
 
 /// Copy the connectivity fixture into a scratch directory, and name its root.
 fn nets_project(name: &str) -> PathBuf {
-    support::scratch_directory(name, "sch/nets").join("nets.kicad_sch")
+    fixtures()
+        .scratch_directory(name, "sch/nets")
+        .join("nets.kicad_sch")
 }
 
 /// A schematic whose only objects are four wire ends meeting at one point.
@@ -71,7 +76,7 @@ fn target<'a>(file: &'a Path, project: &'a Path, sheet: &'a SheetPath) -> Target
 
 #[test]
 fn a_four_way_junction_is_refused() {
-    let project = scratch("four_way_junction");
+    let project = fixtures().scratch("four_way_junction");
     let file = project.join("board.kicad_sch");
     let source = crossroads();
     std::fs::write(&file, &source).expect("the sheet is written");
@@ -108,7 +113,7 @@ fn a_four_way_junction_is_refused() {
 
 #[test]
 fn a_three_way_junction_is_allowed() {
-    let project = scratch("three_way_junction");
+    let project = fixtures().scratch("three_way_junction");
     let file = project.join("board.kicad_sch");
     // The same crossroads with one arm removed leaves three wire ends.
     let source = crossroads().replace(

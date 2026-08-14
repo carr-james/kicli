@@ -17,9 +17,12 @@ use kicli::model::{
 use kicli_probe::oracle::Kicad;
 use kicli_sexpr::Doc;
 
-mod support;
+use kicli_probe::scratch::Fixtures;
 
-use support::{copy_file, scratch};
+/// The committed fixtures this binary reads, and the scratch it writes in.
+fn fixtures() -> Fixtures {
+    Fixtures::new(env!("CARGO_TARGET_TMPDIR"), env!("CARGO_MANIFEST_DIR"))
+}
 
 /// A two-pin part, as a library file writes it.
 ///
@@ -110,8 +113,8 @@ fn request<'a>(lib_id: &'a LibId, at: Point, instances: &'a [Instance]) -> Place
 
 #[test]
 fn a_placed_symbol_carries_its_definition() {
-    let project = scratch("edit_symbol_place");
-    let file = copy_file(&project, "geometry/asymmetric.kicad_sch");
+    let project = fixtures().scratch("edit_symbol_place");
+    let file = fixtures().copy_file(&project, "geometry/asymmetric.kicad_sch");
 
     let (mut doc, schematic) = read(&file);
     assert!(
@@ -191,9 +194,9 @@ fn a_placed_symbol_carries_its_definition() {
 
 #[test]
 fn a_placement_on_a_twice_placed_sheet_gets_two_references() {
-    let project = scratch("edit_symbol_two_paths");
-    let root_file = copy_file(&project, "sch/multi_instance/multi_instance.kicad_sch");
-    let file = copy_file(&project, "sch/multi_instance/channel.kicad_sch");
+    let project = fixtures().scratch("edit_symbol_two_paths");
+    let root_file = fixtures().copy_file(&project, "sch/multi_instance/multi_instance.kicad_sch");
+    let file = fixtures().copy_file(&project, "sch/multi_instance/channel.kicad_sch");
 
     let hierarchy = Hierarchy::load(&root_file).expect("the hierarchy loads");
     let child = hierarchy
@@ -262,8 +265,8 @@ fn a_placement_on_a_twice_placed_sheet_gets_two_references() {
 
 #[test]
 fn a_deleted_symbol_leaves_no_trace() {
-    let project = scratch("edit_symbol_delete");
-    let file = copy_file(&project, "geometry/asymmetric.kicad_sch");
+    let project = fixtures().scratch("edit_symbol_delete");
+    let file = fixtures().copy_file(&project, "geometry/asymmetric.kicad_sch");
 
     let (mut doc, schematic) = read(&file);
     let symbol = symbol_of(&schematic, "A1");
@@ -300,7 +303,7 @@ fn a_deleted_symbol_leaves_no_trace() {
     );
 
     // The last placement takes the definition with it.
-    let file = copy_file(&project, "sch/multi_instance/channel.kicad_sch");
+    let file = fixtures().copy_file(&project, "sch/multi_instance/channel.kicad_sch");
     let (mut doc, schematic) = read(&file);
     let only = symbol_of(&schematic, "R201");
     delete_symbol(&mut doc, &schematic, only).expect("the symbol goes");
@@ -320,8 +323,8 @@ fn kicad_reads_what_place_wrote() {
     let Some(tool) = Kicad::found_or_skip("run the rule check") else {
         return;
     };
-    let project = scratch("edit_symbol_place_oracle");
-    let file = copy_file(&project, "geometry/asymmetric.kicad_sch");
+    let project = fixtures().scratch("edit_symbol_place_oracle");
+    let file = fixtures().copy_file(&project, "geometry/asymmetric.kicad_sch");
     let before = tool.rule_check(&file).violation_kinds();
 
     let (mut doc, schematic) = read(&file);

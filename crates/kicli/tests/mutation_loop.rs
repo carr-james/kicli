@@ -16,7 +16,12 @@ use std::collections::BTreeSet;
 use std::path::PathBuf;
 use std::process::{Command, Output};
 
-mod support;
+use kicli_probe::scratch::Fixtures;
+
+/// The committed fixtures this binary reads, and the scratch it writes in.
+fn fixtures() -> Fixtures {
+    Fixtures::new(env!("CARGO_TARGET_TMPDIR"), env!("CARGO_MANIFEST_DIR"))
+}
 
 /// A path no `kicad-cli` is at.
 ///
@@ -45,7 +50,7 @@ struct Project {
 impl Project {
     /// Copy the committed fixture into a scratch directory of its own.
     fn new(name: &str) -> Self {
-        let directory = support::scratch_directory(name, "sch/nets");
+        let directory = fixtures().scratch_directory(name, "sch/nets");
         Self {
             root: directory.join("nets.kicad_sch"),
             directory,

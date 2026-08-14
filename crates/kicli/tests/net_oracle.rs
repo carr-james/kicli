@@ -13,10 +13,17 @@
 use kicli::connectivity::extract;
 use kicli::model::Hierarchy;
 use kicli_probe::oracle::{Kicad, Netlist, Partition, differences, kicli_partition};
+use kicli_probe::scratch::Fixtures;
 use std::path::{Path, PathBuf};
 
-fn fixtures() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/sch/nets")
+/// The committed fixtures this binary reads, and the scratch it writes in.
+fn fixtures() -> Fixtures {
+    Fixtures::new(env!("CARGO_TARGET_TMPDIR"), env!("CARGO_MANIFEST_DIR"))
+}
+
+/// The connectivity fixture directory.
+fn nets_fixture(name: &str) -> PathBuf {
+    fixtures().fixture("sch/nets").join(name)
 }
 
 /// The partition kicli reads out of a hierarchy on disk.
@@ -25,36 +32,12 @@ fn kicli_partition_of(root: &Path) -> Partition {
     kicli_partition(&extract(&hierarchy))
 }
 
-fn scratch(name: &str) -> PathBuf {
-    let directory = std::env::temp_dir().join(format!("kicli-netlist-{}", std::process::id()));
-    std::fs::create_dir_all(&directory).expect("the scratch directory is writable");
-    directory.join(name)
-}
-
-/// Copy a project's files into a scratch directory and return the root there.
-///
-/// KiCad writes a `.kicad_prl` beside any project it opens, so the tool runs on
-/// a copy and the fixture tree stays exactly as committed.
-fn copy_project(root: &Path) -> PathBuf {
-    let from = root.parent().unwrap_or(Path::new("."));
-    let into = scratch("project");
-    std::fs::create_dir_all(&into).expect("the scratch directory is writable");
-    for entry in std::fs::read_dir(from).expect("the project directory reads") {
-        let path = entry.expect("a directory entry reads").path();
-        if path.is_file() {
-            let name = path.file_name().expect("a file has a name");
-            std::fs::copy(&path, into.join(name)).expect("the copy is writable");
-        }
-    }
-    into.join(root.file_name().expect("the root has a name"))
-}
-
 #[test]
 fn netlist_partition_matches_kicad() {
     let committed =
-        std::fs::read_to_string(fixtures().join("nets.netlist")).expect("the oracle is readable");
+        std::fs::read_to_string(nets_fixture("nets.netlist")).expect("the oracle is readable");
     let kicad = Netlist::parse(&committed).partition();
-    let kicli = kicli_partition_of(&fixtures().join("nets.kicad_sch"));
+    let kicli = kicli_partition_of(&nets_fixture("nets.kicad_sch"));
     assert!(
         differences(&kicli, &kicad).is_none(),
         "{}",
@@ -67,11 +50,14 @@ fn netlist_oracle_is_current() {
     let Some(tool) = Kicad::found_or_skip("regenerate the oracle") else {
         return;
     };
-    let root = fixtures().join("nets.kicad_sch");
-    let copy = copy_project(&root);
-    let fresh = tool.netlist(&copy, &scratch("nets.netlist"));
+    let root = nets_fixture("nets.kicad_sch");
+    let copy = fixtures().copy_project("netlist-oracle", &root);
+    let fresh = tool.netlist(
+        &copy,
+        &fixtures().scratch("netlist-fresh").join("nets.netlist"),
+    );
     let committed =
-        std::fs::read_to_string(fixtures().join("nets.netlist")).expect("the oracle is readable");
+        std::fs::read_to_string(nets_fixture("nets.netlist")).expect("the oracle is readable");
 
     let now = fresh.partition();
     assert!(
@@ -89,7 +75,7 @@ fn netlist_oracle_is_current() {
 #[cfg(feature = "corpus")]
 mod corpus {
     use super::{
-        Hierarchy, Kicad, Path, PathBuf, differences, extract, kicli_partition_of, scratch,
+        Hierarchy, Kicad, Path, PathBuf, differences, extract, fixtures, kicli_partition_of,
     };
 
     fn corpus_root() -> PathBuf {
@@ -206,9 +192,10 @@ mod corpus {
 
         let mut passed = 0;
         let mut failures = Vec::new();
+        let into = fixtures().scratch("corpus-netlist").join("corpus.netlist");
         for root in &projects {
             let name = root.file_stem().unwrap_or_default().to_string_lossy();
-            let Some(netlist) = tool.try_netlist(root, &scratch("corpus.netlist")) else {
+            let Some(netlist) = tool.try_netlist(root, &into) else {
                 failures.push(format!("{name}: kicad-cli exported no netlist"));
                 continue;
             };

@@ -21,9 +21,12 @@ use kicli::view::snapshot::Snapshot;
 use kicli_probe::oracle::Kicad;
 use kicli_sexpr::{Doc, changed_line_count};
 
-mod support;
+use kicli_probe::scratch::Fixtures;
 
-use support::{copy_file, scratch};
+/// The committed fixtures this binary reads, and the scratch it writes in.
+fn fixtures() -> Fixtures {
+    Fixtures::new(env!("CARGO_TARGET_TMPDIR"), env!("CARGO_MANIFEST_DIR"))
+}
 
 /// Read a schematic file into a tree and the objects read from it.
 fn read(file: &Path) -> (Doc, Schematic) {
@@ -105,8 +108,8 @@ fn field_angles(symbol: &Symbol) -> BTreeMap<String, Angle> {
 
 #[test]
 fn a_moved_symbol_takes_its_fields_with_it() {
-    let project = scratch("edit_symbol_move");
-    let file = copy_file(&project, "sch/multi_instance/channel.kicad_sch");
+    let project = fixtures().scratch("edit_symbol_move");
+    let file = fixtures().copy_file(&project, "sch/multi_instance/channel.kicad_sch");
 
     let (mut doc, schematic) = read(&file);
     let symbol = symbol_of(&schematic, "R201");
@@ -178,8 +181,8 @@ fn a_moved_symbol_takes_its_fields_with_it() {
 
 #[test]
 fn kept_field_positions_stay_where_they_were() {
-    let project = scratch("edit_symbol_keep_fields");
-    let file = copy_file(&project, "sch/multi_instance/channel.kicad_sch");
+    let project = fixtures().scratch("edit_symbol_keep_fields");
+    let file = fixtures().copy_file(&project, "sch/multi_instance/channel.kicad_sch");
 
     let (mut doc, schematic) = read(&file);
     let symbol = symbol_of(&schematic, "R201");
@@ -274,8 +277,8 @@ fn turning_a_symbol_clears_the_autoplace_flag() {
 
 #[test]
 fn a_placement_lands_on_the_grid() {
-    let project = scratch("edit_symbol_grid");
-    let file = copy_file(&project, "sch/multi_instance/channel.kicad_sch");
+    let project = fixtures().scratch("edit_symbol_grid");
+    let file = fixtures().copy_file(&project, "sch/multi_instance/channel.kicad_sch");
 
     // Half a grid step past a grid line, on both axes. Halves round away from
     // zero, so the snap goes to the further line.
@@ -306,7 +309,7 @@ fn a_placement_lands_on_the_grid() {
     assert_eq!(symbol_of(&moved, "R201").at, snapped);
 
     // The override places the symbol exactly, and is itself a finding.
-    let file = copy_file(&project, "sch/multi_instance/channel.kicad_sch");
+    let file = fixtures().copy_file(&project, "sch/multi_instance/channel.kicad_sch");
     let (mut doc, schematic) = read(&file);
     let symbol = symbol_of(&schematic, "R201");
     let options = Options {
@@ -332,8 +335,8 @@ fn a_placement_lands_on_the_grid() {
 
 #[test]
 fn a_mirror_reflects_the_pins_about_the_anchor() {
-    let project = scratch("edit_symbol_mirror");
-    let file = copy_file(&project, "geometry/asymmetric.kicad_sch");
+    let project = fixtures().scratch("edit_symbol_mirror");
+    let file = fixtures().copy_file(&project, "geometry/asymmetric.kicad_sch");
 
     let (mut doc, schematic) = read(&file);
     let symbol = symbol_of(&schematic, "A1");
@@ -367,10 +370,10 @@ fn a_mirror_reflects_the_pins_about_the_anchor() {
 
 #[test]
 fn a_symbol_command_changes_only_its_own_lines() {
-    let project = scratch("edit_symbol_locality");
+    let project = fixtures().scratch("edit_symbol_locality");
 
     for name in ["move", "rotate", "mirror", "delete"] {
-        let file = copy_file(&project, "geometry/asymmetric.kicad_sch");
+        let file = fixtures().copy_file(&project, "geometry/asymmetric.kicad_sch");
         let before = std::fs::read_to_string(&file).expect("the fixture reads");
         let (mut doc, schematic) = read(&file);
         let symbol = symbol_of(&schematic, "A1");
@@ -458,8 +461,8 @@ fn a_rotated_symbol_is_where_kicad_draws_it() {
     let Some(tool) = Kicad::found_or_skip("run the rule check") else {
         return;
     };
-    let project = scratch("edit_symbol_oracle");
-    let file = copy_file(&project, "geometry/asymmetric.kicad_sch");
+    let project = fixtures().scratch("edit_symbol_oracle");
+    let file = fixtures().copy_file(&project, "geometry/asymmetric.kicad_sch");
 
     let (mut doc, schematic) = read(&file);
     let turned = symbol_of(&schematic, "A1");

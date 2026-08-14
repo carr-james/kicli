@@ -5,9 +5,12 @@ use kicli::model::{LAST_WRITE, Schematic, SheetPath, Target, WriteOptions, commi
 use kicli::view::snapshot::Snapshot;
 use kicli_sexpr::Doc;
 
-mod support;
+use kicli_probe::scratch::Fixtures;
 
-use support::scratch;
+/// The committed fixtures this binary reads, and the scratch it writes in.
+fn fixtures() -> Fixtures {
+    Fixtures::new(env!("CARGO_TARGET_TMPDIR"), env!("CARGO_MANIFEST_DIR"))
+}
 
 const SHEET: &str = concat!(
     "(kicad_sch\n\t(version 20260306)\n\t(uuid \"root\")\n\t(paper \"A4\")\n",
@@ -35,7 +38,7 @@ fn move_junction(doc: &mut Doc, to: &str) {
 
 #[test]
 fn a_mutation_reports_what_it_touched() {
-    let project = scratch("mutation_report");
+    let project = fixtures().scratch("mutation_report");
     let file = project.join("board.kicad_sch");
     std::fs::write(&file, SHEET).expect("written");
 
@@ -83,7 +86,7 @@ fn a_mutation_reports_what_it_touched() {
 
 #[test]
 fn the_last_write_snapshot_follows_every_mutation() {
-    let project = scratch("last_write");
+    let project = fixtures().scratch("last_write");
     let file = project.join("board.kicad_sch");
     std::fs::write(&file, SHEET).expect("written");
 
@@ -126,7 +129,7 @@ fn the_last_write_snapshot_follows_every_mutation() {
 
 #[test]
 fn a_change_that_breaks_an_invariant_is_not_written() {
-    let project = scratch("refused_mutation");
+    let project = fixtures().scratch("refused_mutation");
     let file = project.join("board.kicad_sch");
     std::fs::write(&file, SHEET).expect("written");
 

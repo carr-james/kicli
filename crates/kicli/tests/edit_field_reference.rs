@@ -11,7 +11,12 @@ use kicli_probe::oracle::Kicad;
 use kicli_sexpr::Doc;
 use std::path::{Path, PathBuf};
 
-mod support;
+use kicli_probe::scratch::Fixtures;
+
+/// The committed fixtures this binary reads, and the scratch it writes in.
+fn fixtures() -> Fixtures {
+    Fixtures::new(env!("CARGO_TARGET_TMPDIR"), env!("CARGO_MANIFEST_DIR"))
+}
 
 /// The resistor of the child sheet, which the sheet's two placements name
 /// `R100` and `R200`.
@@ -27,7 +32,7 @@ const CHANNEL_B: &str =
 
 /// Copy the fixture project into a scratch directory and hand back the copy.
 fn scratch_copy(name: &str) -> PathBuf {
-    support::scratch_directory(name, "sch/nets")
+    fixtures().scratch_directory(name, "sch/nets")
 }
 
 fn read(path: &Path) -> Doc {

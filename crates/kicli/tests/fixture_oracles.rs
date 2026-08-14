@@ -12,14 +12,20 @@
 
 use kicli::geometry::{Iu, Point};
 use kicli_probe::oracle::{Kicad, Report, without_the_run_specific_lines};
+use kicli_probe::scratch::Fixtures;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 /// Internal units per millimetre in a schematic.
 const UNITS_PER_MM: f64 = 10_000.0;
 
+/// The committed fixtures this binary reads, and the scratch it writes in.
+fn fixtures() -> Fixtures {
+    Fixtures::new(env!("CARGO_TARGET_TMPDIR"), env!("CARGO_MANIFEST_DIR"))
+}
+
 fn fixture_root() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures")
+    fixtures().fixture("")
 }
 
 /// Read a `.expected` table, keyed by `(refdes, pin number)` and by pin uuid.
@@ -122,34 +128,18 @@ fn millimetres_to_units(value: f64) -> Iu {
     Iu((value * UNITS_PER_MM).round() as i32)
 }
 
-/// Copy a fixture directory's files into a scratch directory.
-fn copy_fixture_files(from: &Path, to: &Path) {
-    std::fs::create_dir_all(to).expect("scratch directory is writable");
-    for entry in std::fs::read_dir(from).expect("fixture directory reads") {
-        let path = entry.expect("directory entry reads").path();
-        if path.is_file() {
-            let name = path.file_name().expect("a file has a name");
-            std::fs::copy(&path, to.join(name)).expect("copy succeeds");
-        }
-    }
-}
-
 #[test]
 fn oracles_are_current() {
     let Some(tool) = Kicad::found_or_skip("regenerate the oracles") else {
         return;
     };
     let root = fixture_root();
-    let scratch = std::env::temp_dir().join("kicli-oracle-check");
-    std::fs::create_dir_all(&scratch).expect("scratch directory is writable");
-
     // KiCad writes a .kicad_prl beside any project it opens, so the fixtures
     // are copied out and the tool runs on the copies. The fixture tree stays
     // exactly as committed.
-    let geometry = scratch.join("geometry");
-    copy_fixture_files(&root.join("geometry"), &geometry);
-    let nets = scratch.join("nets");
-    copy_fixture_files(&root.join("sch/nets"), &nets);
+    let geometry = fixtures().scratch_directory("oracle-check-geometry", "geometry");
+    let nets = fixtures().scratch_directory("oracle-check-nets", "sch/nets");
+    let scratch = fixtures().scratch("oracle-check-fresh");
 
     for fixture in ["orientations", "asymmetric"] {
         let sheet = geometry.join(format!("{fixture}.kicad_sch"));
