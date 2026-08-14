@@ -10,123 +10,19 @@
 //! `KICLI_TEST_KICAD_CLI` and writes a fresh one, so a stale oracle is caught
 //! rather than trusted.
 
-use kicli::connectivity::{NetPin, Nets, extract};
+use kicli::connectivity::extract;
 use kicli::model::Hierarchy;
-use kicli_sexpr::Doc;
-use std::collections::BTreeSet;
+use kicli_probe::oracle::{Kicad, Netlist, Partition, differences, kicli_partition};
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
-
-/// A net partition: one sorted pin list per net.
-type Partition = BTreeSet<Vec<String>>;
 
 fn fixtures() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/sch/nets")
 }
 
-/// The partition kicli reads out of a hierarchy.
-///
-/// Power symbols are left out, because a netlist leaves them out, and so are
-/// symbols that do not reach the board.
-fn kicli_partition(root: &Path) -> Partition {
+/// The partition kicli reads out of a hierarchy on disk.
+fn kicli_partition_of(root: &Path) -> Partition {
     let hierarchy = Hierarchy::load(root).expect("the hierarchy loads");
-    partition_of(&extract(&hierarchy))
-}
-
-fn partition_of(nets: &Nets) -> Partition {
-    nets.nets()
-        .iter()
-        .map(|net| {
-            net.pins
-                .iter()
-                .filter(|pin| !pin.power && pin.on_board)
-                .map(NetPin::label)
-                .collect::<Vec<String>>()
-        })
-        .filter(|pins| !pins.is_empty())
-        .collect()
-}
-
-/// The partition KiCad reports, read out of a netlist it wrote.
-fn kicad_partition(text: &str) -> Partition {
-    let doc = Doc::parse(text).expect("the netlist parses");
-    let root = doc.root().expect("the netlist has a root list");
-    let mut found = Partition::new();
-    for &child in doc.children(root) {
-        if !doc.head_is(child, "nets") {
-            continue;
-        }
-        for &net in doc.children(child) {
-            if !doc.head_is(net, "net") {
-                continue;
-            }
-            let mut pins: Vec<String> = doc
-                .children(net)
-                .iter()
-                .filter(|&&node| doc.head_is(node, "node"))
-                .filter_map(|&node| node_label(&doc, node))
-                .collect();
-            pins.sort();
-            if !pins.is_empty() {
-                found.insert(pins);
-            }
-        }
-    }
-    assert!(!found.is_empty(), "the netlist reported no nets at all");
-    found
-}
-
-/// One `(node (ref "R1") (pin "2") ...)` as `R1.2`.
-fn node_label(doc: &Doc, node: kicli_sexpr::NodeId) -> Option<String> {
-    let value = |head: &str| -> Option<String> {
-        let list = doc
-            .children(node)
-            .iter()
-            .copied()
-            .find(|&child| doc.head_is(child, head))?;
-        doc.children(list)
-            .get(1)
-            .and_then(|&id| doc.atom_as_str(id))
-    };
-    Some(format!("{}.{}", value("ref")?, value("pin")?))
-}
-
-/// Report the nets the two sides disagree about, or nothing.
-fn differences(kicli: &Partition, kicad: &Partition) -> Option<String> {
-    let missing: Vec<&Vec<String>> = kicad.difference(kicli).collect();
-    let extra: Vec<&Vec<String>> = kicli.difference(kicad).collect();
-    if missing.is_empty() && extra.is_empty() {
-        return None;
-    }
-    Some(format!(
-        "nets KiCad found and kicli did not: {missing:?}\n\
-         nets kicli found and KiCad did not: {extra:?}"
-    ))
-}
-
-/// The `kicad-cli` to run, or nothing when the caller did not ask for it.
-fn kicad_cli() -> Option<String> {
-    std::env::var("KICLI_TEST_KICAD_CLI").ok()?;
-    Some(std::env::var("KICLI_KICAD_CLI").unwrap_or_else(|_| "kicad-cli".to_owned()))
-}
-
-/// Export a netlist and read it back.
-///
-/// The tool's own output is dropped: the first run on a machine prints
-/// fontconfig warnings that say nothing about the netlist.
-fn export_netlist(tool: &str, root: &Path, into: &Path) -> Option<String> {
-    let status = Command::new(tool)
-        .args(["sch", "export", "netlist", "-o"])
-        .arg(into)
-        .arg(root)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .ok()?;
-    if !status.success() {
-        return None;
-    }
-    std::fs::read_to_string(into).ok()
+    kicli_partition(&extract(&hierarchy))
 }
 
 fn scratch(name: &str) -> PathBuf {
@@ -157,8 +53,8 @@ fn copy_project(root: &Path) -> PathBuf {
 fn netlist_partition_matches_kicad() {
     let committed =
         std::fs::read_to_string(fixtures().join("nets.netlist")).expect("the oracle is readable");
-    let kicad = kicad_partition(&committed);
-    let kicli = kicli_partition(&fixtures().join("nets.kicad_sch"));
+    let kicad = Netlist::parse(&committed).partition();
+    let kicli = kicli_partition_of(&fixtures().join("nets.kicad_sch"));
     assert!(
         differences(&kicli, &kicad).is_none(),
         "{}",
@@ -168,35 +64,32 @@ fn netlist_partition_matches_kicad() {
 
 #[test]
 fn netlist_oracle_is_current() {
-    let Some(tool) = kicad_cli() else {
-        eprintln!("skipped: set KICLI_TEST_KICAD_CLI to regenerate the oracle");
+    let Some(tool) = Kicad::found_or_skip("regenerate the oracle") else {
         return;
     };
     let root = fixtures().join("nets.kicad_sch");
     let copy = copy_project(&root);
-    let fresh = export_netlist(&tool, &copy, &scratch("nets.netlist"))
-        .expect("kicad-cli exported a netlist");
+    let fresh = tool.netlist(&copy, &scratch("nets.netlist"));
     let committed =
         std::fs::read_to_string(fixtures().join("nets.netlist")).expect("the oracle is readable");
 
-    let now = kicad_partition(&fresh);
+    let now = fresh.partition();
     assert!(
-        differences(&kicad_partition(&committed), &now).is_none(),
+        differences(&Netlist::parse(&committed).partition(), &now).is_none(),
         "the committed netlist is stale: {}",
-        differences(&kicad_partition(&committed), &now).unwrap_or_default()
+        differences(&Netlist::parse(&committed).partition(), &now).unwrap_or_default()
     );
     assert!(
-        differences(&kicli_partition(&root), &now).is_none(),
+        differences(&kicli_partition_of(&root), &now).is_none(),
         "{}",
-        differences(&kicli_partition(&root), &now).unwrap_or_default()
+        differences(&kicli_partition_of(&root), &now).unwrap_or_default()
     );
 }
 
 #[cfg(feature = "corpus")]
 mod corpus {
     use super::{
-        Hierarchy, Path, PathBuf, differences, export_netlist, extract, kicad_cli, kicad_partition,
-        kicli_partition, scratch,
+        Hierarchy, Kicad, Path, PathBuf, differences, extract, kicli_partition_of, scratch,
     };
 
     fn corpus_root() -> PathBuf {
@@ -300,8 +193,7 @@ mod corpus {
     /// `kicad-cli` once per project.
     #[test]
     fn netlist_partition_matches_kicad_corpus() {
-        let Some(tool) = kicad_cli() else {
-            eprintln!("skipped: set KICLI_TEST_KICAD_CLI to compare against KiCad");
+        let Some(tool) = Kicad::found_or_skip("compare against KiCad") else {
             return;
         };
         let mut projects = Vec::new();
@@ -316,12 +208,12 @@ mod corpus {
         let mut failures = Vec::new();
         for root in &projects {
             let name = root.file_stem().unwrap_or_default().to_string_lossy();
-            let Some(text) = export_netlist(&tool, root, &scratch("corpus.netlist")) else {
+            let Some(netlist) = tool.try_netlist(root, &scratch("corpus.netlist")) else {
                 failures.push(format!("{name}: kicad-cli exported no netlist"));
                 continue;
             };
-            let kicad = kicad_partition(&text);
-            let kicli = kicli_partition(root);
+            let kicad = netlist.partition();
+            let kicli = kicli_partition_of(root);
             println!("{name}: {} nets", kicad.len());
             match differences(&kicli, &kicad) {
                 None => passed += 1,

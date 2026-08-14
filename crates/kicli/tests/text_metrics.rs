@@ -9,6 +9,7 @@
 //! The hermetic test asserts the port reproduces the oracle. The env-gated test
 //! re-measures with `kicad-cli` and fails when the committed oracle is stale.
 
+use kicli_probe::oracle::Kicad;
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
@@ -401,12 +402,11 @@ fn string_extents_match_kicad_measurements() {
 
 #[test]
 fn advances_reproduce_kicad_svg() {
-    if std::env::var_os("KICLI_TEST_KICAD_CLI").is_none() {
-        println!("skipped: set KICLI_TEST_KICAD_CLI=1 to measure with kicad-cli");
+    let Some(tool) = Kicad::found_or_skip("measure with kicad-cli") else {
         return;
-    }
+    };
 
-    let svg = match export_svg() {
+    let svg = match export_svg(&tool) {
         Ok(svg) => svg,
         Err(reason) => {
             println!("skipped: {reason}");
@@ -454,29 +454,14 @@ fn advances_reproduce_kicad_svg() {
 }
 
 /// Plot the calibration sheet to SVG with `kicad-cli`.
-fn export_svg() -> Result<String, String> {
+///
+/// `-n` drops the page background and `-e` the drawing sheet, so the plot holds
+/// the calibration text and nothing else.
+fn export_svg(tool: &Kicad) -> Result<String, String> {
     let directory = std::env::temp_dir().join(format!("kicli-text-metrics-{}", std::process::id()));
-    std::fs::create_dir_all(&directory)
-        .map_err(|error| format!("cannot make a directory: {error}"))?;
-
-    let output = std::process::Command::new("kicad-cli")
-        .args(["sch", "export", "svg", "-n", "-e", "-o"])
-        .arg(&directory)
-        .arg(fixture("calibration.kicad_sch"))
-        .output()
-        .map_err(|error| format!("cannot run kicad-cli: {error}"))?;
-    if !output.status.success() {
-        return Err(format!(
-            "kicad-cli refused the calibration sheet: {}",
-            String::from_utf8_lossy(&output.stderr)
-        ));
-    }
-
-    let plotted = directory.join("calibration.svg");
-    let svg = std::fs::read_to_string(&plotted)
-        .map_err(|error| format!("cannot read {}: {error}", plotted.display()))?;
+    let svg = tool.try_svg(&fixture("calibration.kicad_sch"), &directory, &["-n", "-e"]);
     let _ = std::fs::remove_dir_all(&directory);
-    Ok(svg)
+    svg
 }
 
 /// Read every text width the SVG reports.

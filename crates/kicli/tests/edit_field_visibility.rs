@@ -7,9 +7,9 @@
 use kicli::edit::field::{FieldAddress, hide, show};
 use kicli::geometry::GRID;
 use kicli::model::{Field, Item, Schematic, SheetPath, Target, Uuid, WriteOptions};
+use kicli_probe::oracle::Kicad;
 use kicli_sexpr::Doc;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
 
 mod support;
 
@@ -237,38 +237,14 @@ fn every_object_that_owns_fields_can_hide_one() {
     }
 }
 
-/// The `kicad-cli` to run, or nothing when the caller did not ask for it.
-fn kicad_cli() -> Option<String> {
-    std::env::var("KICLI_TEST_KICAD_CLI").ok()?;
-    Some(std::env::var("KICLI_KICAD_CLI").unwrap_or_else(|_| "kicad-cli".to_owned()))
-}
-
 /// How often KiCad draws a piece of text on a sheet.
-///
-/// The tool's own output is dropped: the first run on a machine prints
-/// fontconfig warnings that say nothing about the drawing.
-fn times_drawn(tool: &str, file: &Path, text: &str) -> usize {
-    let into = file.with_extension("svg-out");
-    let status = Command::new(tool)
-        .args(["sch", "export", "svg", "-o"])
-        .arg(&into)
-        .arg(file)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .expect("kicad-cli runs");
-    assert!(status.success(), "kicad-cli exported the sheet");
-
-    let stem = file.file_stem().expect("the file has a name");
-    let drawing = std::fs::read_to_string(into.join(stem).with_extension("svg"))
-        .expect("the drawing is readable");
-    drawing.matches(text).count()
+fn times_drawn(tool: &Kicad, file: &Path, text: &str) -> usize {
+    tool.svg(file).matches(text).count()
 }
 
 #[test]
 fn kicad_draws_no_hidden_field() {
-    let Some(tool) = kicad_cli() else {
-        eprintln!("skipped: set KICLI_TEST_KICAD_CLI to ask KiCad about the written file");
+    let Some(tool) = Kicad::found_or_skip("ask KiCad about the written file") else {
         return;
     };
     // One file of each form: the stamp decides where `hide` goes, and the

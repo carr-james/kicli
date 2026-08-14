@@ -7,9 +7,9 @@
 use kicli::edit::field::{FieldAddress, set_value};
 use kicli::geometry::GRID;
 use kicli::model::{Refdes, Schematic, SheetPath, Symbol, Target, Uuid, WriteOptions};
+use kicli_probe::oracle::Kicad;
 use kicli_sexpr::Doc;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
 
 mod support;
 
@@ -213,73 +213,9 @@ fn instance_block(text: &str) -> Vec<&str> {
     lines
 }
 
-/// The `kicad-cli` to run, or nothing when the caller did not ask for it.
-fn kicad_cli() -> Option<String> {
-    std::env::var("KICLI_TEST_KICAD_CLI").ok()?;
-    Some(std::env::var("KICLI_KICAD_CLI").unwrap_or_else(|_| "kicad-cli".to_owned()))
-}
-
-/// Ask KiCad for the netlist of a project it has never seen before.
-///
-/// The tool's own output is dropped: the first run on a machine prints
-/// fontconfig warnings that say nothing about the netlist.
-fn export_netlist(tool: &str, root: &Path, into: &Path) -> Option<String> {
-    let status = Command::new(tool)
-        .args(["sch", "export", "netlist", "-o"])
-        .arg(into)
-        .arg(root)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .ok()?;
-    status
-        .success()
-        .then(|| std::fs::read_to_string(into).ok())?
-}
-
-/// What KiCad calls one symbol, on one sheet path.
-///
-/// A netlist writes the symbol's own identifier as `tstamps`, and the sheet
-/// path it is on as the sheet's `tstamps`, which ends in a separator.
-fn netlist_reference(netlist: &str, symbol: &str, sheet_path: &str) -> Option<String> {
-    let doc = Doc::parse(netlist).expect("the netlist parses");
-    let root = doc.root().expect("the netlist has a root list");
-    let value = |list: kicli_sexpr::NodeId, head: &str| -> Option<String> {
-        let child = doc
-            .children(list)
-            .iter()
-            .copied()
-            .find(|&child| doc.head_is(child, head))?;
-        doc.children(child)
-            .get(1)
-            .and_then(|&atom| doc.atom_as_str(atom))
-    };
-    let leaf = sheet_path.rsplit('/').next().unwrap_or_default();
-    for &components in doc.children(root) {
-        if !doc.head_is(components, "components") {
-            continue;
-        }
-        for &component in doc.children(components) {
-            if !doc.head_is(component, "comp") || value(component, "tstamps")? != symbol {
-                continue;
-            }
-            let sheet = doc
-                .children(component)
-                .iter()
-                .copied()
-                .find(|&child| doc.head_is(child, "sheetpath"))?;
-            if value(sheet, "tstamps")?.contains(leaf) {
-                return value(component, "ref");
-            }
-        }
-    }
-    None
-}
-
 #[test]
 fn kicad_agrees_about_the_reference() {
-    let Some(tool) = kicad_cli() else {
-        eprintln!("skipped: set KICLI_TEST_KICAD_CLI to ask KiCad about the written file");
+    let Some(tool) = Kicad::found_or_skip("ask KiCad about the written file") else {
         return;
     };
     let project = scratch_copy("edit_field_reference_oracle");
@@ -299,20 +235,18 @@ fn kicad_agrees_about_the_reference() {
     let symbol = resistor_of(&file);
     assert_eq!(symbol.reference_on(&path), Some(&Refdes("R150".to_owned())));
 
-    let netlist = export_netlist(
-        &tool,
+    let netlist = tool.netlist(
         &project.join("nets.kicad_sch"),
         &project.join("after.netlist"),
-    )
-    .expect("kicad-cli exported a netlist of the file kicli wrote");
+    );
 
     assert_eq!(
-        netlist_reference(&netlist, RESISTOR, CHANNEL_A).as_deref(),
+        netlist.reference_of(RESISTOR, CHANNEL_A).as_deref(),
         Some("R150"),
         "KiCad names the symbol as kicli says it did, on the path that was edited"
     );
     assert_eq!(
-        netlist_reference(&netlist, RESISTOR, CHANNEL_B).as_deref(),
+        netlist.reference_of(RESISTOR, CHANNEL_B).as_deref(),
         Some("R200"),
         "and as it did before, on the path that was not"
     );

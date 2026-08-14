@@ -16,3 +16,8 @@ path = "src/lib.rs"
 # nothing else, so it reaches no shipped artefact. The licence allowlist does
 # not govern a dev-dependency; the advisory database still does.
 [dependencies]
+# The probe measures what kicli reads, so it holds kicli's model and its
+# s-expression layer. The edge back from kicli is a dev-dependency, which is
+# what keeps this crate out of the shipped artefact.
+kicli = { path = "../kicli", version = "0.0.0" }
+kicli-sexpr = { path = "../kicli-sexpr", version = "0.0.0" }

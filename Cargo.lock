@@ -280,6 +280,10 @@ dependencies = [
 [[package]]
 name = "kicli-probe"
 version = "0.0.0"
+dependencies = [
+ "kicli",
+ "kicli-sexpr",
+]
 
 [[package]]
 name = "kicli-sexpr"

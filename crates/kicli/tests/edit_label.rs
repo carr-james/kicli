@@ -12,10 +12,10 @@ use kicli::connectivity::{NetPin, Nets, extract};
 use kicli::edit::label::{self, NewLabel, PortShape};
 use kicli::geometry::{Angle, GRID, Point};
 use kicli::model::{Hierarchy, LabelKind, Schematic, SheetPath, Target, WriteOptions};
+use kicli_probe::oracle::Kicad;
 use kicli_sexpr::Doc;
 use std::collections::BTreeSet;
-use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::path::PathBuf;
 
 mod support;
 
@@ -314,84 +314,9 @@ fn a_moved_label_takes_its_name_off_the_wire() {
     );
 }
 
-/// The `kicad-cli` to run, or nothing when the caller did not ask for it.
-fn kicad_cli() -> Option<String> {
-    std::env::var("KICLI_TEST_KICAD_CLI").ok()?;
-    Some(std::env::var("KICLI_KICAD_CLI").unwrap_or_else(|_| "kicad-cli".to_owned()))
-}
-
-/// Export a netlist of a project and read it back.
-///
-/// The tool's own output is dropped: the first run on a machine prints
-/// fontconfig warnings that say nothing about the netlist.
-fn export_netlist(tool: &str, root: &Path, into: &Path) -> Option<String> {
-    let status = Command::new(tool)
-        .args(["sch", "export", "netlist", "-o"])
-        .arg(into)
-        .arg(root)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .ok()?;
-    status
-        .success()
-        .then(|| std::fs::read_to_string(into).ok())?
-}
-
-/// One `(node (ref "R1") (pin "2") ...)` as `R1.2`.
-fn node_label(doc: &Doc, node: kicli_sexpr::NodeId) -> Option<String> {
-    let value = |head: &str| -> Option<String> {
-        let list = doc
-            .children(node)
-            .iter()
-            .copied()
-            .find(|&child| doc.head_is(child, head))?;
-        doc.children(list)
-            .get(1)
-            .and_then(|&id| doc.atom_as_str(id))
-    };
-    Some(format!("{}.{}", value("ref")?, value("pin")?))
-}
-
-/// The nets KiCad reports, as a name and a sorted pin list each.
-fn kicad_nets(text: &str) -> Vec<(String, Vec<String>)> {
-    let doc = Doc::parse(text).expect("the netlist parses");
-    let root = doc.root().expect("the netlist has a root list");
-    let mut found = Vec::new();
-    for &child in doc.children(root) {
-        if !doc.head_is(child, "nets") {
-            continue;
-        }
-        for &net in doc.children(child) {
-            if !doc.head_is(net, "net") {
-                continue;
-            }
-            let name = doc
-                .children(net)
-                .iter()
-                .copied()
-                .find(|&list| doc.head_is(list, "name"))
-                .and_then(|list| doc.children(list).get(1).copied())
-                .and_then(|atom| doc.atom_as_str(atom))
-                .unwrap_or_default();
-            let mut pins: Vec<String> = doc
-                .children(net)
-                .iter()
-                .filter(|&&node| doc.head_is(node, "node"))
-                .filter_map(|&node| node_label(&doc, node))
-                .collect();
-            pins.sort();
-            found.push((name, pins));
-        }
-    }
-    assert!(!found.is_empty(), "the netlist reported no nets at all");
-    found
-}
-
 #[test]
 fn kicad_agrees_about_the_new_net() {
-    let Some(tool) = kicad_cli() else {
-        eprintln!("skipped: set KICLI_TEST_KICAD_CLI to run kicad-cli");
+    let Some(tool) = Kicad::found_or_skip("run kicad-cli") else {
         return;
     };
     // A label on the wire's free stretch joins it. A label where a pin already
@@ -401,7 +326,7 @@ fn kicad_agrees_about_the_new_net() {
 }
 
 /// Add a label, then hold the report against KiCad's own netlist.
-fn oracle_agrees(tool: &str, name: &str, at: Point, pins: &[&str]) {
+fn oracle_agrees(tool: &Kicad, name: &str, at: Point, pins: &[&str]) {
     let project = Project::new(name);
     let (mut doc, path) = project.open();
     let added = label::add(
@@ -413,29 +338,24 @@ fn oracle_agrees(tool: &str, name: &str, at: Point, pins: &[&str]) {
     )
     .expect("the label is added");
 
-    let netlist = export_netlist(tool, &project.root, &project.directory.join("after.net"))
-        .expect("kicad-cli exported a netlist of the file kicli wrote");
-    let kicad = kicad_nets(&netlist);
+    let netlist = tool.netlist(&project.root, &project.directory.join("after.net"));
 
     let claimed = &added.nets.after[0];
     assert_eq!(claimed.pins, pins, "the report claims what was measured");
-    let named: Vec<&(String, Vec<String>)> = kicad
-        .iter()
-        .filter(|(name, _)| name.ends_with(&claimed.name))
-        .collect();
+    let named = netlist.named(&claimed.name);
     assert_eq!(
         named.len(),
         1,
-        "KiCad's netlist carries the net the report claimed: {kicad:?}"
+        "KiCad's netlist carries the net the report claimed: {:?}",
+        netlist.nets()
     );
-    assert_eq!(named[0].1, claimed.pins, "with the pins the report named");
+    assert_eq!(
+        named[0].pins, claimed.pins,
+        "with the pins the report named"
+    );
 
     // And the whole partition still matches, so the label moved nothing else.
-    let theirs: BTreeSet<Vec<String>> = kicad
-        .iter()
-        .map(|(_, pins)| pins.clone())
-        .filter(|pins| !pins.is_empty())
-        .collect();
+    let theirs: BTreeSet<Vec<String>> = netlist.partition();
     let ours: BTreeSet<Vec<String>> = project
         .nets()
         .nets()

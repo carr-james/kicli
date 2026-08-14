@@ -3,6 +3,7 @@
 //! Discovery is pointed at a path no binary is at, so a machine with KiCad
 //! installed gives the same answer as one without and the text form is stable.
 
+use kicli_probe::oracle::Kicad;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
@@ -364,8 +365,7 @@ fn project_check_reads_the_whole_project() {
 /// minutes. This one uses the real binary, so it is skipped unless asked for.
 #[test]
 fn project_check_announces_warming() {
-    if std::env::var("KICLI_TEST_KICAD_CLI").is_err() {
-        eprintln!("skipped: set KICLI_TEST_KICAD_CLI=1 to run this against a real kicad-cli");
+    if Kicad::found_or_skip("run this against a real kicad-cli").is_none() {
         return;
     }
 

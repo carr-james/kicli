@@ -10,13 +10,10 @@
 //! and the recorded answer is checked against the tool, so a stale expectation
 //! is caught rather than trusted.
 
-use kicli::connectivity::{NetPin, Nets, extract};
-use kicli::model::Hierarchy;
+use kicli::connectivity::extract;
+use kicli_probe::oracle::{Kicad, kicli_partition, net};
 use kicli_probe::{Placed, Probe, hidden_pin, millimetres, pin, power, symbol};
-use kicli_sexpr::Doc;
-use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
 
 /// Where this binary writes the drawings it builds.
 ///
@@ -30,122 +27,6 @@ fn scratch() -> PathBuf {
 /// A probe named for the question it asks.
 fn probe(name: &'static str) -> Probe {
     Probe::new(name, scratch())
-}
-
-/// kicli's partition of a probe, checked against KiCad when it is there.
-fn partition(probe: &Probe) -> Partition {
-    partition_with(probe, &[])
-}
-
-/// The same, of a probe that draws child sheets.
-fn partition_with(probe: &Probe, children: &[&Probe]) -> Partition {
-    let path = probe.write_all(children);
-    let hierarchy = Hierarchy::load(&path).expect("the probe loads");
-    let found = partition_of(&extract(&hierarchy));
-    if let Some(tool) = kicad_cli() {
-        let netlist = export_netlist(&tool, &path).expect("kicad-cli exported a netlist");
-        assert_eq!(
-            found,
-            kicad_partition(&netlist),
-            "kicli and KiCad disagree about {}",
-            probe.name()
-        );
-    }
-    found
-}
-
-/// A net partition: one sorted pin list per net.
-type Partition = BTreeSet<Vec<String>>;
-
-/// The partition kicli reads, the way a netlist reports it.
-fn partition_of(nets: &Nets) -> Partition {
-    nets.nets()
-        .iter()
-        .map(|net| {
-            net.pins
-                .iter()
-                .filter(|pin| !pin.power && pin.on_board)
-                .map(NetPin::label)
-                .collect::<Vec<String>>()
-        })
-        .filter(|pins| !pins.is_empty())
-        .collect()
-}
-
-/// One expected net.
-fn net(pins: &[&str]) -> Vec<String> {
-    let mut sorted: Vec<String> = pins.iter().map(|pin| (*pin).to_owned()).collect();
-    sorted.sort();
-    sorted
-}
-
-/// The `kicad-cli` to run, or nothing when the caller did not ask for it.
-fn kicad_cli() -> Option<String> {
-    std::env::var("KICLI_TEST_KICAD_CLI").ok()?;
-    Some(std::env::var("KICLI_KICAD_CLI").unwrap_or_else(|_| "kicad-cli".to_owned()))
-}
-
-/// Export a netlist of a probe and read it back.
-///
-/// The tool's own output is dropped: the first run on a machine prints
-/// fontconfig warnings that say nothing about the netlist.
-fn export_netlist(tool: &str, probe: &Path) -> Option<String> {
-    let into = probe.with_extension("net");
-    let status = Command::new(tool)
-        .args(["sch", "export", "netlist", "-o"])
-        .arg(&into)
-        .arg(probe)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .ok()?;
-    if !status.success() {
-        return None;
-    }
-    std::fs::read_to_string(&into).ok()
-}
-
-/// The partition KiCad reports, read out of a netlist it wrote.
-fn kicad_partition(text: &str) -> Partition {
-    let doc = Doc::parse(text).expect("the netlist parses");
-    let root = doc.root().expect("the netlist has a root list");
-    let mut found = Partition::new();
-    for &child in doc.children(root) {
-        if !doc.head_is(child, "nets") {
-            continue;
-        }
-        for &net in doc.children(child) {
-            if !doc.head_is(net, "net") {
-                continue;
-            }
-            let mut pins: Vec<String> = doc
-                .children(net)
-                .iter()
-                .filter(|&&node| doc.head_is(node, "node"))
-                .filter_map(|&node| node_label(&doc, node))
-                .collect();
-            pins.sort();
-            if !pins.is_empty() {
-                found.insert(pins);
-            }
-        }
-    }
-    found
-}
-
-/// One `(node (ref "R1") (pin "2") ...)` as `R1.2`.
-fn node_label(doc: &Doc, node: kicli_sexpr::NodeId) -> Option<String> {
-    let value = |head: &str| -> Option<String> {
-        let list = doc
-            .children(node)
-            .iter()
-            .copied()
-            .find(|&child| doc.head_is(child, head))?;
-        doc.children(list)
-            .get(1)
-            .and_then(|&id| doc.atom_as_str(id))
-    };
-    Some(format!("{}.{}", value("ref")?, value("pin")?))
 }
 
 /// A part with a pin of unit 0, which every unit draws.
@@ -195,7 +76,7 @@ fn a_pin_shared_by_two_units_is_listed_once_per_net() {
     probe.place("R", "R2", ("88.9", "118.11"), &["1", "2"]);
     probe.place("R", "R3", ("88.9", "143.51"), &["1", "2"]);
 
-    let found = partition(&probe);
+    let found = probe.partition();
     // One net, one entry for U1 pin 9, though two pins reach it.
     assert!(found.contains(&net(&["R1.1", "U1.9"])));
     // The rule is per net: wired apart, the pin number is on both nets.
@@ -219,7 +100,7 @@ fn two_labels_join_when_their_net_names_are_equal() {
     probe.named_strand("R5", "76.2", "80.01", "EE/FF");
     probe.named_strand("R6", "88.9", "92.71", "EE/FF");
 
-    let found = partition(&probe);
+    let found = probe.partition();
     assert!(found.contains(&net(&["R1.1", "R2.1"])));
     assert!(found.contains(&net(&["R3.1"])));
     assert!(found.contains(&net(&["R4.1"])));
@@ -248,7 +129,7 @@ fn a_bundle_carries_its_members_to_every_sheet_it_reaches() {
     child.named_strand("R2", "25.4", "29.21", "AN0");
     child.named_strand("R6", "88.9", "92.71", "ZZ9");
 
-    let found = partition_with(&probe, &[&child]);
+    let found = probe.partition_with(&[&child]);
     // The two sheets' AN0 are one net, though no wire joins them.
     assert!(found.contains(&net(&["R1.1", "R2.1"])));
     // A name the bundle does not carry stays local to its sheet.
@@ -322,7 +203,7 @@ fn two_bundles_on_one_bus_join_their_corresponding_members() {
         &[("R4", "UART_TRG.TX"), ("R5", "UART_TRG.RX")],
     );
 
-    let found = partition_with(&probe, &[&left, &right]);
+    let found = probe.partition_with(&[&left, &right]);
     // A group member corresponds by its own name, so TX joins TX and RX joins
     // RX, though the two bundles are named differently and no wire joins the
     // member nets.
@@ -352,7 +233,7 @@ fn two_vector_bundles_on_one_bus_join_by_place_and_not_by_index() {
     );
     bundled_members(&mut right, "BB[5..6]", &[("R4", "BB5"), ("R5", "BB6")]);
 
-    let found = partition_with(&probe, &[&left, &right]);
+    let found = probe.partition_with(&[&left, &right]);
     // The first member of one range joins the first of the other, so the
     // number written in the name is not what corresponds.
     assert!(found.contains(&net(&["R1.1", "R4.1"])));
@@ -377,18 +258,16 @@ fn a_vector_against_a_group_is_reported_and_not_reproduced() {
     bundled_members(&mut right, "BB{P, Q}", &[("R3", "BB.P"), ("R4", "BB.Q")]);
 
     let path = probe.write_all(&[&left, &right]);
-    let hierarchy = Hierarchy::load(&path).expect("the probe loads");
-    let nets = extract(&hierarchy);
+    let nets = extract(&probe.hierarchy(&[&left, &right]));
 
     // KiCad puts R1, R3 and R4 on one net and leaves R2 alone: it matches a
     // vector member by index against group members that have none. kicli
     // declines to reproduce that, so its answer differs here on purpose.
-    if let Some(tool) = kicad_cli() {
-        let netlist = export_netlist(&tool, &path).expect("kicad-cli exported a netlist");
-        let kicad = kicad_partition(&netlist);
+    if let Some(tool) = Kicad::found() {
+        let kicad = tool.netlist_beside(&path).partition();
         assert!(kicad.contains(&net(&["R1.1", "R3.1", "R4.1"])));
         assert!(kicad.contains(&net(&["R2.1"])));
-        assert_ne!(partition_of(&nets), kicad);
+        assert_ne!(kicli_partition(&nets), kicad);
     }
 
     // What kicli must never do is differ in silence.
@@ -428,9 +307,11 @@ fn a_bus_of_one_bundle_kind_is_not_reported() {
             &[("R3", members[1].0), ("R4", members[1].1)],
         );
 
-        let path = probe.write_all(&[&left, &right]);
-        let hierarchy = Hierarchy::load(&path).expect("the probe loads");
-        assert!(extract(&hierarchy).warnings().is_empty());
+        assert!(
+            extract(&probe.hierarchy(&[&left, &right]))
+                .warnings()
+                .is_empty()
+        );
     }
 }
 
@@ -459,7 +340,7 @@ fn two_bundles_in_one_scope_share_the_members_they_both_name() {
     );
     bundled_members(&mut right, "DQ[0..1]", &[("R4", "DQ0"), ("R5", "DQ1")]);
 
-    let found = partition_with(&probe, &[&left, &right]);
+    let found = probe.partition_with(&[&left, &right]);
     // The members both bundles name are one net each, though no bus joins the
     // two bundles and the members are drawn on different sheets.
     assert!(found.contains(&net(&["R1.1", "R4.1"])));
@@ -497,7 +378,7 @@ fn two_bundles_in_different_scopes_keep_their_members_apart() {
         &[("R3", "DQ0"), ("R4", "DQ1")],
     );
 
-    let found = partition_with(&probe, &[&left, &right]);
+    let found = probe.partition_with(&[&left, &right]);
     // Each sheet is its own scope, so an equal member name is two nets.
     assert!(found.contains(&net(&["R1.1"])));
     assert!(found.contains(&net(&["R2.1"])));
@@ -538,7 +419,7 @@ fn a_wide_bundle_splits_into_sub_ranges_that_rename_at_each_port() {
     bundled_members(&mut left, "BB[0..1]", &[("R5", "BB0"), ("R6", "BB1")]);
     bundled_members(&mut right, "BB[0..1]", &[("R7", "BB0"), ("R8", "BB1")]);
 
-    let found = partition_with(&probe, &[&left, &right]);
+    let found = probe.partition_with(&[&left, &right]);
     // Each child's members correspond by place to its own sub-range, and the
     // sub-ranges correspond by name to the wide bundle.
     assert!(found.contains(&net(&["R1.1", "R5.1"])));
@@ -578,7 +459,7 @@ fn one_child_placed_twice_carries_each_sub_range_to_its_own_placement() {
 
     bundled_members(&mut child, "BB[0..1]", &[("R5", "BB0"), ("R6", "BB1")]);
 
-    let found = partition_with(&probe, &[&child]);
+    let found = probe.partition_with(&[&child]);
     // The first placement answers to the first sub-range, the second to the
     // second, though both are the same drawing under the same member names.
     assert!(found.contains(&net(&["R1.1", "R5.1"])));
@@ -613,7 +494,7 @@ fn two_bus_entries_that_meet_do_not_join() {
     probe.place("R", "R3", ("99.06", "115.57"), &["1", "2"]);
     probe.place("R", "R4", ("99.06", "120.65"), &["1", "2"]);
 
-    let found = partition(&probe);
+    let found = probe.partition();
     // Each member keeps its own net, on the bundle and off it.
     assert!(found.contains(&net(&["R1.1"])));
     assert!(found.contains(&net(&["R2.1"])));
@@ -662,7 +543,7 @@ fn the_instance_record_says_which_unit_a_symbol_draws() {
     probe.label_of_kind("label", "", "CTRLNET", ("76.2", "85.09"));
     probe.place("R", "R2", ("76.2", "88.9"), &["1", "2"]);
 
-    let found = partition(&probe);
+    let found = probe.partition();
     // Unit 2 is drawn, so the pin on the wire is pin 3 and not pin 1.
     assert!(found.contains(&net(&["R1.1", "U1.3"])));
     assert!(found.contains(&net(&["R2.1", "U2.3"])));
@@ -692,7 +573,7 @@ fn a_symbol_off_the_board_is_in_no_net_list() {
         probe.label_of_kind("label", "", name, ("63.5", wire_y));
     }
 
-    let found = partition(&probe);
+    let found = probe.partition();
     // A symbol that does not reach the board is in no net list at all, not
     // even the one-pin net of its unwired pin.
     assert!(found.contains(&net(&["R2.1"])));
@@ -754,7 +635,7 @@ fn one_sheet_is_one_namespace() {
         "HGL",
     );
 
-    let found = partition(&probe);
+    let found = probe.partition();
     assert!(found.contains(&net(&["R1.1", "R2.1"])));
     assert!(found.contains(&net(&["R3.1", "R4.1"])));
     assert!(found.contains(&net(&["R5.1", "R6.1"])));
@@ -802,7 +683,7 @@ fn a_hidden_power_input_reaches_its_rail_with_no_wire() {
     probe.wire(("101.6", "88.9"), ("101.6", "92.71"));
     probe.place("R", "R2", ("101.6", "96.52"), &["1", "2"]);
 
-    let found = partition(&probe);
+    let found = probe.partition();
     // The hidden input is on the rail its pin name asks for.
     assert!(found.contains(&net(&["R1.1", "U1.9"])));
     // The visible one is not. A power input on an ordinary symbol names a

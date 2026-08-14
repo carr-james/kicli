@@ -7,15 +7,10 @@ use kicli::connectivity::{Net, NetPin, Nets, extract};
 use kicli::edit::net::{self, Scope};
 use kicli::geometry::GRID;
 use kicli::model::{Hierarchy, WriteOptions};
-use kicli_sexpr::Doc;
-use std::collections::BTreeSet;
+use kicli_probe::oracle::{Kicad, kicli_partition};
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
 
 mod support;
-
-/// A net partition: one sorted pin list per net.
-type Partition = BTreeSet<Vec<String>>;
 
 /// Copy the connectivity fixture into a scratch directory, and name its root.
 fn nets_project(name: &str) -> PathBuf {
@@ -41,22 +36,6 @@ fn pins_of(nets: &Nets, name: &str) -> Vec<String> {
         .find(|net| net.name == name)
         .map(|net| net.pins.iter().map(NetPin::label).collect())
         .unwrap_or_default()
-}
-
-/// The whole partition kicli reads, power pins left out as a netlist leaves
-/// them out.
-fn partition_of(nets: &Nets) -> Partition {
-    nets.nets()
-        .iter()
-        .map(|net| {
-            net.pins
-                .iter()
-                .filter(|pin| !pin.power)
-                .map(NetPin::label)
-                .collect::<Vec<String>>()
-        })
-        .filter(|pins| !pins.is_empty())
-        .collect()
 }
 
 #[test]
@@ -226,17 +205,15 @@ fn a_name_another_net_already_has_is_refused() {
 
 #[test]
 fn kicad_agrees_about_the_rename() {
-    let Some(tool) = kicad_cli() else {
-        eprintln!("skipped: set KICLI_TEST_KICAD_CLI to compare against KiCad");
+    let Some(tool) = Kicad::found_or_skip("compare against KiCad") else {
         return;
     };
     let root = nets_project("rename_oracle");
     let project = root.parent().expect("the root has a directory").to_owned();
 
-    let first = export_netlist(&tool, &root, &project.join("before.net"))
-        .expect("kicad-cli exported a netlist");
-    let partition_before = kicad_partition(&first);
-    assert!(names_in(&first).contains("/NET_A"));
+    let first = tool.netlist(&root, &project.join("before.net"));
+    let partition_before = first.partition();
+    assert!(first.names().contains("/NET_A"));
 
     // A local label, a global label across two files, and a power value.
     for (from, to) in [
@@ -255,9 +232,8 @@ fn kicad_agrees_about_the_rename() {
         .unwrap_or_else(|error| panic!("renaming {from} to {to}: {error}"));
     }
 
-    let second = export_netlist(&tool, &root, &project.join("after.net"))
-        .expect("kicad-cli exported a netlist");
-    let names = names_in(&second);
+    let second = tool.netlist(&root, &project.join("after.net"));
+    let names = second.names();
     for wanted in ["/NET_Z", "GLOBAL_Z", "GNDA"] {
         assert!(names.contains(wanted), "KiCad reports {wanted}: {names:?}");
     }
@@ -268,107 +244,13 @@ fn kicad_agrees_about_the_rename() {
         );
     }
     assert_eq!(
-        kicad_partition(&second),
+        second.partition(),
         partition_before,
         "the rename changed the names and not the partition"
     );
     assert_eq!(
-        partition_of(&nets_now(&root)),
+        kicli_partition(&nets_now(&root)),
         partition_before,
         "and kicli reads the same partition KiCad does"
     );
-}
-
-/// The `kicad-cli` to run, or nothing when the caller did not ask for it.
-fn kicad_cli() -> Option<String> {
-    std::env::var("KICLI_TEST_KICAD_CLI").ok()?;
-    Some(std::env::var("KICLI_KICAD_CLI").unwrap_or_else(|_| "kicad-cli".to_owned()))
-}
-
-/// Export a netlist and read it back.
-///
-/// The tool's own output is dropped: the first run on a machine prints
-/// fontconfig warnings that say nothing about the netlist.
-fn export_netlist(tool: &str, root: &Path, into: &Path) -> Option<String> {
-    let status = Command::new(tool)
-        .args(["sch", "export", "netlist", "-o"])
-        .arg(into)
-        .arg(root)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .ok()?;
-    if !status.success() {
-        return None;
-    }
-    std::fs::read_to_string(into).ok()
-}
-
-/// Every net's own name, as KiCad wrote it.
-fn names_in(netlist: &str) -> BTreeSet<String> {
-    let doc = Doc::parse(netlist).expect("the netlist parses");
-    let root = doc.root().expect("the netlist has a root list");
-    let mut names = BTreeSet::new();
-    for &child in doc.children(root) {
-        if !doc.head_is(child, "nets") {
-            continue;
-        }
-        for &net in doc.children(child) {
-            if !doc.head_is(net, "net") {
-                continue;
-            }
-            if let Some(name) = value_of(&doc, net, "name") {
-                names.insert(name);
-            }
-        }
-    }
-    assert!(!names.is_empty(), "the netlist reported no nets at all");
-    names
-}
-
-/// The partition KiCad reports, read out of a netlist it wrote.
-fn kicad_partition(netlist: &str) -> Partition {
-    let doc = Doc::parse(netlist).expect("the netlist parses");
-    let root = doc.root().expect("the netlist has a root list");
-    let mut found = Partition::new();
-    for &child in doc.children(root) {
-        if !doc.head_is(child, "nets") {
-            continue;
-        }
-        for &net in doc.children(child) {
-            if !doc.head_is(net, "net") {
-                continue;
-            }
-            let mut pins: Vec<String> = doc
-                .children(net)
-                .iter()
-                .filter(|&&node| doc.head_is(node, "node"))
-                .filter_map(|&node| {
-                    Some(format!(
-                        "{}.{}",
-                        value_of(&doc, node, "ref")?,
-                        value_of(&doc, node, "pin")?
-                    ))
-                })
-                .collect();
-            pins.sort();
-            if !pins.is_empty() {
-                found.insert(pins);
-            }
-        }
-    }
-    assert!(!found.is_empty(), "the netlist reported no nets at all");
-    found
-}
-
-/// The first value of a named child list.
-fn value_of(doc: &Doc, node: kicli_sexpr::NodeId, head: &str) -> Option<String> {
-    let list = doc
-        .children(node)
-        .iter()
-        .copied()
-        .find(|&child| doc.head_is(child, head))?;
-    doc.children(list)
-        .get(1)
-        .and_then(|&id| doc.atom_as_str(id))
 }

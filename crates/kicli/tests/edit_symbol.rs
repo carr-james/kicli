@@ -8,7 +8,6 @@
 
 use std::collections::BTreeMap;
 use std::path::Path;
-use std::process::{Command, Stdio};
 
 use kicli::edit::symbol::{
     Finding, Motion, Options, delete_symbol, mirror_symbol, move_symbol, rotate_symbol,
@@ -19,6 +18,7 @@ use kicli::model::{
     read_library, state_before,
 };
 use kicli::view::snapshot::Snapshot;
+use kicli_probe::oracle::Kicad;
 use kicli_sexpr::{Doc, changed_line_count};
 
 mod support;
@@ -453,81 +453,9 @@ fn outside_the_block(text: &str, uuid: &str) -> Vec<String> {
         .collect()
 }
 
-/// The `kicad-cli` binary, when the environment asks for the live tests.
-fn kicad_cli() -> Option<String> {
-    std::env::var("KICLI_TEST_KICAD_CLI").ok()?;
-    Some(std::env::var("KICLI_KICAD_CLI").unwrap_or_else(|_| "kicad-cli".to_owned()))
-}
-
-/// Run KiCad's own rule check and read the pin positions out of its report.
-fn rule_check(binary: &str, file: &Path) -> BTreeMap<(String, String), Point> {
-    let directory = file.parent().expect("the file sits in a directory");
-    let report = directory.join("rule-check.txt");
-    let status = Command::new(binary)
-        .current_dir(directory)
-        .args([
-            "sch",
-            "erc",
-            "--format",
-            "report",
-            "--units",
-            "mm",
-            "--severity-all",
-            "-o",
-        ])
-        .arg(&report)
-        .arg(file.file_name().expect("the file has a name"))
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .expect("kicad-cli runs");
-    assert!(status.success(), "the rule check ran");
-    read_report(&report)
-}
-
-/// Read the pin positions out of KiCad's plain-text rule-check report.
-///
-/// A violation line reads `@(25.40 mm, 21.59 mm): Symbol R1 Pin 1 [Passive, Line]`.
-fn read_report(path: &Path) -> BTreeMap<(String, String), Point> {
-    let text = std::fs::read_to_string(path).expect("the report reads");
-    let mut found = BTreeMap::new();
-    for line in text.lines().map(str::trim) {
-        let Some(rest) = line.strip_prefix("@(") else {
-            continue;
-        };
-        let Some((position, description)) = rest.split_once("): ") else {
-            continue;
-        };
-        let Some(symbol) = description.strip_prefix("Symbol ") else {
-            continue;
-        };
-        let mut words = symbol.split_whitespace();
-        let (Some(reference), Some("Pin"), Some(number)) =
-            (words.next(), words.next(), words.next())
-        else {
-            continue;
-        };
-        let (x, y) = position.split_once(", ").expect("two coordinates");
-        found.insert(
-            (reference.to_owned(), number.to_owned()),
-            Point {
-                x: millimetres(x),
-                y: millimetres(y),
-            },
-        );
-    }
-    found
-}
-
-/// Read a `12.34 mm` reading as internal units, without going through a float.
-fn millimetres(reading: &str) -> Iu {
-    Iu::from_millimetres_text(reading.trim_end_matches(" mm")).expect("a coordinate is a number")
-}
-
 #[test]
 fn a_rotated_symbol_is_where_kicad_draws_it() {
-    let Some(binary) = kicad_cli() else {
-        eprintln!("skipped: set KICLI_TEST_KICAD_CLI to run the rule check");
+    let Some(tool) = Kicad::found_or_skip("run the rule check") else {
         return;
     };
     let project = scratch("edit_symbol_oracle");
@@ -585,7 +513,9 @@ fn a_rotated_symbol_is_where_kicad_draws_it() {
         "the turn and the mirror carried every pin about its anchor"
     );
 
-    let kicad: BTreeMap<(String, String), Point> = rule_check(&binary, &file)
+    let kicad: BTreeMap<(String, String), Point> = tool
+        .rule_check(&file)
+        .pin_positions()
         .into_iter()
         .filter(|((reference, _), _)| reference == "A1" || reference == "A5")
         .collect();

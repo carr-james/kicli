@@ -10,6 +10,8 @@
 //! regeneration test runs `kicad-cli` and is off unless `KICLI_TEST_KICAD_CLI`
 //! is set.
 
+use kicli::geometry::{Iu, Point};
+use kicli_probe::oracle::{Kicad, Report, without_the_run_specific_lines};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
@@ -20,15 +22,8 @@ fn fixture_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures")
 }
 
-/// One row of a `.expected` table: where a pin should be, in integer units.
-#[derive(Debug, PartialEq, Eq)]
-struct Pin {
-    x: i32,
-    y: i32,
-}
-
 /// Read a `.expected` table, keyed by `(refdes, pin number)` and by pin uuid.
-fn read_expected(path: &Path) -> (BTreeMap<(String, String), Pin>, BTreeMap<String, Pin>) {
+fn read_expected(path: &Path) -> (BTreeMap<(String, String), Point>, BTreeMap<String, Point>) {
     let text = std::fs::read_to_string(path).expect("expected table is readable");
     let mut by_pin = BTreeMap::new();
     let mut by_uuid = BTreeMap::new();
@@ -39,55 +34,11 @@ fn read_expected(path: &Path) -> (BTreeMap<(String, String), Pin>, BTreeMap<Stri
             fields[4].parse().expect("x is an integer"),
             fields[5].parse().expect("y is an integer"),
         );
-        by_pin.insert((fields[0].to_owned(), fields[3].to_owned()), Pin { x, y });
-        by_uuid.insert(fields[6].to_owned(), Pin { x, y });
+        let at = Point { x: Iu(x), y: Iu(y) };
+        by_pin.insert((fields[0].to_owned(), fields[3].to_owned()), at);
+        by_uuid.insert(fields[6].to_owned(), at);
     }
     (by_pin, by_uuid)
-}
-
-/// Read the pin positions out of KiCad's plain-text rule-check report.
-///
-/// A violation line reads `@(25.40 mm, 21.59 mm): Symbol R1 Pin 1 [Passive, Line]`.
-fn read_text_report(path: &Path) -> BTreeMap<(String, String), Pin> {
-    let text = std::fs::read_to_string(path).expect("report is readable");
-    let mut found = BTreeMap::new();
-    for line in text.lines().map(str::trim) {
-        let Some(rest) = line.strip_prefix("@(") else {
-            continue;
-        };
-        let Some((position, description)) = rest.split_once("): ") else {
-            continue;
-        };
-        let Some(refdes) = description.strip_prefix("Symbol ") else {
-            continue;
-        };
-        let mut words = refdes.split_whitespace();
-        let (Some(refdes), Some("Pin"), Some(number)) = (words.next(), words.next(), words.next())
-        else {
-            continue;
-        };
-        let (x, y) = position.split_once(", ").expect("two coordinates");
-        found.insert(
-            (refdes.to_owned(), number.to_owned()),
-            Pin {
-                x: millimetres_to_units(x),
-                y: millimetres_to_units(y),
-            },
-        );
-    }
-    found
-}
-
-/// Convert a `12.34 mm` reading to integer internal units.
-fn millimetres_to_units(reading: &str) -> i32 {
-    let value: f64 = reading
-        .trim_end_matches(" mm")
-        .parse()
-        .expect("coordinate is a number");
-    // The reading has four decimals at most, so this rounds exactly.
-    #[allow(clippy::cast_possible_truncation)] // schematic coordinates are int32
-    let units = (value * UNITS_PER_MM).round() as i32;
-    units
 }
 
 #[test]
@@ -95,7 +46,7 @@ fn predicted_pin_positions_match_the_rule_check() {
     let root = fixture_root().join("geometry");
     for fixture in ["orientations", "asymmetric"] {
         let (expected, _by_uuid) = read_expected(&root.join(format!("{fixture}.expected")));
-        let measured = read_text_report(&root.join(format!("{fixture}.erc.txt")));
+        let measured = Report::read(&root.join(format!("{fixture}.erc.txt"))).pin_positions();
         assert_eq!(
             expected, measured,
             "{fixture}: the predicted pin positions are KiCad's own"
@@ -142,9 +93,9 @@ fn the_rule_check_json_reports_coordinates_a_hundred_times_small() {
                     let x = item["pos"]["x"].as_f64().expect("x is a number");
                     let y = item["pos"]["y"].as_f64().expect("y is a number");
                     assert_eq!(
-                        Pin {
-                            x: millimetres_to_units(&format!("{}", x * 100.0)),
-                            y: millimetres_to_units(&format!("{}", y * 100.0)),
+                        Point {
+                            x: millimetres_to_units(x * 100.0),
+                            y: millimetres_to_units(y * 100.0),
                         },
                         *pin,
                         "{fixture}: JSON coordinate times 100 is the text coordinate"
@@ -160,13 +111,15 @@ fn the_rule_check_json_reports_coordinates_a_hundred_times_small() {
     }
 }
 
-/// The `kicad-cli` binary, when the environment asks for the live tests.
+/// Convert a reading in millimetres to internal units.
 ///
-/// Returns `None` unless `KICLI_TEST_KICAD_CLI` is set, so the default run
-/// needs no KiCad install.
-fn kicad_cli() -> Option<String> {
-    std::env::var("KICLI_TEST_KICAD_CLI").ok()?;
-    Some(std::env::var("KICLI_KICAD_CLI").unwrap_or_else(|_| "kicad-cli".to_owned()))
+/// The JSON canary below reads a float, because the number it checks is one
+/// KiCad computed with the wrong scale. Every other reading in this file is an
+/// exact integer.
+fn millimetres_to_units(value: f64) -> Iu {
+    // The reading has four decimals at most, so this rounds exactly.
+    #[allow(clippy::cast_possible_truncation, reason = "schematic units are int32")]
+    Iu((value * UNITS_PER_MM).round() as i32)
 }
 
 /// Copy a fixture directory's files into a scratch directory.
@@ -181,24 +134,9 @@ fn copy_fixture_files(from: &Path, to: &Path) {
     }
 }
 
-/// Drop the lines that carry a timestamp or the caller's own path.
-fn without_the_run_specific_lines(text: &str) -> Vec<&str> {
-    text.lines()
-        .map(str::trim_end)
-        .filter(|line| {
-            let trimmed = line.trim_start();
-            !trimmed.starts_with("ERC report (")
-                && !trimmed.starts_with("(date ")
-                && !trimmed.starts_with("(source ")
-                && !trimmed.starts_with("(tool ")
-        })
-        .collect()
-}
-
 #[test]
 fn oracles_are_current() {
-    let Some(binary) = kicad_cli() else {
-        eprintln!("skipped: set KICLI_TEST_KICAD_CLI to regenerate the oracles");
+    let Some(tool) = Kicad::found_or_skip("regenerate the oracles") else {
         return;
     };
     let root = fixture_root();
@@ -214,30 +152,14 @@ fn oracles_are_current() {
     copy_fixture_files(&root.join("sch/nets"), &nets);
 
     for fixture in ["orientations", "asymmetric"] {
-        let directory = geometry.clone();
-        let fresh = scratch.join(format!("{fixture}.erc.txt"));
-        let status = std::process::Command::new(&binary)
-            .current_dir(&directory)
-            .args([
-                "sch",
-                "erc",
-                "--format",
-                "report",
-                "--units",
-                "mm",
-                "--severity-all",
-                "-o",
-            ])
-            .arg(&fresh)
-            .arg(format!("{fixture}.kicad_sch"))
-            .status()
-            .expect("kicad-cli runs");
-        assert!(status.success(), "{fixture}: the rule check ran");
-
+        let sheet = geometry.join(format!("{fixture}.kicad_sch"));
+        let regenerated = tool
+            .rule_check_into(&sheet, &scratch.join(format!("{fixture}.erc.txt")))
+            .text()
+            .to_owned();
         let committed =
             std::fs::read_to_string(root.join("geometry").join(format!("{fixture}.erc.txt")))
                 .expect("committed report reads");
-        let regenerated = std::fs::read_to_string(&fresh).expect("fresh report reads");
         assert_eq!(
             without_the_run_specific_lines(&committed),
             without_the_run_specific_lines(&regenerated),
@@ -245,18 +167,12 @@ fn oracles_are_current() {
         );
     }
 
-    let fresh = scratch.join("nets.netlist");
-    let status = std::process::Command::new(&binary)
-        .current_dir(&nets)
-        .args(["sch", "export", "netlist", "-o"])
-        .arg(&fresh)
-        .arg("nets.kicad_sch")
-        .status()
-        .expect("kicad-cli runs");
-    assert!(status.success(), "the netlist export ran");
+    let regenerated = tool
+        .netlist(&nets.join("nets.kicad_sch"), &scratch.join("nets.netlist"))
+        .text()
+        .to_owned();
     let committed =
         std::fs::read_to_string(root.join("sch/nets/nets.netlist")).expect("oracle reads");
-    let regenerated = std::fs::read_to_string(&fresh).expect("fresh netlist reads");
     assert_eq!(
         without_the_run_specific_lines(&committed),
         without_the_run_specific_lines(&regenerated),

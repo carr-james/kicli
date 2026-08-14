@@ -6,9 +6,7 @@
 //! The live rule check runs `kicad-cli` and is off unless `KICLI_TEST_KICAD_CLI`
 //! is set, so the default run needs no KiCad install.
 
-use std::collections::BTreeSet;
 use std::path::Path;
-use std::process::{Command, Stdio};
 
 use kicli::edit::symbol::{Instance, Options, Placement, delete_symbol, place_symbol};
 use kicli::geometry::{Angle, GRID, Point, resolve_pins};
@@ -16,6 +14,7 @@ use kicli::model::{
     Hierarchy, LibId, Mutation, Refdes, Schematic, SheetPath, Symbol, Target, Uuid, WriteOptions,
     commit, definition_of, read_library, state_before,
 };
+use kicli_probe::oracle::Kicad;
 use kicli_sexpr::Doc;
 
 mod support;
@@ -316,99 +315,14 @@ fn a_deleted_symbol_leaves_no_trace() {
     );
 }
 
-/// The `kicad-cli` binary, when the environment asks for the live tests.
-fn kicad_cli() -> Option<String> {
-    std::env::var("KICLI_TEST_KICAD_CLI").ok()?;
-    Some(std::env::var("KICLI_KICAD_CLI").unwrap_or_else(|_| "kicad-cli".to_owned()))
-}
-
-/// Run KiCad's own rule check and hand back the report it wrote.
-fn rule_check(binary: &str, file: &Path) -> String {
-    let directory = file.parent().expect("the file sits in a directory");
-    let report = directory.join("rule-check.txt");
-    let status = Command::new(binary)
-        .current_dir(directory)
-        .args([
-            "sch",
-            "erc",
-            "--format",
-            "report",
-            "--units",
-            "mm",
-            "--severity-all",
-            "-o",
-        ])
-        .arg(&report)
-        .arg(file.file_name().expect("the file has a name"))
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .expect("kicad-cli runs");
-    assert!(status.success(), "the rule check ran");
-    std::fs::read_to_string(&report).expect("the report reads")
-}
-
-/// The kinds of violation a report carries, such as `pin_not_connected`.
-fn violation_kinds(report: &str) -> BTreeSet<String> {
-    report
-        .lines()
-        .map(str::trim)
-        .filter_map(|line| line.strip_prefix('['))
-        .filter_map(|line| line.split_once(']'))
-        .map(|(kind, _)| kind.to_owned())
-        .collect()
-}
-
-/// The pin positions of one symbol, as the report gives them.
-fn reported_pins(report: &str, reference: &str) -> Vec<(String, Point)> {
-    let mut found = Vec::new();
-    for line in report.lines().map(str::trim) {
-        let Some(rest) = line.strip_prefix("@(") else {
-            continue;
-        };
-        let Some((position, description)) = rest.split_once("): ") else {
-            continue;
-        };
-        let Some(symbol) = description.strip_prefix("Symbol ") else {
-            continue;
-        };
-        let mut words = symbol.split_whitespace();
-        let (Some(found_reference), Some("Pin"), Some(number)) =
-            (words.next(), words.next(), words.next())
-        else {
-            continue;
-        };
-        if found_reference != reference {
-            continue;
-        }
-        let (x, y) = position.split_once(", ").expect("two coordinates");
-        found.push((
-            number.to_owned(),
-            Point {
-                x: millimetres(x),
-                y: millimetres(y),
-            },
-        ));
-    }
-    found.sort();
-    found
-}
-
-/// Read a `12.34 mm` reading as internal units, without going through a float.
-fn millimetres(reading: &str) -> kicli::geometry::Iu {
-    kicli::geometry::Iu::from_millimetres_text(reading.trim_end_matches(" mm"))
-        .expect("a coordinate is a number")
-}
-
 #[test]
 fn kicad_reads_what_place_wrote() {
-    let Some(binary) = kicad_cli() else {
-        eprintln!("skipped: set KICLI_TEST_KICAD_CLI to run the rule check");
+    let Some(tool) = Kicad::found_or_skip("run the rule check") else {
         return;
     };
     let project = scratch("edit_symbol_place_oracle");
     let file = copy_file(&project, "geometry/asymmetric.kicad_sch");
-    let before = violation_kinds(&rule_check(&binary, &file));
+    let before = tool.rule_check(&file).violation_kinds();
 
     let (mut doc, schematic) = read(&file);
     let root = SheetPath::root(schematic.uuid.as_ref().expect("the file has a uuid"));
@@ -441,14 +355,15 @@ fn kicad_reads_what_place_wrote() {
         .collect();
     kicli.sort();
 
-    let report = rule_check(&binary, &file);
+    let report = tool.rule_check(&file);
+    let mut reported = report.pins_of("U1");
+    reported.sort();
     assert_eq!(
-        reported_pins(&report, "U1"),
-        kicli,
+        reported, kicli,
         "KiCad reports the new symbol's pins where kicli says they are"
     );
     assert_eq!(
-        violation_kinds(&report),
+        report.violation_kinds(),
         before,
         "and the placement brought no fault of its own"
     );

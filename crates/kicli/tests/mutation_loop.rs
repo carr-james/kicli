@@ -9,11 +9,12 @@
 //! The oracle half runs `kicad-cli` and is off unless `KICLI_TEST_KICAD_CLI` is
 //! set, so the default run needs no KiCad install.
 
+use kicli_probe::oracle::Kicad;
 use kicli_sexpr::Doc;
 use serde_json::Value;
 use std::collections::BTreeSet;
 use std::path::PathBuf;
-use std::process::{Command, Output, Stdio};
+use std::process::{Command, Output};
 
 mod support;
 
@@ -245,8 +246,7 @@ fn an_agent_can_look_edit_and_verify() {
 
 #[test]
 fn kicad_reads_what_the_loop_wrote() {
-    let Some(tool) = kicad_cli() else {
-        eprintln!("skipped: set KICLI_TEST_KICAD_CLI to run kicad-cli");
+    let Some(tool) = Kicad::found_or_skip("run kicad-cli") else {
         return;
     };
     let project = Project::new("mutation_loop_oracle");
@@ -254,7 +254,9 @@ fn kicad_reads_what_the_loop_wrote() {
     // What KiCad says about the drawing before kicli touches it. The control
     // for the comparison below: a report parser that read nothing would make
     // "nothing else moved" true and meaningless.
-    let before = rule_check(&tool, &project, "before.txt");
+    let before = tool
+        .rule_check_into(&project.root, &project.directory.join("before.txt"))
+        .items();
     assert!(
         !before.is_empty(),
         "the rule check reported items on the fixture as it stands"
@@ -276,7 +278,9 @@ fn kicad_reads_what_the_loop_wrote() {
     project.json(&["label", "add", "--text", "LOOP", "--at", LABEL_AT]);
 
     // KiCad reads the file kicli wrote, and reports the new symbol's pins.
-    let after = rule_check(&tool, &project, "after.txt");
+    let after = tool
+        .rule_check_into(&project.root, &project.directory.join("after.txt"))
+        .items();
     assert!(
         after.iter().any(|item| item.contains("Symbol R900 Pin")),
         "the rule check found the placed symbol: {after:?}"
@@ -298,116 +302,8 @@ fn kicad_reads_what_the_loop_wrote() {
     );
 
     // KiCad's netlist carries the net the label report claimed.
-    let netlist = export_netlist(&tool, &project).expect("kicad-cli exported a netlist");
-    let named: Vec<Vec<String>> = kicad_nets(&netlist)
-        .into_iter()
-        .filter(|(name, _)| name.ends_with("LOOP"))
-        .map(|(_, pins)| pins)
-        .collect();
-    assert_eq!(named.len(), 1, "one net is called LOOP: {netlist}");
-    assert_eq!(named[0], WIRE_PINS, "with the pins the report named");
-}
-
-/// The `kicad-cli` binary, when the environment asks for the live tests.
-fn kicad_cli() -> Option<String> {
-    std::env::var("KICLI_TEST_KICAD_CLI").ok()?;
-    Some(std::env::var("KICLI_KICAD_CLI").unwrap_or_else(|_| "kicad-cli".to_owned()))
-}
-
-/// Run KiCad's own rule check, and read the items it reported.
-///
-/// An item line reads `@(25.40 mm, 21.59 mm): Symbol R1 Pin 1 [Passive, Line]`.
-/// The counts and headings around them move whenever anything is added, so the
-/// items are what a comparison can be made of.
-fn rule_check(tool: &str, project: &Project, into: &str) -> BTreeSet<String> {
-    let report = project.directory.join(into);
-    let status = Command::new(tool)
-        .current_dir(&project.directory)
-        .args([
-            "sch",
-            "erc",
-            "--format",
-            "report",
-            "--units",
-            "mm",
-            "--severity-all",
-            "-o",
-        ])
-        .arg(&report)
-        .arg(project.root.file_name().expect("the root has a name"))
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .expect("kicad-cli runs");
-    assert!(status.success(), "KiCad read the file kicli wrote");
-
-    std::fs::read_to_string(&report)
-        .expect("the report reads")
-        .lines()
-        .map(str::trim)
-        .filter(|line| line.starts_with("@("))
-        .map(str::to_owned)
-        .collect()
-}
-
-/// Export KiCad's own netlist of the project.
-fn export_netlist(tool: &str, project: &Project) -> Option<String> {
-    let into = project.directory.join("after.net");
-    let status = Command::new(tool)
-        .args(["sch", "export", "netlist", "-o"])
-        .arg(&into)
-        .arg(&project.root)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .ok()?;
-    status
-        .success()
-        .then(|| std::fs::read_to_string(&into).ok())?
-}
-
-/// The nets KiCad reports, as a name and a sorted pin list each.
-fn kicad_nets(text: &str) -> Vec<(String, Vec<String>)> {
-    let doc = Doc::parse(text).expect("the netlist parses");
-    let root = doc.root().expect("the netlist has a root list");
-    let mut found = Vec::new();
-    for &child in doc.children(root) {
-        if !doc.head_is(child, "nets") {
-            continue;
-        }
-        for &net in doc.children(child) {
-            if !doc.head_is(net, "net") {
-                continue;
-            }
-            let name = atom_of(&doc, net, "name").unwrap_or_default();
-            let mut pins: Vec<String> = doc
-                .children(net)
-                .iter()
-                .filter(|&&node| doc.head_is(node, "node"))
-                .filter_map(|&node| {
-                    Some(format!(
-                        "{}.{}",
-                        atom_of(&doc, node, "ref")?,
-                        atom_of(&doc, node, "pin")?
-                    ))
-                })
-                .collect();
-            pins.sort();
-            found.push((name, pins));
-        }
-    }
-    assert!(!found.is_empty(), "the netlist reported no nets at all");
-    found
-}
-
-/// The first value of a named child list.
-fn atom_of(doc: &Doc, node: kicli_sexpr::NodeId, head: &str) -> Option<String> {
-    let list = doc
-        .children(node)
-        .iter()
-        .copied()
-        .find(|&child| doc.head_is(child, head))?;
-    doc.children(list)
-        .get(1)
-        .and_then(|&id| doc.atom_as_str(id))
+    let netlist = tool.netlist(&project.root, &project.directory.join("after.net"));
+    let named = netlist.named("LOOP");
+    assert_eq!(named.len(), 1, "one net is called LOOP: {}", netlist.text());
+    assert_eq!(named[0].pins, WIRE_PINS, "with the pins the report named");
 }
