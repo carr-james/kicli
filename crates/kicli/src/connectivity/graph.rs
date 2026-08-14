@@ -299,7 +299,7 @@ impl Graph {
             .map(|field| field.value.clone())
             .unwrap_or_default();
         let on_board = on_board(doc, symbol.node);
-        for pin in resolve_pins(&drawn_on(symbol, placement), definition) {
+        for pin in resolve_pins(&symbol.drawn_on(&placement.path), definition) {
             let kind = NodeKind::Pin(PinNode {
                 reference: reference.cloned(),
                 number: pin.number.clone(),
@@ -947,27 +947,6 @@ fn group_parts(plain: &str) -> Option<(String, Vec<String>)> {
         }
     }
     None
-}
-
-/// The symbol as it is drawn on one placement.
-///
-/// The unit a symbol draws is a property of the sheet path, like the
-/// reference designator: the `(unit …)` beside the `lib_id` is a cache of
-/// whichever sheet was loaded last, and the truth is the instance record
-/// (`SCH_SYMBOL::GetUnitSelection`). A sheet whose cache and instance
-/// disagree draws the instance's unit, which is a different set of pins with
-/// different numbers.
-fn drawn_on(symbol: &Symbol, placement: &Placement) -> Symbol {
-    let mut drawn = symbol.clone();
-    if let Some(unit) = symbol
-        .placements
-        .iter()
-        .find(|instance| instance.path == placement.path)
-        .map(|instance| instance.unit)
-    {
-        drawn.unit = unit;
-    }
-    drawn
 }
 
 /// Does this symbol reach the board?

@@ -200,6 +200,31 @@ impl Symbol {
         self.fields.iter().find(|field| field.name == name)
     }
 
+    /// This symbol as it is drawn on one sheet path.
+    ///
+    /// The `(unit ...)` beside the `lib_id` is a cache of whichever sheet was
+    /// loaded last. The instance record is the truth, and on a sheet placed
+    /// twice the two placements draw different units of the same part. A
+    /// resolver that reads the cache therefore reports one placement's pins for
+    /// both, at the wrong numbers and the wrong positions
+    /// (`SCH_SYMBOL::GetUnitSelection`).
+    ///
+    /// A symbol with no instance record for the path keeps the cache, which is
+    /// all the file says about it.
+    #[must_use]
+    pub fn drawn_on(&self, path: &SheetPath) -> Self {
+        let mut drawn = self.clone();
+        if let Some(unit) = self
+            .placements
+            .iter()
+            .find(|instance| &instance.path == path)
+            .map(|instance| instance.unit)
+        {
+            drawn.unit = unit;
+        }
+        drawn
+    }
+
     /// The reference designator for one sheet path.
     ///
     /// The cached `Reference` field holds the value for whichever sheet was

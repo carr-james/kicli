@@ -3,6 +3,7 @@ project healthy
   root       healthy.kicad_sch
   kicad-cli  not found
   alias      ADDR = A0 A1
+  nets       0
 
 sheets 2
   page 1  symbols 0  power 0  file healthy.kicad_sch  path /00000000-0000-4000-8000-050000000000
@@ -11,6 +12,3 @@ sheets 2
 files 2
   healthy.kicad_sch  stamp 20260306  layout normal  canonical yes
   stage.kicad_sch  stamp 20260306  layout normal  canonical yes
-
-not covered
-  net count: kicli does not extract nets in this build

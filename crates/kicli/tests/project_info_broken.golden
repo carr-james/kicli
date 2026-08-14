@@ -3,6 +3,7 @@ project broken
   root       broken.kicad_sch
   kicad-cli  not found
   faults     1, which project check names one by one
+  nets       0
 
 sheets 3
   page 1  symbols 0  power 0  file broken.kicad_sch  path /00000000-0000-4000-8000-070000000000
@@ -13,6 +14,3 @@ files 3
   broken.kicad_sch  stamp 20260306  layout normal  canonical yes
   future.kicad_sch  stamp 20260803  layout normal  canonical yes
   commented.kicad_sch  stamp 20260306  layout normal  canonical no
-
-not covered
-  net count: kicli does not extract nets in this build

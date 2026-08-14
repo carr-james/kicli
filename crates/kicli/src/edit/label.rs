@@ -22,7 +22,7 @@ use crate::connectivity::{Net, NetPin, Nets, extract};
 use crate::edit::text::{fresh_uuid, insertion_index};
 use crate::geometry::{Angle, Iu, Point, resolve_pins};
 use crate::model::hierarchy::{Hierarchy, LoadError};
-use crate::model::items::{Item, LabelKind, ReadError, Schematic, Uuid};
+use crate::model::items::{Item, LabelKind, ReadError, Schematic, Symbol, Uuid};
 use crate::model::library::{definition_of, read_library};
 use crate::model::mutate::{Mutation, MutationError, Target, commit, state_before};
 use crate::model::version::FormatVersion;
@@ -550,13 +550,24 @@ fn blocker_at(
 }
 
 /// Is a symbol pin at a point?
+///
+/// Every unit the symbol is placed as is asked, not only the one cached beside
+/// the `lib_id`. A sheet placed twice draws a different unit on each placement,
+/// and a pin of either sits at its own point in this one file.
 fn pin_at(doc: &Doc, schematic: &Schematic, at: Point) -> bool {
     let library = read_library(doc, &schematic.library_symbols, schematic.version);
     schematic.symbols().any(|symbol| {
         definition_of(&library, symbol).is_some_and(|definition| {
-            resolve_pins(symbol, definition)
+            let drawn: Vec<Symbol> = symbol
+                .placements
                 .iter()
-                .any(|pin| pin.position == at)
+                .map(|placement| symbol.drawn_on(&placement.path))
+                .collect();
+            std::iter::once(symbol).chain(drawn.iter()).any(|drawn| {
+                resolve_pins(drawn, definition)
+                    .iter()
+                    .any(|pin| pin.position == at)
+            })
         })
     })
 }

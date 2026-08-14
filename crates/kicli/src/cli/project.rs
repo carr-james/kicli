@@ -9,13 +9,18 @@ use super::exit::ExitCode;
 use super::locate::Loaded;
 use super::output::{Failure, Report, Reporter};
 use super::tools::{ToolStatus, probe};
+use crate::connectivity::{Nets, extract};
 use crate::model::{Placement, SheetPath};
 use kicli_sexpr::{Doc, FormatMode};
 use serde_json::{Value, json};
 use std::fmt::Write as _;
 
 /// What kicli does not answer yet, named rather than passed over in silence.
-const NOT_COVERED: &[&str] = &["net count: kicli does not extract nets in this build"];
+///
+/// The net count left this list when the extractor landed. An empty list is
+/// printed as no section at all, rather than as a heading with nothing under
+/// it, so a reader is never told there is a gap when there is none.
+const NOT_COVERED: &[&str] = &[];
 
 /// One sheet placement, as the report names it.
 struct SheetRecord {
@@ -59,9 +64,13 @@ pub fn info(global: &Global, reporter: &Reporter) -> Result<Report, Failure> {
     let files = file_records(&loaded, &wanted);
     let status = probe(reporter, &loaded.config);
 
+    // The extractor answers this now, so the report says how many nets the
+    // drawing has rather than that kicli cannot tell.
+    let nets = extract(&loaded.hierarchy);
+
     Ok(Report {
-        text: as_text(&loaded, &sheets, &files, &status),
-        json: as_json(&loaded, &sheets, &files, &status),
+        text: as_text(&loaded, &sheets, &files, &status, &nets),
+        json: as_json(&loaded, &sheets, &files, &status, &nets),
     })
 }
 
@@ -179,6 +188,7 @@ fn as_text(
     sheets: &[SheetRecord],
     files: &[FileRecord],
     status: &ToolStatus,
+    nets: &Nets,
 ) -> String {
     let mut text = String::new();
 
@@ -205,6 +215,8 @@ fn as_text(
     for alias in bus_aliases(loaded) {
         let _ = writeln!(text, "  alias      {} = {}", alias.0, alias.1.join(" "));
     }
+
+    write_nets(&mut text, nets);
 
     let _ = writeln!(text, "\nsheets {}", sheets.len());
     for sheet in sheets {
@@ -233,11 +245,30 @@ fn as_text(
         );
     }
 
-    let _ = writeln!(text, "\nnot covered");
-    for item in NOT_COVERED {
-        let _ = writeln!(text, "  {item}");
+    if !NOT_COVERED.is_empty() {
+        let _ = writeln!(text, "\nnot covered");
+        for item in NOT_COVERED {
+            let _ = writeln!(text, "  {item}");
+        }
     }
     text
+}
+
+/// Write the net count, and any warning that qualifies it.
+///
+/// A warning belongs beside the count it is about, not in a section of its own
+/// at the end where a reader who has the number already has stopped.
+fn write_nets(text: &mut String, nets: &Nets) {
+    let _ = writeln!(text, "  nets       {}", nets.nets().len());
+    for warning in nets.warnings() {
+        let _ = writeln!(
+            text,
+            "  warning    {} {}: {}",
+            warning.kind.code(),
+            warning.sheet.0,
+            warning.message()
+        );
+    }
 }
 
 /// The JSON form, carrying the same content.
@@ -246,6 +277,7 @@ fn as_json(
     sheets: &[SheetRecord],
     files: &[FileRecord],
     status: &ToolStatus,
+    nets: &Nets,
 ) -> Value {
     json!({
         "project": {
@@ -253,6 +285,7 @@ fn as_json(
             "file": loaded.project_file.as_ref().map(|path| loaded.shorten(path)),
             "root": loaded.shorten(&loaded.root),
             "faults": loaded.hierarchy.problems.len(),
+            "nets": nets.nets().len(),
         },
         "kicad_cli": status.to_json(),
         "bus_aliases": bus_aliases(loaded)
@@ -280,6 +313,15 @@ fn as_json(
             }))
             .collect::<Vec<Value>>(),
         "not_covered": NOT_COVERED,
+        "warnings": nets
+            .warnings()
+            .iter()
+            .map(|warning| json!({
+                "code": warning.kind.code(),
+                "sheet": warning.sheet.0,
+                "message": warning.message(),
+            }))
+            .collect::<Vec<Value>>(),
     })
 }
 

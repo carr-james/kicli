@@ -374,7 +374,10 @@ fn pin_position(
         reference: pin.reference.0.clone(),
         lib_id: symbol.lib_id.0.clone(),
     })?;
-    resolve_pins(symbol, definition)
+    // The unit is a property of the sheet path, not of the cache beside the
+    // lib_id. A sheet placed twice draws a different unit on each placement,
+    // and resolving from the cache would put the marker on the other one's pin.
+    resolve_pins(&symbol.drawn_on(sheet), definition)
         .into_iter()
         .find(|resolved| resolved.number == pin.number)
         .map(|resolved| resolved.position)
