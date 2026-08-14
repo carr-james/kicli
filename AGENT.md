@@ -18,7 +18,7 @@ closed product, use [`kicad-tools`](https://github.com/rjwalters/kicad-tools)
 ## The shape of a command
 
 ```
-kicli <noun> <verb> [flags]
+kicli <noun> <verb> [<handle>] [flags]
 ```
 
 Global flags, accepted before or after the verb:
@@ -147,8 +147,13 @@ W 15 segments, 2 junctions, 1 crossings
 |---|---|
 | `L` | A symbol: reference, x, y, angle, mirror (`x`, `y` or `-`), body size |
 | `F` | A field that has moved off the position its library gives it |
-| `T` | A label or free text: kind, text, x, y, angle |
+| `T` | A label or free text: kind, text, x, y, angle. The kind is `label`, `global`, `hier`, `netclass` or `text` |
 | `W` | The wire summary for the sheet |
+
+The three label kinds a `T` line can carry are the three `label add` writes,
+under different words: `label` is `--kind local`, `global` is `--kind global`,
+and `hier` is `--kind hierarchical`. `netclass` marks a netclass flag and `text`
+marks free text; neither is made by `label add`.
 
 `L` carries the angle and mirror exactly as the file writes them, because that
 is what you pass back to a rotate command. `F` lists a field **only** when it has
@@ -195,6 +200,18 @@ names each invariant and whether it passed, so a caller never has to assume.
 Get handles from `sch view --uuids`. Eight characters are the minimum, and they
 do not always identify: if two objects share them, kicli refuses and lists both.
 Name more of the identifier.
+
+**A positional argument is always a handle.** It names something that is already
+in the drawing, and the verb acts on that object: `sym move R12`, `field hide
+R12 --name Value`, `label delete da5aa983`, `net rename NET_A --to NET_Z`.
+Everything a command makes or sets is a named flag.
+
+A verb that makes a new object therefore takes **no** positional at all. The new
+object's own text goes in a flag: `label add --text SPY`, `text add --text
+"note"`, `sym place --lib-id Device:R`. This is why `label delete SPY` and
+`label add --text SPY` are different shapes — the first addresses a label that
+exists, the second makes one — and it is what stops a typo in a name from
+reading as a handle.
 
 ### Units, and the grid
 

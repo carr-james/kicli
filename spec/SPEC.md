@@ -404,11 +404,17 @@ KiCad name is an attribute and must never be used as an identifier.
 ```
 page <paper> <w>x<h>mm  used=<x0>,<y0>..<x1>,<y1>
 L <ref> <x> <y> <rot> <mirror|-> [<w>x<h>]   ; symbol placement, mm@0.01
-T <kind> <text> <x> <y> [<rot>]              ; labels and free text
+T <kind> <text> <x> <y> [<rot>]              ; label|global|hier|netclass|text
 F <ref>.<field> <dx> <dy> [<rot>]            ; field offsets, only when non-default
 W <n> segments, <j> junctions, <c> crossings ; summary; --wires enumerates
 B <x0>,<y0>..<x1>,<y1> <density>             ; occupancy grid (--dense)
 ```
+
+A `T` line's kind is one of five tokens: the three label kinds `label`, `global`
+and `hier`, plus `netclass` for a netclass flag and `text` for free text. The
+three label kinds are the three `label add --kind local|global|hierarchical`
+writes, and the two vocabularies use different words for them, which `AGENT.md`
+maps.
 
 Symbols carry `rot` and `mirror` verbatim (0/90/180/270 and `x`/`y`/`-`) because
 that is what the agent passes back to `kicli sym rotate`. Field positions are

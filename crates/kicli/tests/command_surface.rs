@@ -511,3 +511,83 @@ fn code_lines(text: &str) -> impl Iterator<Item = &str> {
         .map(str::trim)
         .filter(|line| !line.starts_with("//"))
 }
+
+/// The value names a positional argument may carry.
+///
+/// Each one names an object that is already in the drawing: `TARGET` and
+/// `OWNER` are handles, and `FROM` is the net name a rename starts from.
+const HANDLES: [&str; 3] = ["TARGET", "OWNER", "FROM"];
+
+/// The verbs that make a new object, which therefore address none.
+const MAKERS: [&str; 5] = [
+    "sym place",
+    "text add",
+    "label add",
+    "junction add",
+    "noconnect add",
+];
+
+/// Every positional argument of the surface, as `noun verb` and its value name.
+fn positionals(command: &clap::Command, path: &str, found: &mut Vec<(String, String)>) {
+    for sub in command.get_subcommands() {
+        let here = if path.is_empty() {
+            sub.get_name().to_owned()
+        } else {
+            format!("{path} {}", sub.get_name())
+        };
+        for argument in sub
+            .get_arguments()
+            .filter(|argument| argument.is_positional())
+        {
+            let name = argument
+                .get_value_names()
+                .and_then(|names| names.first().map(ToString::to_string))
+                .unwrap_or_else(|| argument.get_id().to_string().to_uppercase());
+            found.push((here.clone(), name));
+        }
+        positionals(sub, &here, found);
+    }
+}
+
+#[test]
+fn a_positional_argument_always_names_something_that_exists() {
+    // The rule the whole surface follows: a positional is a handle for an
+    // object already in the drawing, and everything a command makes or sets is
+    // a named flag. It is what makes `label delete NAME` and `label add
+    // --text NAME` different shapes: one addresses, the other creates.
+    let mut found = Vec::new();
+    positionals(&Cli::command(), "", &mut found);
+    assert!(
+        found.len() >= 10,
+        "the surface has positionals to check: {found:?}"
+    );
+
+    let strangers: Vec<&(String, String)> = found
+        .iter()
+        .filter(|(_, name)| !HANDLES.contains(&name.as_str()))
+        .collect();
+    assert!(
+        strangers.is_empty(),
+        "a positional must name an existing object, one of {HANDLES:?}: {strangers:?}"
+    );
+}
+
+#[test]
+fn a_verb_that_makes_an_object_takes_no_positional() {
+    // The other half of the rule, and the control for the check above: a sweep
+    // that found no positionals at all would pass it.
+    let mut found = Vec::new();
+    positionals(&Cli::command(), "", &mut found);
+    let addressing: Vec<&String> = found.iter().map(|(verb, _)| verb).collect();
+    assert!(
+        addressing.iter().any(|verb| *verb == "label delete"),
+        "the sweep reached the verbs that address an object: {addressing:?}"
+    );
+
+    for maker in MAKERS {
+        assert!(
+            !addressing.iter().any(|verb| *verb == maker),
+            "{maker} makes an object, so its name is a flag and not a positional"
+        );
+    }
+}
