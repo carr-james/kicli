@@ -4,19 +4,15 @@ use kicli::geometry::GRID;
 use kicli::model::{LAST_WRITE, Schematic, SheetPath, Target, WriteOptions, commit, state_before};
 use kicli::view::snapshot::Snapshot;
 use kicli_sexpr::Doc;
-use std::path::{Path, PathBuf};
+
+mod support;
+
+use support::scratch;
 
 const SHEET: &str = concat!(
     "(kicad_sch\n\t(version 20260306)\n\t(uuid \"root\")\n\t(paper \"A4\")\n",
     "\t(junction\n\t\t(at 25.4 25.4)\n\t\t(uuid \"j1\")\n\t)\n)\n"
 );
-
-fn scratch(name: &str) -> PathBuf {
-    let directory = Path::new(env!("CARGO_TARGET_TMPDIR")).join(name);
-    let _ = std::fs::remove_dir_all(&directory);
-    std::fs::create_dir_all(&directory).expect("the directory is made");
-    directory
-}
 
 /// Move the junction, and report it.
 fn move_junction(doc: &mut Doc, to: &str) {

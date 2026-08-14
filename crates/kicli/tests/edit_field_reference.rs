@@ -11,6 +11,8 @@ use kicli_sexpr::Doc;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
+mod support;
+
 /// The resistor of the child sheet, which the sheet's two placements name
 /// `R100` and `R200`.
 const RESISTOR: &str = "00000000-0000-4000-8000-03000000005c";
@@ -23,25 +25,9 @@ const CHANNEL_A: &str =
 const CHANNEL_B: &str =
     "/00000000-0000-4000-8000-030000000000/00000000-0000-4000-8000-03b000000001";
 
-fn fixtures() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/sch/nets")
-}
-
 /// Copy the fixture project into a scratch directory and hand back the copy.
-///
-/// A test never writes inside the committed fixture tree.
 fn scratch_copy(name: &str) -> PathBuf {
-    let directory = Path::new(env!("CARGO_TARGET_TMPDIR")).join(name);
-    let _ = std::fs::remove_dir_all(&directory);
-    std::fs::create_dir_all(&directory).expect("the scratch directory is writable");
-    for entry in std::fs::read_dir(fixtures()).expect("the fixture directory reads") {
-        let path = entry.expect("a directory entry reads").path();
-        if path.is_file() {
-            let file = path.file_name().expect("a file has a name");
-            std::fs::copy(&path, directory.join(file)).expect("the copy is writable");
-        }
-    }
-    directory
+    support::scratch_directory(name, "sch/nets")
 }
 
 fn read(path: &Path) -> Doc {

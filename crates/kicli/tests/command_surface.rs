@@ -9,6 +9,8 @@ use kicli::cli::{Cli, ExitCode};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
+mod support;
+
 /// A path no `kicad-cli` is at.
 ///
 /// Every test here points discovery at it, so a run never starts KiCad and a
@@ -115,7 +117,7 @@ fn help_lists_the_global_flags_and_hides_the_variant_flag() {
 
 #[test]
 fn the_variant_flag_is_accepted_and_says_it_does_nothing() {
-    let project = fixture("project/healthy");
+    let project = support::fixture("project/healthy");
     let project = project.to_str().expect("the path is text");
 
     let run = kicli(&["project", "info", "--variant", "assembled", "-p", project]);
@@ -258,39 +260,11 @@ fn every_mutation_noun_is_on_the_surface() {
     }
 }
 
-/// A copy of a project a test may write to, in a directory of its own.
+/// A project a test may write to, in a scratch directory of its own.
 fn scratch_project(name: &str, files: &[(&str, &str)]) -> PathBuf {
-    let directory = Path::new(env!("CARGO_TARGET_TMPDIR")).join(name);
-    let _ = std::fs::remove_dir_all(&directory);
-    std::fs::create_dir_all(&directory).expect("the scratch directory is made");
+    let directory = support::scratch(name);
     for (file, source) in files {
         std::fs::write(directory.join(file), source).expect("the sheet is written");
-    }
-    directory
-}
-
-/// A scratch directory holding one copy of one fixture file.
-fn scratch_file(name: &str, relative: &str) -> PathBuf {
-    let from = fixture(relative);
-    let directory = Path::new(env!("CARGO_TARGET_TMPDIR")).join(name);
-    let _ = std::fs::remove_dir_all(&directory);
-    std::fs::create_dir_all(&directory).expect("the scratch directory is made");
-    let file = from.file_name().expect("a fixture file has a name");
-    std::fs::copy(&from, directory.join(file)).expect("the copy is written");
-    directory
-}
-
-/// A copy of one of this crate's fixture directories.
-fn scratch_copy(name: &str, relative: &str) -> PathBuf {
-    let directory = Path::new(env!("CARGO_TARGET_TMPDIR")).join(name);
-    let _ = std::fs::remove_dir_all(&directory);
-    std::fs::create_dir_all(&directory).expect("the scratch directory is made");
-    for entry in std::fs::read_dir(fixture(relative)).expect("the fixture directory reads") {
-        let path = entry.expect("a directory entry reads").path();
-        if path.is_file() {
-            let file = path.file_name().expect("a file has a name");
-            std::fs::copy(&path, directory.join(file)).expect("the copy is written");
-        }
     }
     directory
 }
@@ -321,7 +295,7 @@ const OFF_GRID: &str = concat!(
 /// case for each of the other rows a mutation can end on.
 #[test]
 fn every_refusal_exits_with_the_code_its_row_names() {
-    let nets = scratch_copy("surface_refusals_nets", "sch/nets");
+    let nets = support::scratch_directory("surface_refusals_nets", "sch/nets");
     let crossroads = scratch_project(
         "surface_refusals_crossroads",
         &[("board.kicad_sch", CROSSROADS)],
@@ -330,7 +304,8 @@ fn every_refusal_exits_with_the_code_its_row_names() {
         "surface_refusals_off_grid",
         &[("board.kicad_sch", OFF_GRID)],
     );
-    let future = scratch_file("surface_refusals_future", "sch/future_version.kicad_sch");
+    let future = support::scratch("surface_refusals_future");
+    support::copy_file(&future, "sch/future_version.kicad_sch");
 
     let cases: [(&str, &Path, Vec<&str>, ExitCode); 8] = [
         (
@@ -440,7 +415,7 @@ fn a_refusal_in_json_names_its_row_of_the_table() {
 /// A mutation reports the invariants it ran, in both forms.
 #[test]
 fn a_mutation_reports_the_invariants_it_ran() {
-    let project = scratch_copy("surface_mutation_report", "sch/nets");
+    let project = support::scratch_directory("surface_mutation_report", "sch/nets");
     let path = project.to_str().expect("the path is text");
 
     let run = kicli(&[
@@ -506,13 +481,6 @@ fn files_of(directory: &Path) -> Vec<(String, Vec<u8>)> {
         .collect();
     found.sort();
     found
-}
-
-/// One of this crate's fixture directories.
-fn fixture(relative: &str) -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures")
-        .join(relative)
 }
 
 /// Every Rust source file under a directory.

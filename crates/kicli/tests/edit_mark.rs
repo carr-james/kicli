@@ -9,6 +9,10 @@ use kicli::geometry::{GRID, Point};
 use kicli::model::{Hierarchy, Refdes, SheetPath, Target, Uuid, WriteOptions};
 use std::path::{Path, PathBuf};
 
+mod support;
+
+use support::scratch;
+
 /// The root sheet of the connectivity fixture.
 const NETS_ROOT: &str = "00000000-0000-4000-8000-030000000000";
 
@@ -16,25 +20,9 @@ const NETS_ROOT: &str = "00000000-0000-4000-8000-030000000000";
 /// R11 pin 1 at its middle, and no junction to join them.
 const MID_SPAN: Point = Point::new(381_000, 889_000);
 
-fn scratch(name: &str) -> PathBuf {
-    let directory = Path::new(env!("CARGO_TARGET_TMPDIR")).join(name);
-    let _ = std::fs::remove_dir_all(&directory);
-    std::fs::create_dir_all(&directory).expect("the scratch directory is made");
-    directory
-}
-
 /// Copy the connectivity fixture into a scratch directory, and name its root.
 fn nets_project(name: &str) -> PathBuf {
-    let from = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/sch/nets");
-    let into = scratch(name);
-    for entry in std::fs::read_dir(&from).expect("the fixture directory reads") {
-        let path = entry.expect("a directory entry reads").path();
-        if path.is_file() {
-            let name = path.file_name().expect("a file has a name");
-            std::fs::copy(&path, into.join(name)).expect("the copy is writable");
-        }
-    }
-    into.join("nets.kicad_sch")
+    support::scratch_directory(name, "sch/nets").join("nets.kicad_sch")
 }
 
 /// A schematic whose only objects are four wire ends meeting at one point.

@@ -11,6 +11,8 @@ use kicli_sexpr::Doc;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
+mod support;
+
 /// The objects of the fixture that own fields, one field each.
 const OWNERS: [(&str, &str, &str); 4] = [
     ("symbol", "00000000-0000-4000-8000-000000000020", "Value"),
@@ -40,15 +42,7 @@ const LEGACY_SYMBOL: &str = "00000000-0000-4000-8000-0000000000e1";
 ///
 /// A test never writes inside the committed fixture tree.
 fn scratch_copy(name: &str, fixture: &str) -> PathBuf {
-    let directory = Path::new(env!("CARGO_TARGET_TMPDIR")).join(name);
-    let _ = std::fs::remove_dir_all(&directory);
-    std::fs::create_dir_all(&directory).expect("the scratch directory is writable");
-    let from = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/sch")
-        .join(fixture);
-    let copy = directory.join(fixture);
-    std::fs::copy(from, &copy).expect("the copy is writable");
-    copy
+    support::scratch_file(name, &format!("sch/{fixture}"))
 }
 
 fn read(path: &Path) -> Doc {

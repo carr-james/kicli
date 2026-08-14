@@ -12,6 +12,8 @@ use kicli::model::{Schematic, SheetPath, Target, Uuid, WriteOptions};
 use kicli_sexpr::Doc;
 use std::path::{Path, PathBuf};
 
+mod support;
+
 /// The global label of the fixture, which owns an `Intersheetrefs` field and
 /// carries the autoplace flag.
 const GLOBAL_LABEL: &str = "00000000-0000-4000-8000-00000000001b";
@@ -23,17 +25,8 @@ const INTERSHEET: &str = "Intersheetrefs";
 const ROOT: &str = "/00000000-0000-4000-8000-000000000002";
 
 /// Copy the fixture into a scratch directory and hand back the copy.
-///
-/// A test never writes inside the committed fixture tree.
 fn scratch_copy(name: &str) -> PathBuf {
-    let directory = Path::new(env!("CARGO_TARGET_TMPDIR")).join(name);
-    let _ = std::fs::remove_dir_all(&directory);
-    std::fs::create_dir_all(&directory).expect("the scratch directory is writable");
-    let fixture =
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/sch/item_zoo.kicad_sch");
-    let copy = directory.join("item_zoo.kicad_sch");
-    std::fs::copy(fixture, &copy).expect("the copy is writable");
-    copy
+    support::scratch_file(name, "sch/item_zoo.kicad_sch")
 }
 
 fn read(path: &Path) -> Doc {

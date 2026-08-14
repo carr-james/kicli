@@ -7,7 +7,9 @@ use kicli::edit::text::{self, NewText};
 use kicli::geometry::{Angle, GRID, Point, Size};
 use kicli::model::{Item, Schematic, SheetPath, Target, WriteOptions};
 use kicli_sexpr::Doc;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
+
+mod support;
 
 /// A sheet with one text item already on it, so the file is not empty.
 const SHEET: &str = concat!(
@@ -45,9 +47,7 @@ struct Sheet {
 impl Sheet {
     /// Write the sheet into its own scratch directory, in canonical form.
     fn new(name: &str) -> Self {
-        let project = Path::new(env!("CARGO_TARGET_TMPDIR")).join(name);
-        let _ = std::fs::remove_dir_all(&project);
-        std::fs::create_dir_all(&project).expect("the scratch directory is made");
+        let project = support::scratch(name);
         let file = project.join("sheet.kicad_sch");
         let canonical = Doc::parse(SHEET).expect("the sheet parses").emit();
         std::fs::write(&file, &canonical).expect("the sheet is written");

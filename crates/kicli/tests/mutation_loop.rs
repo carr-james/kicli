@@ -12,8 +12,10 @@
 use kicli_sexpr::Doc;
 use serde_json::Value;
 use std::collections::BTreeSet;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::{Command, Output, Stdio};
+
+mod support;
 
 /// A path no `kicad-cli` is at.
 ///
@@ -42,17 +44,7 @@ struct Project {
 impl Project {
     /// Copy the committed fixture into a scratch directory of its own.
     fn new(name: &str) -> Self {
-        let from = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/sch/nets");
-        let directory = Path::new(env!("CARGO_TARGET_TMPDIR")).join(name);
-        let _ = std::fs::remove_dir_all(&directory);
-        std::fs::create_dir_all(&directory).expect("the scratch directory is made");
-        for entry in std::fs::read_dir(&from).expect("the fixture reads") {
-            let path = entry.expect("a directory entry reads").path();
-            if path.is_file() {
-                let file = path.file_name().expect("a file has a name");
-                std::fs::copy(&path, directory.join(file)).expect("the copy is written");
-            }
-        }
+        let directory = support::scratch_directory(name, "sch/nets");
         Self {
             root: directory.join("nets.kicad_sch"),
             directory,

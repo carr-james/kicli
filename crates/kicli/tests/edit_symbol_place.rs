@@ -7,7 +7,7 @@
 //! is set, so the default run needs no KiCad install.
 
 use std::collections::BTreeSet;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::{Command, Stdio};
 
 use kicli::edit::symbol::{Instance, Options, Placement, delete_symbol, place_symbol};
@@ -17,6 +17,10 @@ use kicli::model::{
     commit, definition_of, read_library, state_before,
 };
 use kicli_sexpr::Doc;
+
+mod support;
+
+use support::{copy_file, scratch};
 
 /// A two-pin part, as a library file writes it.
 ///
@@ -45,25 +49,6 @@ const PLACED: &str = concat!(
     "      (number \"2\" (effects (font (size 1.27 1.27))))))\n",
     "  (embedded_fonts no))\n"
 );
-
-/// A scratch directory of its own for one test.
-fn scratch(name: &str) -> PathBuf {
-    let directory = Path::new(env!("CARGO_TARGET_TMPDIR")).join(name);
-    let _ = std::fs::remove_dir_all(&directory);
-    std::fs::create_dir_all(&directory).expect("the scratch directory is made");
-    directory
-}
-
-/// Copy one committed fixture into a scratch directory.
-fn copy_fixture(into: &Path, relative: &str) -> PathBuf {
-    let from = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures")
-        .join(relative);
-    let name = from.file_name().expect("a fixture file has a name");
-    let to = into.join(name);
-    std::fs::copy(&from, &to).expect("the fixture copies");
-    to
-}
 
 /// Read a schematic file into a tree and the objects read from it.
 fn read(file: &Path) -> (Doc, Schematic) {
@@ -127,7 +112,7 @@ fn request<'a>(lib_id: &'a LibId, at: Point, instances: &'a [Instance]) -> Place
 #[test]
 fn a_placed_symbol_carries_its_definition() {
     let project = scratch("edit_symbol_place");
-    let file = copy_fixture(&project, "geometry/asymmetric.kicad_sch");
+    let file = copy_file(&project, "geometry/asymmetric.kicad_sch");
 
     let (mut doc, schematic) = read(&file);
     assert!(
@@ -208,8 +193,8 @@ fn a_placed_symbol_carries_its_definition() {
 #[test]
 fn a_placement_on_a_twice_placed_sheet_gets_two_references() {
     let project = scratch("edit_symbol_two_paths");
-    let root_file = copy_fixture(&project, "sch/multi_instance/multi_instance.kicad_sch");
-    let file = copy_fixture(&project, "sch/multi_instance/channel.kicad_sch");
+    let root_file = copy_file(&project, "sch/multi_instance/multi_instance.kicad_sch");
+    let file = copy_file(&project, "sch/multi_instance/channel.kicad_sch");
 
     let hierarchy = Hierarchy::load(&root_file).expect("the hierarchy loads");
     let child = hierarchy
@@ -279,7 +264,7 @@ fn a_placement_on_a_twice_placed_sheet_gets_two_references() {
 #[test]
 fn a_deleted_symbol_leaves_no_trace() {
     let project = scratch("edit_symbol_delete");
-    let file = copy_fixture(&project, "geometry/asymmetric.kicad_sch");
+    let file = copy_file(&project, "geometry/asymmetric.kicad_sch");
 
     let (mut doc, schematic) = read(&file);
     let symbol = symbol_of(&schematic, "A1");
@@ -316,7 +301,7 @@ fn a_deleted_symbol_leaves_no_trace() {
     );
 
     // The last placement takes the definition with it.
-    let file = copy_fixture(&project, "sch/multi_instance/channel.kicad_sch");
+    let file = copy_file(&project, "sch/multi_instance/channel.kicad_sch");
     let (mut doc, schematic) = read(&file);
     let only = symbol_of(&schematic, "R201");
     delete_symbol(&mut doc, &schematic, only).expect("the symbol goes");
@@ -422,7 +407,7 @@ fn kicad_reads_what_place_wrote() {
         return;
     };
     let project = scratch("edit_symbol_place_oracle");
-    let file = copy_fixture(&project, "geometry/asymmetric.kicad_sch");
+    let file = copy_file(&project, "geometry/asymmetric.kicad_sch");
     let before = violation_kinds(&rule_check(&binary, &file));
 
     let (mut doc, schematic) = read(&file);

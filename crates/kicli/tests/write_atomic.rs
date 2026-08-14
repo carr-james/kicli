@@ -2,16 +2,13 @@
 
 use kicli::model::{Sink, WriteError, WriteOptions, write_document, write_document_with};
 use kicli_sexpr::Doc;
+
+mod support;
+
 use std::path::{Path, PathBuf};
+use support::scratch;
 
 const SHEET: &str = "(kicad_sch\n\t(version 20260306)\n\t(paper \"A4\")\n)\n";
-
-fn scratch(name: &str) -> PathBuf {
-    let directory = Path::new(env!("CARGO_TARGET_TMPDIR")).join(name);
-    let _ = std::fs::remove_dir_all(&directory);
-    std::fs::create_dir_all(&directory).expect("the directory is made");
-    directory
-}
 
 fn temporary_of(target: &Path) -> PathBuf {
     let name = target

@@ -7,7 +7,7 @@
 //! is set, so the default run needs no KiCad install.
 
 use std::collections::BTreeMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::{Command, Stdio};
 
 use kicli::edit::symbol::{
@@ -21,24 +21,9 @@ use kicli::model::{
 use kicli::view::snapshot::Snapshot;
 use kicli_sexpr::{Doc, changed_line_count};
 
-/// A scratch directory of its own for one test.
-fn scratch(name: &str) -> PathBuf {
-    let directory = Path::new(env!("CARGO_TARGET_TMPDIR")).join(name);
-    let _ = std::fs::remove_dir_all(&directory);
-    std::fs::create_dir_all(&directory).expect("the scratch directory is made");
-    directory
-}
+mod support;
 
-/// Copy one committed fixture into a scratch directory.
-fn copy_fixture(into: &Path, relative: &str) -> PathBuf {
-    let from = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures")
-        .join(relative);
-    let name = from.file_name().expect("a fixture file has a name");
-    let to = into.join(name);
-    std::fs::copy(&from, &to).expect("the fixture copies");
-    to
-}
+use support::{copy_file, scratch};
 
 /// Read a schematic file into a tree and the objects read from it.
 fn read(file: &Path) -> (Doc, Schematic) {
@@ -121,7 +106,7 @@ fn field_angles(symbol: &Symbol) -> BTreeMap<String, Angle> {
 #[test]
 fn a_moved_symbol_takes_its_fields_with_it() {
     let project = scratch("edit_symbol_move");
-    let file = copy_fixture(&project, "sch/multi_instance/channel.kicad_sch");
+    let file = copy_file(&project, "sch/multi_instance/channel.kicad_sch");
 
     let (mut doc, schematic) = read(&file);
     let symbol = symbol_of(&schematic, "R201");
@@ -194,7 +179,7 @@ fn a_moved_symbol_takes_its_fields_with_it() {
 #[test]
 fn kept_field_positions_stay_where_they_were() {
     let project = scratch("edit_symbol_keep_fields");
-    let file = copy_fixture(&project, "sch/multi_instance/channel.kicad_sch");
+    let file = copy_file(&project, "sch/multi_instance/channel.kicad_sch");
 
     let (mut doc, schematic) = read(&file);
     let symbol = symbol_of(&schematic, "R201");
@@ -290,7 +275,7 @@ fn turning_a_symbol_clears_the_autoplace_flag() {
 #[test]
 fn a_placement_lands_on_the_grid() {
     let project = scratch("edit_symbol_grid");
-    let file = copy_fixture(&project, "sch/multi_instance/channel.kicad_sch");
+    let file = copy_file(&project, "sch/multi_instance/channel.kicad_sch");
 
     // Half a grid step past a grid line, on both axes. Halves round away from
     // zero, so the snap goes to the further line.
@@ -321,7 +306,7 @@ fn a_placement_lands_on_the_grid() {
     assert_eq!(symbol_of(&moved, "R201").at, snapped);
 
     // The override places the symbol exactly, and is itself a finding.
-    let file = copy_fixture(&project, "sch/multi_instance/channel.kicad_sch");
+    let file = copy_file(&project, "sch/multi_instance/channel.kicad_sch");
     let (mut doc, schematic) = read(&file);
     let symbol = symbol_of(&schematic, "R201");
     let options = Options {
@@ -348,7 +333,7 @@ fn a_placement_lands_on_the_grid() {
 #[test]
 fn a_mirror_reflects_the_pins_about_the_anchor() {
     let project = scratch("edit_symbol_mirror");
-    let file = copy_fixture(&project, "geometry/asymmetric.kicad_sch");
+    let file = copy_file(&project, "geometry/asymmetric.kicad_sch");
 
     let (mut doc, schematic) = read(&file);
     let symbol = symbol_of(&schematic, "A1");
@@ -385,7 +370,7 @@ fn a_symbol_command_changes_only_its_own_lines() {
     let project = scratch("edit_symbol_locality");
 
     for name in ["move", "rotate", "mirror", "delete"] {
-        let file = copy_fixture(&project, "geometry/asymmetric.kicad_sch");
+        let file = copy_file(&project, "geometry/asymmetric.kicad_sch");
         let before = std::fs::read_to_string(&file).expect("the fixture reads");
         let (mut doc, schematic) = read(&file);
         let symbol = symbol_of(&schematic, "A1");
@@ -546,7 +531,7 @@ fn a_rotated_symbol_is_where_kicad_draws_it() {
         return;
     };
     let project = scratch("edit_symbol_oracle");
-    let file = copy_fixture(&project, "geometry/asymmetric.kicad_sch");
+    let file = copy_file(&project, "geometry/asymmetric.kicad_sch");
 
     let (mut doc, schematic) = read(&file);
     let turned = symbol_of(&schematic, "A1");
