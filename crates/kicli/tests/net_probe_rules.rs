@@ -616,13 +616,25 @@ fn a_bundle_carries_its_members_to_every_sheet_it_reaches() {
 /// hierarchical label puts the bundle on the port above, and each member is a
 /// named wire joined to the bundle by a bus entry.
 fn bundled_members(probe: &mut Probe, bundle: &str, members: &[(&str, &str)]) {
-    probe.bus(("127", "20.32"), ("127", "101.6"));
-    probe.label_of_kind(
+    bundled_members_named(
+        probe,
         "hierarchical_label",
         "(shape input)",
         bundle,
-        ("127", "20.32"),
+        members,
     );
+}
+
+/// The same, with the bundle named by a label of the kind asked for.
+fn bundled_members_named(
+    probe: &mut Probe,
+    head: &str,
+    shape: &str,
+    bundle: &str,
+    members: &[(&str, &str)],
+) {
+    probe.bus(("127", "20.32"), ("127", "101.6"));
+    probe.label_of_kind(head, shape, bundle, ("127", "20.32"));
     for (index, (reference, member)) in members.iter().enumerate() {
         let wire_y = format!("{}", 38.1 + 12.7 * index as f64);
         let anchor_y = format!("{}", 41.91 + 12.7 * index as f64);
@@ -700,6 +712,77 @@ fn two_vector_bundles_on_one_bus_join_by_place_and_not_by_index() {
     assert!(found.contains(&net(&["R1.1", "R4.1"])));
     assert!(found.contains(&net(&["R2.1", "R5.1"])));
     assert!(found.contains(&net(&["R3.1"])));
+}
+
+#[test]
+fn two_bundles_in_one_scope_share_the_members_they_both_name() {
+    let mut probe = Probe::new("bundle-scope");
+    let first = "00000000-0000-4000-8000-cccccccccc01";
+    let second = "00000000-0000-4000-8000-cccccccccc02";
+    let mut left = Probe::named_child_of(&probe, "child1", first, 2);
+    let mut right = Probe::named_child_of(&probe, "child2", second, 3);
+
+    // Two bundles of one base name and two ranges. Each leaves the root sheet
+    // on a bus of its own, and the two buses never touch. The label on each
+    // bus is local, so the root sheet is the scope of both.
+    probe.sheet_named(first, "child1", "DQ[0..2]", ("101.6", "50.8"), "0");
+    probe.bus(("101.6", "50.8"), ("152.4", "50.8"));
+    probe.label_of_kind("label", "", "DQ[0..2]", ("152.4", "50.8"));
+    probe.sheet_named(second, "child2", "DQ[0..1]", ("101.6", "152.4"), "0");
+    probe.bus(("101.6", "152.4"), ("152.4", "152.4"));
+    probe.label_of_kind("label", "", "DQ[0..1]", ("152.4", "152.4"));
+
+    bundled_members(
+        &mut left,
+        "DQ[0..2]",
+        &[("R1", "DQ0"), ("R2", "DQ1"), ("R3", "DQ2")],
+    );
+    bundled_members(&mut right, "DQ[0..1]", &[("R4", "DQ0"), ("R5", "DQ1")]);
+
+    let found = probe.partition_with(&[&left, &right]);
+    // The members both bundles name are one net each, though no bus joins the
+    // two bundles and the members are drawn on different sheets.
+    assert!(found.contains(&net(&["R1.1", "R4.1"])));
+    assert!(found.contains(&net(&["R2.1", "R5.1"])));
+    // The member only one bundle names keeps a net of its own. This is the
+    // control: it fails if the two bundles have collapsed into one.
+    assert!(found.contains(&net(&["R3.1"])));
+}
+
+#[test]
+fn two_bundles_in_different_scopes_keep_their_members_apart() {
+    let mut probe = Probe::new("bundle-scopes-apart");
+    let first = "00000000-0000-4000-8000-cccccccccc01";
+    let second = "00000000-0000-4000-8000-cccccccccc02";
+    let mut left = Probe::named_child_of(&probe, "child1", first, 2);
+    let mut right = Probe::named_child_of(&probe, "child2", second, 3);
+
+    // The same bundle name, drawn on two child sheets and nowhere else. The
+    // ports carry a name no sheet uses, so nothing joins the two bundles.
+    probe.sheet_named(first, "child1", "UNUSED1", ("101.6", "50.8"), "0");
+    probe.sheet_named(second, "child2", "UNUSED2", ("101.6", "152.4"), "0");
+
+    bundled_members_named(
+        &mut left,
+        "label",
+        "",
+        "DQ[0..1]",
+        &[("R1", "DQ0"), ("R2", "DQ1")],
+    );
+    bundled_members_named(
+        &mut right,
+        "label",
+        "",
+        "DQ[0..1]",
+        &[("R3", "DQ0"), ("R4", "DQ1")],
+    );
+
+    let found = probe.partition_with(&[&left, &right]);
+    // Each sheet is its own scope, so an equal member name is two nets.
+    assert!(found.contains(&net(&["R1.1"])));
+    assert!(found.contains(&net(&["R2.1"])));
+    assert!(found.contains(&net(&["R3.1"])));
+    assert!(found.contains(&net(&["R4.1"])));
 }
 
 #[test]

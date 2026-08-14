@@ -479,25 +479,81 @@ impl Graph {
     /// rather than by name, so `UART.RX` and `UART_TRG.RX` land in one group
     /// and join. `CONNECTION_GRAPH::matchBusMember` decides the
     /// correspondence, and [`Correspondence`] records what it measures.
+    ///
+    /// A bundle names its members in the scope of its own driver, not of the
+    /// sheet each member is drawn on. Two bundles that share a scope therefore
+    /// share every member whose name they both carry, though no bus joins
+    /// them: `DQ[0..31]` and `DQ[0..15]` driven on one sheet have one `DQ0`
+    /// between them. Two bundles of equal name in different scopes keep their
+    /// members apart.
     fn merge_bus_members(&mut self, rules: MergeRules) {
-        let mut carried: BTreeMap<usize, BTreeMap<Correspondence, BTreeSet<String>>> =
-            BTreeMap::new();
-        let mut reaches: BTreeMap<usize, BTreeSet<usize>> = BTreeMap::new();
-        for index in self.nodes_where(|node| node.carrier == Carrier::Bus) {
-            let (sheet, name) = (self.nodes[index].sheet, name_of(&self.nodes[index]));
-            let class = self.class_of(index);
-            reaches.entry(class).or_default().insert(sheet);
-            if let Some(name) = name {
-                let by_key = carried.entry(class).or_default();
-                for member in bus_members_of(&name) {
-                    by_key
-                        .entry(member.corresponds)
-                        .or_default()
-                        .insert(net_name(&member.name));
+        let buses = self.read_buses();
+        let by_place = self.nets_by_place(rules);
+
+        // One group per correspondence within a bus, and one per member name
+        // within a scope. A member joins through either.
+        let mut groups = Vec::new();
+        let mut by_scope: BTreeMap<(String, String), Vec<usize>> = BTreeMap::new();
+        for bus in buses.values() {
+            // The driver that names the bus names its members too. A member of
+            // any other bundle on that bus is an alias of the corresponding
+            // one, so it is filed under the driver's name and not its own.
+            let named = bus.names_of_driver();
+            for (corresponds, members) in &bus.carried {
+                let group: Vec<usize> = members
+                    .iter()
+                    .flat_map(|member| {
+                        bus.reaches
+                            .iter()
+                            .filter_map(|&sheet| by_place.get(&(sheet, member.clone())))
+                            .flatten()
+                            .copied()
+                    })
+                    .collect();
+                if let Some((_, _, scope, _)) = &bus.driver {
+                    let canonical = named.get(corresponds).or_else(|| members.iter().next());
+                    if let Some(canonical) = canonical {
+                        by_scope
+                            .entry((scope.clone(), canonical.clone()))
+                            .or_default()
+                            .extend(&group);
+                    }
+                }
+                if group.len() > 1 {
+                    groups.push(group);
                 }
             }
         }
+        groups.extend(by_scope.into_values().filter(|group| group.len() > 1));
+        self.union_each(&groups);
+    }
 
+    /// What each bus of the graph carries, reaches, and is named by.
+    fn read_buses(&mut self) -> BTreeMap<usize, Bus> {
+        let mut buses: BTreeMap<usize, Bus> = BTreeMap::new();
+        for index in self.nodes_where(|node| node.carrier == Carrier::Bus) {
+            let (sheet, name) = (self.nodes[index].sheet, name_of(&self.nodes[index]));
+            let ranked = self.rank_of_driver(index);
+            let bus = buses.entry(self.class_of(index)).or_default();
+            bus.reaches.insert(sheet);
+            let Some(name) = name else { continue };
+            if let Some(candidate) = ranked {
+                if bus.driver.as_ref().is_none_or(|best| candidate < *best) {
+                    bus.driver = Some(candidate);
+                }
+            }
+            for member in bus_members_of(&name) {
+                bus.carried
+                    .entry(member.corresponds)
+                    .or_default()
+                    .insert(net_name(&member.name));
+            }
+        }
+        buses
+    }
+
+    /// Every net-naming item of the graph, by the sheet and name it offers.
+    fn nets_by_place(&mut self, rules: MergeRules) -> BTreeMap<(usize, String), Vec<usize>> {
         let mut by_place: BTreeMap<(usize, String), Vec<usize>> = BTreeMap::new();
         for named in self.naming_items(rules) {
             if self.nodes[named.node].carrier == Carrier::Net {
@@ -507,27 +563,38 @@ impl Graph {
                     .push(named.node);
             }
         }
+        by_place
+    }
 
-        let mut groups = Vec::new();
-        for (class, by_key) in carried {
-            let Some(sheets) = reaches.get(&class) else {
-                continue;
-            };
-            for members in by_key.into_values() {
-                let mut group = Vec::new();
-                for member in members {
-                    for &sheet in sheets {
-                        if let Some(nodes) = by_place.get(&(sheet, member.clone())) {
-                            group.extend(nodes);
-                        }
-                    }
-                }
-                if group.len() > 1 {
-                    groups.push(group);
-                }
-            }
-        }
-        self.union_each(&groups);
+    /// How strong a driver one bus item is, and the scope it would name in.
+    ///
+    /// The answer is `(priority, qualified name, scope)`, which orders exactly
+    /// as KiCad chooses a driver: by priority first, then by the name itself.
+    /// The scope is the sheet the driver is drawn on, written the way KiCad
+    /// prefixes a net name; a global label names in no sheet at all, so its
+    /// scope is empty. The priority order is `CONNECTION_SUBGRAPH::PRIORITY`,
+    /// which [`super::names`] follows for net names.
+    fn rank_of_driver(&self, index: usize) -> Option<(u8, String, String, String)> {
+        let node = &self.nodes[index];
+        let text = name_of(node)?;
+        let sheet = || self.sheets[node.sheet].human.clone();
+        let (rank, scope) = match &node.kind {
+            NodeKind::Label {
+                kind: LabelKind::Global,
+                ..
+            } => (0, String::new()),
+            NodeKind::Label {
+                kind: LabelKind::Local,
+                ..
+            } => (1, sheet()),
+            NodeKind::Label {
+                kind: LabelKind::Hierarchical,
+                ..
+            } => (2, sheet()),
+            NodeKind::SheetPin { .. } => (3, sheet()),
+            _ => return None,
+        };
+        Some((rank, format!("{scope}{}", net_name(&text)), scope, text))
     }
 
     /// Rule 4, the hierarchy half: a hierarchical label meets the pin above it.
@@ -678,6 +745,30 @@ fn name_of(node: &Node) -> Option<String> {
         NodeKind::Label { text, .. } => Some(text.clone()),
         NodeKind::SheetPin { name, .. } => Some(name.clone()),
         _ => None,
+    }
+}
+
+/// One bus of the graph: what it carries, where it reaches, what names it.
+#[derive(Default)]
+struct Bus {
+    /// The member net names it carries, by what they correspond to.
+    carried: BTreeMap<Correspondence, BTreeSet<String>>,
+    /// The sheets its items are drawn on.
+    reaches: BTreeSet<usize>,
+    /// Its strongest driver, as [`Graph::rank_of_driver`] reports one.
+    driver: Option<(u8, String, String, String)>,
+}
+
+impl Bus {
+    /// The member name the driver gives each correspondence.
+    fn names_of_driver(&self) -> BTreeMap<Correspondence, String> {
+        let Some((_, _, _, text)) = &self.driver else {
+            return BTreeMap::new();
+        };
+        bus_members_of(text)
+            .into_iter()
+            .map(|member| (member.corresponds, net_name(&member.name)))
+            .collect()
     }
 }
 

@@ -90,6 +90,17 @@ plain function can remove.
 Write the test before the implementation for each task. A bug fix starts with
 a failing test reproducing it.
 
+## Controls before conclusions
+
+A probe or experiment that tests external behaviour (KiCad, kicad-cli, any
+oracle) is itself an instrument, and instruments fail. Before concluding
+anything from a probe that did NOT produce the expected behaviour, run a
+control: a variant that MUST produce it, built on ground already known good.
+If the control also fails, the harness is broken — fix the instrument before
+re-testing the hypothesis. Record the control alongside the probe; a negative
+result without a passing control is not evidence and does not merge into a
+research note as a finding.
+
 ## Self-documenting code
 
 - Names carry the meaning; comments carry the WHY (invariants, KiCad quirks
