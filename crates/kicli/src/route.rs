@@ -9,6 +9,14 @@
 //! There is no floating point anywhere below this line: two runs over one sheet
 //! must produce the same route, on any machine, forever.
 
+pub mod obstacles;
+
 pub mod terminal;
 
+pub mod window;
+
+pub use obstacles::{
+    Axis, Feature, Obstacles, PinObstacle, Segment, SheetGeometry, Treatment, Verdict,
+};
 pub use terminal::{BlockedEscape, Heading, Obstruction, Terminal};
+pub use window::{Cell, Window};
