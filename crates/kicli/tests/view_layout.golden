@@ -38,13 +38,13 @@ F R17.Reference 0.00 0.00 0
 F R14.Reference 0.00 0.00 0
 F R20.Reference 0.00 0.00 0
 F R21.Reference 0.00 0.00 0
-T label NET_A 50.80 41.91 0
-T label NET_A 76.20 41.91 0
-T label D[0..1] 25.40 110.49 0
-T label D0 38.10 107.95 0
-T label D1 50.80 113.03 0
-T label CH_A_IN 30.48 132.08 0
-T label CH_B_IN 81.28 132.08 0
+T local NET_A 50.80 41.91 0
+T local NET_A 76.20 41.91 0
+T local D[0..1] 25.40 110.49 0
+T local D0 38.10 107.95 0
+T local D1 50.80 113.03 0
+T local CH_A_IN 30.48 132.08 0
+T local CH_B_IN 81.28 132.08 0
 T global GLOBAL_A 101.60 88.90 0
 W 15 segments, 2 junctions, 1 crossings
 page A4  sheet /00000000-0000-4000-8000-030000000000/00000000-0000-4000-8000-03a000000001
@@ -52,8 +52,8 @@ L R100 41.91 25.40 90 - 7.62x2.03
 L R101 78.74 25.40 90 - 7.62x2.03
 F R100.Reference 0.00 0.00 0
 F R101.Reference 0.00 0.00 0
-T hier IN 25.40 25.40 0
-T label CHAN_LOCAL 69.85 25.40 0
+T hierarchical IN 25.40 25.40 0
+T local CHAN_LOCAL 69.85 25.40 0
 T global GLOBAL_A 90.17 25.40 0
 W 4 segments, 0 junctions, 0 crossings
 page A4  sheet /00000000-0000-4000-8000-030000000000/00000000-0000-4000-8000-03b000000001
@@ -61,7 +61,7 @@ L R200 41.91 25.40 90 - 7.62x2.03
 L R201 78.74 25.40 90 - 7.62x2.03
 F R200.Reference 0.00 0.00 0
 F R201.Reference 0.00 0.00 0
-T hier IN 25.40 25.40 0
-T label CHAN_LOCAL 69.85 25.40 0
+T hierarchical IN 25.40 25.40 0
+T local CHAN_LOCAL 69.85 25.40 0
 T global GLOBAL_A 90.17 25.40 0
 W 4 segments, 0 junctions, 0 crossings

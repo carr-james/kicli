@@ -139,7 +139,7 @@ decimals.
 page A4  sheet /0000...0000
 L R1 50.80 50.80 0 - 2.03x7.62
 F R1.Reference 0.00 0.00 0
-T label NET_A 50.80 41.91 0
+T local NET_A 50.80 41.91 0
 W 15 segments, 2 junctions, 1 crossings
 ```
 
@@ -147,13 +147,12 @@ W 15 segments, 2 junctions, 1 crossings
 |---|---|
 | `L` | A symbol: reference, x, y, angle, mirror (`x`, `y` or `-`), body size |
 | `F` | A field that has moved off the position its library gives it |
-| `T` | A label or free text: kind, text, x, y, angle. The kind is `label`, `global`, `hier`, `netclass` or `text` |
+| `T` | A label or free text: kind, text, x, y, angle. The kind is `local`, `global`, `hierarchical`, `netclass` or `text` |
 | `W` | The wire summary for the sheet |
 
-The three label kinds a `T` line can carry are the three `label add` writes,
-under different words: `label` is `--kind local`, `global` is `--kind global`,
-and `hier` is `--kind hierarchical`. `netclass` marks a netclass flag and `text`
-marks free text; neither is made by `label add`.
+A `T` kind is written with the word the command takes, so `T hierarchical IN …`
+is added again by `label add --kind hierarchical`. `netclass` marks a netclass
+flag and `text` marks free text; neither is made by `label add`.
 
 `L` carries the angle and mirror exactly as the file writes them, because that
 is what you pass back to a rotate command. `F` lists a field **only** when it has

@@ -203,12 +203,13 @@ fn write_fields(out: &mut String, file: &LoadedFile, path: &SheetPath, options: 
 fn write_text(out: &mut String, file: &LoadedFile) {
     let schematic = &file.schematic;
     // T: labels and free text, which is what a reader looks for when a net has
-    // no obvious source.
+    // no obvious source. The kind is written with the word `label add --kind`
+    // takes, so a kind read out of a view goes straight back into a command.
     for label in schematic.labels() {
         let kind = match label.kind {
-            LabelKind::Local => "label",
+            LabelKind::Local => "local",
             LabelKind::Global => "global",
-            LabelKind::Hierarchical => "hier",
+            LabelKind::Hierarchical => "hierarchical",
             LabelKind::NetclassFlag => "netclass",
         };
         let _ = writeln!(
