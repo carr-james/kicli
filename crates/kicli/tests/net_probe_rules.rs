@@ -31,8 +31,12 @@ struct Probe {
     name: &'static str,
     /// The file name, without the extension.
     file: &'static str,
-    /// The sheet path the symbols of this file are placed on.
-    path: String,
+    /// Where this file is placed, and what each placement calls its symbols.
+    ///
+    /// A sheet placed twice gives every symbol on it two instance records, one
+    /// per sheet path, with a different reference designator each time. The
+    /// suffix distinguishes them, so `R1` on the second placement is `R1b`.
+    paths: Vec<(String, &'static str)>,
     /// The uuid prefix, so a child's uuids differ from its parent's.
     series: u32,
     /// The uuid of the sheet this file is.
@@ -47,7 +51,7 @@ impl Probe {
         Self {
             name,
             file: "probe",
-            path: format!("/{ROOT}"),
+            paths: vec![(format!("/{ROOT}"), "")],
             series: 1,
             sheet_uuid: ROOT.to_owned(),
             symbols: vec![resistor()],
@@ -66,13 +70,21 @@ impl Probe {
         Self {
             name: parent.name,
             file,
-            path: format!("/{ROOT}/{uuid}"),
+            paths: vec![(format!("/{ROOT}/{uuid}"), "")],
             series,
             sheet_uuid: uuid.to_owned(),
             symbols: vec![resistor()],
             items: Vec::new(),
             next_uuid: 0,
         }
+    }
+
+    /// Place this file again, under a second sheet symbol of the parent.
+    ///
+    /// The suffix names the second placement's symbols, so one drawing carries
+    /// `R1` and `R1b`. Call it before placing any symbol.
+    fn also_placed_at(&mut self, uuid: &str, suffix: &'static str) {
+        self.paths.push((format!("/{ROOT}/{uuid}"), suffix));
     }
 
     /// A fresh uuid. The counter makes every probe file reproducible.
@@ -171,12 +183,20 @@ impl Probe {
             ("Datasheet", ""),
             ("Description", ""),
         ]);
+        let instances: String = self
+            .paths
+            .iter()
+            .map(|(path, suffix)| {
+                format!(
+                    "(path \"{path}\" (reference \"{reference}{suffix}\") (unit {instance_unit}))"
+                )
+            })
+            .collect();
         self.items.push(format!(
             "(symbol (lib_id \"Probe:{library}\") (at {x} {y} 0) (unit {unit}) (body_style 1)\n\
              {attributes}\n\
              (uuid \"{uuid}\")\n{fields}{pin_list}\
-             (instances (project \"probe\" (path \"{}\" (reference \"{reference}\") (unit {instance_unit}))))\n)",
-            self.path
+             (instances (project \"probe\" {instances}))\n)"
         ));
     }
 
@@ -945,6 +965,46 @@ fn a_wide_bundle_splits_into_sub_ranges_that_rename_at_each_port() {
     assert!(found.contains(&net(&["R2.1", "R6.1"])));
     assert!(found.contains(&net(&["R3.1", "R7.1"])));
     assert!(found.contains(&net(&["R4.1", "R8.1"])));
+}
+
+#[test]
+fn one_child_placed_twice_carries_each_sub_range_to_its_own_placement() {
+    let mut probe = Probe::new("subrange-one-file-twice");
+    let first = "00000000-0000-4000-8000-cccccccccc01";
+    let second = "00000000-0000-4000-8000-cccccccccc02";
+    // One file, placed twice. This is what vme-wren draws and what the
+    // sub-range probe beside it does not: four banks off one sheet file.
+    let mut child = Probe::named_child_of(&probe, "child", first, 2);
+    child.also_placed_at(second, "b");
+
+    probe.sheet_named(first, "child", "BB[0..1]", ("101.6", "50.8"), "0");
+    probe.bus(("101.6", "50.8"), ("177.8", "50.8"));
+    probe.label_of_kind("label", "", "AA[0..1]", ("177.8", "50.8"));
+    probe.sheet_named(second, "child", "BB[0..1]", ("101.6", "152.4"), "0");
+    probe.bus(("101.6", "152.4"), ("177.8", "152.4"));
+    probe.label_of_kind("label", "", "AA[2..3]", ("177.8", "152.4"));
+
+    probe.bus(("228.6", "20.32"), ("228.6", "152.4"));
+    probe.label_of_kind("label", "", "AA[0..3]", ("228.6", "20.32"));
+    for (index, member) in ["AA0", "AA1", "AA2", "AA3"].iter().enumerate() {
+        let wire_y = millimetres(38.1 + 12.7 * index as f64);
+        let anchor_y = millimetres(41.91 + 12.7 * index as f64);
+        probe.bus_entry(("226.06", &wire_y), ("2.54", "2.54"));
+        probe.wire(("200.66", &wire_y), ("226.06", &wire_y));
+        probe.label_of_kind("label", "", member, ("203.2", &wire_y));
+        let reference = format!("R{}", index + 1);
+        probe.place("R", &reference, ("200.66", &anchor_y), &["1", "2"]);
+    }
+
+    bundled_members(&mut child, "BB[0..1]", &[("R5", "BB0"), ("R6", "BB1")]);
+
+    let found = probe.partition_with(&[&child]);
+    // The first placement answers to the first sub-range, the second to the
+    // second, though both are the same drawing under the same member names.
+    assert!(found.contains(&net(&["R1.1", "R5.1"])));
+    assert!(found.contains(&net(&["R2.1", "R6.1"])));
+    assert!(found.contains(&net(&["R3.1", "R5b.1"])));
+    assert!(found.contains(&net(&["R4.1", "R6b.1"])));
 }
 
 #[test]

@@ -355,9 +355,15 @@ its reproduction recipe.
 6. **bundle member** — a bundle carries its members: a net named after one
    member, on any sheet the bundle reaches, is that member, and no wire
    between them is needed. `AN[0..7]` carries `AN0`, and `ANALOG{A[0..5]}`
-   carries `ANALOG.A0`. Two bundles of different names wired together also
-   share their members; how those correspond is **not yet measured**, and it
-   is the whole of the remaining corpus difference (`notes/bundle-members.md`).
+   carries `ANALOG.A0`. Two bundles on one bus share their corresponding
+   members: a vector member corresponds by its place in the range and not by
+   the number in its name, a group member by its own name. A bundle label
+   names its members in the namespace of the sheet it is drawn on, so two
+   bundles labelled on one sheet share the members whose names are equal, with
+   no bus between them; a sheet pin names nothing on the sheet it is drawn on,
+   because its name speaks for the child's namespace. A bus that carries a
+   vector bundle and a plain group at once is the one measured case kicli
+   reports rather than reproduces (`notes/bundle-members.md`).
 
 Rules 1–3 alone give 37 nets on `ampli_ht` where KiCad reports 25; the six
 give exactly 25 (`representation.md` §3.2).

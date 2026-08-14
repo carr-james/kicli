@@ -36,7 +36,10 @@
 //!    sheet the bundle reaches, is that member, and no wire between the two
 //!    is needed. Where one bus carries two bundle names, their corresponding
 //!    members are one net as well: a vector member corresponds by its place
-//!    in the range, a group member by its own name.
+//!    in the range, a group member by its own name. A bundle label names its
+//!    members in the namespace of the sheet it is drawn on, so two bundles
+//!    labelled on one sheet share the members whose names are equal, with no
+//!    bus between them.
 //!
 //! A bundle never joins a single net: a bus, a bus label and a bus entry to a
 //! bus carry a bundle, and the union-find refuses to join the two kinds, as
@@ -483,20 +486,25 @@ impl Graph {
     /// and join. `CONNECTION_GRAPH::matchBusMember` decides the
     /// correspondence, and [`Correspondence`] records what it measures.
     ///
-    /// A bundle names its members in the scope of its own driver, not of the
-    /// sheet each member is drawn on. Two bundles that share a scope therefore
-    /// share every member whose name they both carry, though no bus joins
-    /// them: `DQ[0..31]` and `DQ[0..15]` driven on one sheet have one `DQ0`
-    /// between them. Two bundles of equal name in different scopes keep their
-    /// members apart.
+    /// A bundle label names its members in the namespace of the sheet it is
+    /// drawn on, exactly as any other label does. Two bundles labelled on one
+    /// sheet therefore share every member whose name they both carry, though
+    /// no bus joins them: `DQ[0..31]` and `DQ[0..15]` labelled on one sheet
+    /// have one `DQ0` between them. Two bundles of equal name on different
+    /// sheets keep their members apart, because those are two namespaces.
+    ///
+    /// A sheet pin names nothing on the sheet it is drawn on. Its name is the
+    /// child's hierarchical label, so it speaks for the child's namespace and
+    /// not the parent's. Reading it as the parent's would join every sub-range
+    /// that feeds a like-named port, which is a different net per port.
     fn merge_bus_members(&mut self, rules: MergeRules) {
         let buses = self.read_buses();
         let by_place = self.nets_by_place(rules);
 
         // One group per correspondence within a bus, and one per member name
-        // within a scope. A member joins through either.
+        // per sheet the bus is on. A member joins through either.
         let mut groups = Vec::new();
-        let mut by_scope: BTreeMap<(String, String), Vec<usize>> = BTreeMap::new();
+        let mut by_sheet: BTreeMap<(usize, String), Vec<usize>> = BTreeMap::new();
         for bus in buses.values() {
             // A bus that mixes the two kinds of bundle is reported rather than
             // reproduced. Say so before joining anything, so that a reader of
@@ -510,10 +518,6 @@ impl Graph {
                     });
                 }
             }
-            // The driver that names the bus names its members too. A member of
-            // any other bundle on that bus is an alias of the corresponding
-            // one, so it is filed under the driver's name and not its own.
-            let named = bus.names_of_driver();
             for (corresponds, members) in &bus.carried {
                 let group: Vec<usize> = members
                     .iter()
@@ -525,11 +529,14 @@ impl Graph {
                             .copied()
                     })
                     .collect();
-                if let Some((_, _, scope, _)) = &bus.driver {
-                    let canonical = named.get(corresponds).or_else(|| members.iter().next());
-                    if let Some(canonical) = canonical {
-                        by_scope
-                            .entry((scope.clone(), canonical.clone()))
+                // File the group under each name a label gives it, on the sheet
+                // that label is drawn on. Two buses that never touch join
+                // wherever a sheet and a member name are shared, which is how a
+                // sub-range reaches the wide bundle drawn beside it.
+                for (&sheet, by_key) in &bus.drawn {
+                    for name in by_key.get(corresponds).into_iter().flatten() {
+                        by_sheet
+                            .entry((sheet, name.clone()))
                             .or_default()
                             .extend(&group);
                     }
@@ -539,7 +546,7 @@ impl Graph {
                 }
             }
         }
-        groups.extend(by_scope.into_values().filter(|group| group.len() > 1));
+        groups.extend(by_sheet.into_values().filter(|group| group.len() > 1));
         self.union_each(&groups);
     }
 
@@ -548,22 +555,27 @@ impl Graph {
         let mut buses: BTreeMap<usize, Bus> = BTreeMap::new();
         for index in self.nodes_where(|node| node.carrier == Carrier::Bus) {
             let (sheet, name) = (self.nodes[index].sheet, name_of(&self.nodes[index]));
-            let ranked = self.rank_of_driver(index);
             let bus = buses.entry(self.class_of(index)).or_default();
             bus.reaches.insert(sheet);
             let Some(name) = name else { continue };
-            if let Some(candidate) = ranked {
-                if bus.driver.as_ref().is_none_or(|best| candidate < *best) {
-                    bus.driver = Some(candidate);
+            let members = bus_members_of(&name);
+            let labelled = matches!(self.nodes[index].kind, NodeKind::Label { .. });
+            for member in &members {
+                let net = net_name(&member.name);
+                bus.carried
+                    .entry(member.corresponds.clone())
+                    .or_default()
+                    .insert(net.clone());
+                if labelled {
+                    bus.drawn
+                        .entry(sheet)
+                        .or_default()
+                        .entry(member.corresponds.clone())
+                        .or_default()
+                        .insert(net);
                 }
             }
-            for member in bus_members_of(&name) {
-                bus.carried
-                    .entry(member.corresponds)
-                    .or_default()
-                    .insert(net_name(&member.name));
-            }
-            if !bus_members_of(&name).is_empty() {
+            if !members.is_empty() {
                 bus.bundles.insert(name);
             }
         }
@@ -582,37 +594,6 @@ impl Graph {
             }
         }
         by_place
-    }
-
-    /// How strong a driver one bus item is, and the scope it would name in.
-    ///
-    /// The answer is `(priority, qualified name, scope)`, which orders exactly
-    /// as KiCad chooses a driver: by priority first, then by the name itself.
-    /// The scope is the sheet the driver is drawn on, written the way KiCad
-    /// prefixes a net name; a global label names in no sheet at all, so its
-    /// scope is empty. The priority order is `CONNECTION_SUBGRAPH::PRIORITY`,
-    /// which [`super::names`] follows for net names.
-    fn rank_of_driver(&self, index: usize) -> Option<(u8, String, String, String)> {
-        let node = &self.nodes[index];
-        let text = name_of(node)?;
-        let sheet = || self.sheets[node.sheet].human.clone();
-        let (rank, scope) = match &node.kind {
-            NodeKind::Label {
-                kind: LabelKind::Global,
-                ..
-            } => (0, String::new()),
-            NodeKind::Label {
-                kind: LabelKind::Local,
-                ..
-            } => (1, sheet()),
-            NodeKind::Label {
-                kind: LabelKind::Hierarchical,
-                ..
-            } => (2, sheet()),
-            NodeKind::SheetPin { .. } => (3, sheet()),
-            _ => return None,
-        };
-        Some((rank, format!("{scope}{}", net_name(&text)), scope, text))
     }
 
     /// Rule 4, the hierarchy half: a hierarchical label meets the pin above it.
@@ -773,24 +754,17 @@ struct Bus {
     bundles: BTreeSet<String>,
     /// The member net names it carries, by what they correspond to.
     carried: BTreeMap<Correspondence, BTreeSet<String>>,
+    /// The members a label on each sheet names, by what they correspond to.
+    ///
+    /// A label names its members in the namespace of the sheet it is drawn on.
+    /// A sheet pin does not: its name is the child's hierarchical label, and it
+    /// says nothing about the parent's namespace.
+    drawn: BTreeMap<usize, BTreeMap<Correspondence, BTreeSet<String>>>,
     /// The sheets its items are drawn on.
     reaches: BTreeSet<usize>,
-    /// Its strongest driver, as [`Graph::rank_of_driver`] reports one.
-    driver: Option<(u8, String, String, String)>,
 }
 
 impl Bus {
-    /// The member name the driver gives each correspondence.
-    fn names_of_driver(&self) -> BTreeMap<Correspondence, String> {
-        let Some((_, _, _, text)) = &self.driver else {
-            return BTreeMap::new();
-        };
-        bus_members_of(text)
-            .into_iter()
-            .map(|member| (member.corresponds, net_name(&member.name)))
-            .collect()
-    }
-
     /// Does this bus carry a vector bundle and a plain group at once?
     ///
     /// Two bundles correspond only where their members correspond the same

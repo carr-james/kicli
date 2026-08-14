@@ -261,16 +261,11 @@ mod corpus {
         );
     }
 
-    // 34 of 35 hierarchies of KiCad's demo corpus match exactly. The one that
-    // does not — vme-wren — needs no rule KiCad has not already shown us. It
-    // needs kicli to rename a bundle member through a port, so that a
-    // sub-range feeding a child whose port bundle starts at zero again carries
-    // its members. That is measured, on the smallest drawing that shows it, by
-    // the ignored probe beside the other bundle rules.
-    // research/notes/bundle-members.md carries the measurement. The test is
-    // kept whole and does not run, so that closing it is a matter of deleting
-    // one attribute and reading the report.
-    #[ignore = "34 of 35 corpus hierarchies match; vme-wren needs a bundle member renamed through a port, recorded in research/notes/bundle-members.md"]
+    /// kicli's partition equals KiCad's on every hierarchy of the demo corpus.
+    ///
+    /// All 35 match. This is the gate the extractor exists to pass, and it runs
+    /// only when `KICLI_TEST_KICAD_CLI` is set, because it shells out to
+    /// `kicad-cli` once per project.
     #[test]
     fn netlist_partition_matches_kicad_corpus() {
         let Some(tool) = kicad_cli() else {

@@ -140,76 +140,80 @@ A net reached by two bundles on one bus has two bus parents by construction. Six
 probes aimed at reproducing the mechanism directly; the rule above is what the
 drawing has to show.
 
-## The scope a bundle names its members in
+## The namespace a bundle names its members in
 
-**Measured 2026-08-14.** The second rule, which `video` needed:
+**Measured 2026-08-14.** The second rule, which `video` and `vme-wren` needed:
 
-> **A bundle names its members in the scope of its own driver**, not of the
-> sheet each member is drawn on. Two bundles that share a scope share every
-> member whose name they both carry, though no bus joins them.
+> **A bundle label names its members in the namespace of the sheet it is drawn
+> on**, exactly as any other label does. Two bundles labelled on one sheet share
+> every member whose name they both carry, though no bus joins them.
 
 `DQ[0..2]` and `DQ[0..1]`, each leaving the root sheet on a bus of its own that
-the other never touches, put `DQ0` and `DQ1` on one net each, named `/DQ0` and
-`/DQ1`. The control is the same drawing with the two bundles on two child
-sheets instead: an equal member name is then two nets, one per scope.
+the other never touches, put `DQ0` and `DQ1` on one net each. The control is the
+same drawing with the two bundles on two child sheets instead: an equal member
+name is then two nets, one per namespace.
 
-The scope is the sheet of the strongest driver, by KiCad's own priority — a
-global label, then a local label, a hierarchical label, a sheet pin — with the
-tie broken by the qualified name. Measured: a bus driven only by sheet pins
-takes the winning child's path, which is why `royalblue54L_feather` calls the
-net `/Connectors/UART.RX` and not `/UART.RX`. A global bus label names in no
-sheet, so its scope is empty.
+**A sheet pin names nothing on the sheet it is drawn on.** Its name is the
+child's hierarchical label, so it speaks for the child's namespace and not the
+parent's. That distinction is load-bearing rather than pedantic: reading a sheet
+pin as naming the parent joins every sub-range that feeds a like-named port, and
+those are a different net per port. The control that catches it is one child file
+placed twice, whose two placements must stay apart.
 
-The driver also names the members. A member of any other bundle on the same bus
-is an alias of the corresponding one, so it takes the driver's name rather than
-its own. `video` needed exactly that: a bus carrying the local label
-`PCA[0..1]` and the sheet pin `PC_A[0..1]`, where `PC_A0` is `PCA0` because the
-local label is the stronger driver.
+This is what `video` draws — `DQ[0..31]`, `DQ[0..15]` and `DQ[0..7]` on three
+buses that never touch, all labelled on the root — and what `vme-wren` draws at
+depth. `vme-wren`'s `pp_driver_32x` labels `PP_OUT[0..31]` on one bus and
+`PP_OUT[24..31]` on another that only reaches a bank's port; the two never touch
+and are one namespace apart, so `PP_OUT31` is one net across them, and `J6.32`
+on the root joins it.
 
-With both rules, 34 of the 35 corpus hierarchies match KiCad exactly.
+An earlier reading of this rule keyed the namespace on the bus's strongest
+driver instead of on each label's own sheet. It closed `video` and left
+`vme-wren` short, because a bus that reaches the root takes the root's scope
+while the sub-range beside it keeps the child's, and two bundles drawn side by
+side then never met. Keying each label where it is drawn is both simpler and
+what KiCad does, and it removed the driver-priority machinery entirely.
 
-## Still open: `vme-wren`
+**With both rules, all 35 corpus hierarchies match KiCad exactly.**
 
-`vme-wren` is the one hierarchy left. Its difference has a very clean shape:
-**96 nets, each missing exactly one pin.** For every one of them kicli has the
-net minus a pin and that pin as a net of its own. The strays are connector and
-FPGA pins — `J6.32`, `JFP2.4`, `IC14.B1`.
+## What `vme-wren` needed, and the probe that lied about it
 
-The cause is a bundle chain that stops one level short. `D100.1` sits on the net
-KiCad calls `/PP_OUT31`; kicli calls it `/io_drivers_pp/bank3/PP_OUT7`. The
-drawing renames at every port: the leaf's own port is `PP_OUT[0..1]`, its bank
+`vme-wren` was the last hierarchy to match, and its difference had a very clean
+shape: **96 nets, each missing exactly one pin** — connector and FPGA pins such
+as `J6.32`, `JFP2.4` and `IC14.B1`, each left on a net of its own. The cause was
+the namespace rule above, and nothing else.
+
+Its chain renames at every port: a leaf's port is `PP_OUT[0..1]`, its bank
 carries `PP_OUT[0..7]`, the bus feeding that bank is labelled `PP_OUT[24..31]`,
-and the root carries `PP_OUT[0..31]`. kicli follows that chain as far as the
-bank and stops, so its member never reaches the root's `PP_OUT31`, where `J6.32`
-is waiting under the right name.
-
-**The chain itself is not the defect.** `a_wide_bundle_splits_into_sub_ranges_that_rename_at_each_port`
-draws exactly that shape — a wide bundle split into sub-ranges, each feeding a
-child whose port bundle starts at zero again — and kicli matches KiCad on it.
-What that probe does not draw is the one thing left: `vme-wren` places **one
-child file four times**, once per bank, so the same hierarchical label appears
-on four sheet paths at once. That is the untested variable.
+and the root carries `PP_OUT[0..31]`. `FP_IO` is worse: the root labels two
+buses `FP_IO[0..31]` and feeds one of them into a port called `IO[0..31]`, so
+the member names differ on the two sides of one port.
 
 ### A probe measured its own defect, and how that was caught
 
-An earlier reading of this had two defects in it, and both were the instrument.
+Before the rule was found, a probe reported that kicli could not carry a bundle
+member through a port at all, and that it merged members no geometry related.
+Both were the instrument.
+
 The probe generator wrote coordinates straight from floating point, so
 `38.1 + 12.7 * 3.0` reached the file as `76.19999999999999`. KiCad reads that;
 kicli's number reader rejects more than four decimals and the caller reads the
-rejection as zero. Phantom items appeared at the origin, every label lay on
-them, and nets that shared nothing were joined. It looked exactly like a merge
-bug, and it was a drawing nobody meant.
+rejection as zero. Phantom items collected at the origin, every label lay on
+them, and nets that shared nothing were joined. Rounded to the four decimals
+KiCad itself writes, the same drawing passes.
 
 Two things came out of it. `Probe::check_precision` now refuses to write a
 drawing carrying a number KiCad would not write, so no probe can make this
-mistake again quietly. And a real kicli defect is recorded: **a coordinate the
+mistake quietly again. And a real kicli defect is recorded: **a coordinate the
 reader cannot parse becomes zero rather than an error**, which is the
 wrong-and-confident failure this project exists to avoid. That one is not a
 bundle rule and belongs in its own task.
 
 The lesson is the one the sheet-pin angle already taught: a probe needs a
 control that fails loudly, and an instrument needs checking before its readings
-are believed.
+are believed. Both controls are committed —
+`one_child_placed_twice_carries_each_sub_range_to_its_own_placement` and
+`two_bundles_in_different_scopes_keep_their_members_apart`.
 
 ## Reproduction
 
