@@ -40,7 +40,9 @@ pub mod oracle;
 
 pub mod scratch;
 
-pub use drawing::{Placed, Probe, hidden_pin, millimetres, pin, power, resistor, symbol};
+pub use drawing::{
+    Placed, Probe, hidden_pin, millimetres, pin, power, rectangle, resistor, symbol,
+};
 pub use oracle::{
     Change, Kicad, NamedNet, Netlist, Partition, Report, ReportPin, net, with_and_without,
 };

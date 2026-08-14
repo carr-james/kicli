@@ -43,8 +43,8 @@ outranks completeness.
 - **Single responsibility** holds as-is: one module = one concern. The
   workspace is four crates: `kicli-sexpr` (tokens/tree/prettify — minimal
   dependencies, no knowledge of schematics), `kicli` (modules: `model`,
-  `geometry`, `connectivity`, `view`, `lint`, `render`, `libraries`, `kicad`,
-  `pcb`, `cli`), `kicli-probe` (the test instruments: probe drawings and oracle
+  `geometry`, `connectivity`, `route`, `view`, `lint`, `render`, `libraries`,
+  `kicad`, `pcb`, `cli`), `kicli-probe` (the test instruments: probe drawings and oracle
   readers), and `xtask`. `cli` depends on everything; nothing depends on `cli`;
   `kicli-sexpr` depends on nothing of ours. Crate boundaries enforce the
   dependency direction — do not merge them for convenience.
@@ -62,7 +62,10 @@ outranks completeness.
   exit-code translation — because `lint`, `render` and `cli` all need it and
   none of them may depend on another. A later milestone may add a module the
   same way: state the concern, keep the dependency direction, and amend this
-  list in the same change.
+  list in the same change. `route` was added that way: it turns two terminals
+  and a sheet's geometry into an ordered list of grid points and the cost of
+  reaching them, and it knows nothing of files, the CLI or `kicad-cli`, so the
+  search is as cheap to test as arithmetic.
 - **Interfaces → traits.** Depend on traits or generics at seams that need
   substitution (e.g. the process-runner behind kicad-cli invocation, so tests
   can fake it). Do NOT introduce a trait with a single implementation and no

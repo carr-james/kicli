@@ -169,6 +169,10 @@ impl Probe {
         let uuid = self.uuid();
         let pin_uuids: Vec<String> = placed.pins.iter().map(|_| self.uuid()).collect();
         let (library, reference, unit) = (placed.library, placed.reference, placed.unit);
+        let angle = placed.angle;
+        let mirror = placed
+            .mirror
+            .map_or_else(String::new, |axis| format!(" (mirror {axis})"));
         let instance_unit = placed.instance_unit.unwrap_or(unit);
         let (x, y) = placed.at;
         let attributes = placed.attributes;
@@ -199,7 +203,7 @@ impl Probe {
             })
             .collect();
         self.items.push(format!(
-            "(symbol (lib_id \"Probe:{library}\") (at {x} {y} 0) (unit {unit}) (body_style 1)\n\
+            "(symbol (lib_id \"Probe:{library}\") (at {x} {y} {angle}){mirror} (unit {unit}) (body_style 1)\n\
              {attributes}\n\
              (uuid \"{uuid}\")\n{fields}{pin_list}\
              (instances (project \"probe\" {instances}))\n)"
@@ -376,6 +380,10 @@ pub struct Placed<'a> {
     pub at: (&'a str, &'a str),
     /// The pin numbers this placement draws.
     pub pins: &'a [&'a str],
+    /// The angle the placement is drawn at.
+    pub angle: &'a str,
+    /// The axis the placement is mirrored about, if any: `x` or `y`.
+    pub mirror: Option<&'a str>,
     /// The unit written beside the `lib_id`, which is only a cache.
     pub unit: u32,
     /// The unit written in the instance record, which is the truth.
@@ -400,6 +408,8 @@ impl<'a> Placed<'a> {
             reference,
             at,
             pins,
+            angle: "0",
+            mirror: None,
             unit: 1,
             instance_unit: None,
             value: reference,
@@ -420,6 +430,20 @@ fn fields(values: &[(&str, &str)]) -> String {
             )
         })
         .collect()
+}
+
+/// One rectangle of a symbol's body.
+///
+/// A body is what a router treats as an obstacle, so a probe that measures
+/// routing needs symbols that have one. The coordinates are the library's, with
+/// y upwards.
+#[must_use]
+pub fn rectangle(start: (&str, &str), end: (&str, &str)) -> String {
+    format!(
+        "(rectangle (start {} {}) (end {} {})\n\
+         (stroke (width 0.254) (type default)) (fill (type none)))",
+        start.0, start.1, end.0, end.1
+    )
 }
 
 /// One library pin.
