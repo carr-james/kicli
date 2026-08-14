@@ -222,16 +222,16 @@ mod corpus {
         }
     }
 
-    // 33 of 35 hierarchies of KiCad's demo corpus match exactly. The two that
-    // do not — video and vme-wren — need a rule that is not yet measured
-    // whole: a bundle names its members at its own sheet path, so two bundles
-    // on one sheet share the members whose names are equal, with no bus
-    // between them. Which sheet path a bundle spanning several sheets uses is
-    // the unmeasured half. research/notes/bundle-members.md carries the
-    // measurement and the drawing. The test is kept whole and does not run, so
-    // that closing the rule is a matter of deleting one attribute and reading
-    // the report.
-    #[ignore = "33 of 35 corpus hierarchies match; the rest need the sheet path a bundle names its members at, recorded in research/notes/bundle-members.md"]
+    // 34 of 35 hierarchies of KiCad's demo corpus match exactly. The one that
+    // does not — vme-wren — needs no rule KiCad has not already shown us. It
+    // needs kicli to rename a bundle member through a port, so that a
+    // sub-range feeding a child whose port bundle starts at zero again carries
+    // its members. That is measured, on the smallest drawing that shows it, by
+    // the ignored probe beside the other bundle rules.
+    // research/notes/bundle-members.md carries the measurement. The test is
+    // kept whole and does not run, so that closing it is a matter of deleting
+    // one attribute and reading the report.
+    #[ignore = "34 of 35 corpus hierarchies match; vme-wren needs a bundle member renamed through a port, recorded in research/notes/bundle-members.md"]
     #[test]
     fn netlist_partition_matches_kicad_corpus() {
         let Some(tool) = kicad_cli() else {

@@ -785,6 +785,57 @@ fn two_bundles_in_different_scopes_keep_their_members_apart() {
     assert!(found.contains(&net(&["R4.1"])));
 }
 
+// KiCad's answer below is measured, and kicli does not yet reproduce it. A
+// bundle member keeps the name its own sheet gives it instead of taking the
+// name of the bundle that carries it, so a sub-range that renames at a port
+// does not carry its members through. The drawing is the smallest form of what
+// vme-wren draws, which is the one corpus hierarchy still unmatched. The defect
+// is older than the two bundle rules beside it: it reproduces on the commit
+// before either landed. The test is kept whole and does not run, so that
+// closing it is a matter of deleting one attribute.
+#[ignore = "measured against KiCad; kicli does not yet rename a bundle member through a port. See research/notes/bundle-members.md"]
+#[test]
+fn a_wide_bundle_splits_into_sub_ranges_that_rename_at_each_port() {
+    let mut probe = Probe::new("subrange-chain");
+    let first = "00000000-0000-4000-8000-cccccccccc01";
+    let second = "00000000-0000-4000-8000-cccccccccc02";
+    let mut left = Probe::named_child_of(&probe, "child1", first, 2);
+    let mut right = Probe::named_child_of(&probe, "child2", second, 3);
+
+    // A wide bundle, split into two sub-ranges. Each sub-range feeds a child
+    // whose own port bundle is named differently and starts its range at zero.
+    probe.sheet_named(first, "child1", "BB[0..1]", ("101.6", "50.8"), "0");
+    probe.bus(("101.6", "50.8"), ("177.8", "50.8"));
+    probe.label_of_kind("label", "", "AA[0..1]", ("177.8", "50.8"));
+    probe.sheet_named(second, "child2", "BB[0..1]", ("101.6", "152.4"), "0");
+    probe.bus(("101.6", "152.4"), ("177.8", "152.4"));
+    probe.label_of_kind("label", "", "AA[2..3]", ("177.8", "152.4"));
+
+    // The wide bundle carries the root's own member nets.
+    probe.bus(("228.6", "20.32"), ("228.6", "152.4"));
+    probe.label_of_kind("label", "", "AA[0..3]", ("228.6", "20.32"));
+    for (index, member) in ["AA0", "AA1", "AA2", "AA3"].iter().enumerate() {
+        let wire_y = format!("{}", 38.1 + 12.7 * index as f64);
+        let anchor_y = format!("{}", 41.91 + 12.7 * index as f64);
+        probe.bus_entry(("226.06", &wire_y), ("2.54", "2.54"));
+        probe.wire(("200.66", &wire_y), ("226.06", &wire_y));
+        probe.label_of_kind("label", "", member, ("203.2", &wire_y));
+        let reference = format!("R{}", index + 1);
+        probe.place("R", &reference, ("200.66", &anchor_y), &["1", "2"]);
+    }
+
+    bundled_members(&mut left, "BB[0..1]", &[("R5", "BB0"), ("R6", "BB1")]);
+    bundled_members(&mut right, "BB[0..1]", &[("R7", "BB0"), ("R8", "BB1")]);
+
+    let found = probe.partition_with(&[&left, &right]);
+    // Each child's members correspond by place to its own sub-range, and the
+    // sub-ranges correspond by name to the wide bundle.
+    assert!(found.contains(&net(&["R1.1", "R5.1"])));
+    assert!(found.contains(&net(&["R2.1", "R6.1"])));
+    assert!(found.contains(&net(&["R3.1", "R7.1"])));
+    assert!(found.contains(&net(&["R4.1", "R8.1"])));
+}
+
 #[test]
 fn two_bus_entries_that_meet_do_not_join() {
     let mut probe = Probe::new("bus-entries");

@@ -124,34 +124,63 @@ A net reached by two bundles on one bus has two bus parents by construction. Six
 probes aimed at reproducing the mechanism directly; the rule above is what the
 drawing has to show.
 
-## Still open: `video` and `vme-wren`
+## The scope a bundle names its members in
 
-With the rule above, 33 of the 35 corpus hierarchies match KiCad exactly, up
-from 32. `video` and `vme-wren` remain, and `video`'s cause is now measured and
-is a **different rule**:
+**Measured 2026-08-14.** The second rule, which `video` needed:
 
-> **A bundle names its members at its own sheet path.** Two bundles on one
-> sheet whose members expand to equal names put those members on one net, with
-> no bus between the two bundles at all.
+> **A bundle names its members in the scope of its own driver**, not of the
+> sheet each member is drawn on. Two bundles that share a scope share every
+> member whose name they both carry, though no bus joins them.
 
-Measured on two buses that never touch: `DQ[0..2]` and `DQ[0..1]`, each leaving
-the root sheet to a child of its own, put `DQ0` and `DQ1` on one net each,
-named `/DQ0` and `/DQ1` at the root path. The control, `AA[0..1]` against
-`BB[0..1]` drawn the same way, stays apart. That is the shape `video` draws:
-its root sheet carries `DQ[0..31]`, `DQ[0..15]` and `DQ[0..7]` on three
-separate buses, and KiCad puts all their `DQ0` on one net.
+`DQ[0..2]` and `DQ[0..1]`, each leaving the root sheet on a bus of its own that
+the other never touches, put `DQ0` and `DQ1` on one net each, named `/DQ0` and
+`/DQ1`. The control is the same drawing with the two bundles on two child
+sheets instead: an equal member name is then two nets, one per scope.
 
-kicli joins like-named member nets only across the sheets one bus class reaches,
-so it splits that net three ways. Closing it needs the half that is **not yet
-measured**: which sheet path a bundle's members take when the bundle spans
-several sheets. `royalblue54L_feather` names the merged net
-`/Connectors/UART.RX`, a child path and not the root, so the answer is driver
-priority rather than "the sheet the label is drawn on". That is the next probe,
-and it should carry a control that fails loudly, as this one now does.
+The scope is the sheet of the strongest driver, by KiCad's own priority — a
+global label, then a local label, a hierarchical label, a sheet pin — with the
+tie broken by the qualified name. Measured: a bus driven only by sheet pins
+takes the winning child's path, which is why `royalblue54L_feather` calls the
+net `/Connectors/UART.RX` and not `/UART.RX`. A global bus label names in no
+sheet, so its scope is empty.
 
-`vme-wren`'s difference is not yet attributed. Its missing joins are whole
-connector pins (`J6.32`, `JFP2.4`, `IC14.B1`) that kicli leaves on nets of their
-own, which does not look like either rule above.
+The driver also names the members. A member of any other bundle on the same bus
+is an alias of the corresponding one, so it takes the driver's name rather than
+its own. `video` needed exactly that: a bus carrying the local label
+`PCA[0..1]` and the sheet pin `PC_A[0..1]`, where `PC_A0` is `PCA0` because the
+local label is the stronger driver.
+
+With both rules, 34 of the 35 corpus hierarchies match KiCad exactly.
+
+## Still open: `vme-wren`, and it is not a new rule
+
+`vme-wren` is the one left. It needs no rule KiCad has not already shown us: it
+needs kicli to finish carrying a bundle member through a port.
+
+The measurement is `a_wide_bundle_splits_into_sub_ranges_that_rename_at_each_port`
+in `net_probe_rules.rs`, which is ignored because kicli fails it. A wide bundle
+`AA[0..3]` is split into `AA[0..1]` and `AA[2..3]`, and each sub-range feeds a
+child whose own port bundle is `BB[0..1]`, starting its range again at zero.
+KiCad joins `AA0` to the first child's `BB0`, `AA1` to its `BB1`, `AA2` to the
+second child's `BB0` and `AA3` to its `BB1`. kicli does not.
+
+Two things are wrong, and both are older than the rules above — the drawing
+fails the same way on the commit before either landed:
+
+- **A member keeps its own sheet's name.** With no wide bundle at all, KiCad
+  renames the first child's `BB1` to `/AA1`; kicli calls it `/child1/BB1`. The
+  rename through a port is what the scope rule needs in order to reach a member
+  drawn under a different name, and it is missing.
+- **Unrelated members merge.** On the same drawing kicli joins `AA0` to `AA3`
+  and `AA1` to `AA2`, including the unconnected second pins of their resistors,
+  which no geometry explains. That one is a defect on its own and should be cut
+  down further before anything is written against it.
+
+`vme-wren` draws this shape at depth: `PP_OUT[0..31]` on the root, split into
+`PP_OUT[0..7]` through `PP_OUT[24..31]`, feeding sheets whose ports start at
+`PP_OUT0` again and which are instantiated four times each. kicli names the
+root's own nets correctly — `J6.1` sits on `/PP_OUT0`, as KiCad has it — and
+simply fails to join them to the driver side.
 
 ## Reproduction
 
