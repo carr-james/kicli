@@ -114,6 +114,22 @@ fn agent_doc_states_what_the_spec_requires_it_to_state() {
         "and the rule that goes with it"
     );
 
+    // The delta and the result of a mutation answer different questions. An
+    // agent told otherwise goes looking for a command that replays its own
+    // edits, and there is none.
+    assert!(
+        doc.contains("kicli sch view --view delta"),
+        "the command that answers the second question"
+    );
+    assert!(
+        doc.contains("since kicli last wrote it"),
+        "the question it answers"
+    );
+    assert!(
+        doc.contains("that command already reported it"),
+        "and the question it does not"
+    );
+
     // The views are the truth an agent acts on.
     assert!(
         doc.contains("This is what you act on"),

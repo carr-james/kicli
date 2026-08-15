@@ -79,15 +79,7 @@ fn dispatch(parsed: &Cli, reporter: &Reporter) -> Result<Report, Failure> {
         Command::Project {
             verb: ProjectVerb::Check,
         } => check::check(global, reporter),
-        Command::Sch {
-            verb:
-                SchVerb::View {
-                    view: which,
-                    include_power,
-                    uuids,
-                    stats,
-                },
-        } => view::view(global, *which, *include_power, *uuids, *stats, reporter),
+        Command::Sch { verb } => view::view(global, verb, reporter),
         Command::Sym { verb } => edit::symbol::run(global, verb),
         Command::Field { verb } => edit::field::run(global, verb),
         Command::Text { verb } => edit::text::run(global, verb),

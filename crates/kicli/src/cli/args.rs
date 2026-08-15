@@ -137,9 +137,14 @@ pub enum Command {
 }
 
 /// The verbs of the `sch` noun.
-#[derive(Clone, Copy, Debug, Subcommand)]
+#[derive(Clone, Debug, Subcommand)]
 pub enum SchVerb {
     /// Print a compact view of the drawing.
+    ///
+    /// The delta view answers one question: what has touched this file since
+    /// kicli last wrote it? It is empty right after a mutation, by design.
+    /// That mutation's own result already reported what it changed. Keep that
+    /// result. Nothing derives it again.
     View {
         /// Which view to print.
         #[arg(long, value_enum, default_value_t = ViewName::Connectivity)]
@@ -156,6 +161,12 @@ pub enum SchVerb {
         /// Report the size of the view in bytes.
         #[arg(long)]
         stats: bool,
+
+        /// The saved state the delta compares against.
+        ///
+        /// The default is the state every command that writes leaves behind.
+        #[arg(long, value_name = "NAME")]
+        against: Option<String>,
     },
 }
 
@@ -167,6 +178,8 @@ pub enum ViewName {
     Connectivity,
     /// Where things are drawn.
     Layout,
+    /// What has touched the file since kicli last wrote it.
+    Delta,
 }
 
 /// The verbs of the `project` noun.
