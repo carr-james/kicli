@@ -1689,3 +1689,87 @@ golden to see it at all.)*
    **Recommendation: accept**, into `falsification-control`. The row was not
    wrong; it was under-specified, and disambiguating it cost the reviewer real
    time — which is exactly the cost the falsification table exists to avoid.
+
+### The verb surface (T16), Lane B — merged `a16333c` on the second attempt, awaiting tick review
+
+Lane commits `2861254`, `dec0c0a`, `978ad2e`, `b77dbed`. **Six gates green on the
+merged result**, and the contract test run three times consecutively in the main
+checkout — a *different directory* from the lane's, which for this defect is the
+proof rather than the ceremony.
+
+#### The orchestrator's diagnosis was wrong on mechanism, and the truth is worse
+
+Recorded first and plainly, because a report in which the orchestrator's calls are
+only ever vindicated is not a record.
+
+**What I said:** the goldens embed *randomly generated* UUIDs, so they cannot pass
+twice. I had measured two runs producing two different sets and concluded a random
+source.
+
+**What is true**, per the implementer, verified by recomputing the hash by hand
+outside the test: the identifiers are **not random**. `edit::insert` derives them
+by SHA-256 from a seed `edit::wire::draw` builds as
+`format!("{} wire {} to {}", target.path.display(), from.name, to.name)` — which
+**begins with the file's absolute path**. Both observed sets are exactly what
+their two paths predict, to the digit:
+
+| Seed path | First identifier |
+|---|---|
+| the lane's worktree | `ebb43fde-5c3c-4534-8776-e35e3f8aefaf` — its committed golden |
+| the main checkout | `9d618919-5152-4a4e-8860-23f4945012d3` — my merged run |
+
+**My conclusion held; my argument did not.** As the implementer put it, a pure
+hash cannot give one checkout two different sets — two sets means two paths. And
+the corrected mechanism is *worse* than the one I alleged: these values are
+**stable per checkout and wrong everywhere else**, whereas genuinely random ones
+would have failed loudly on the second run in the lane's own worktree. A defect
+that only manifests on someone else's machine is the more expensive kind.
+
+**So the lane's green was real and worthless.** `git status --porcelain` and
+`git diff --stat HEAD` were both empty before its `cargo xtask check`; nothing
+refreshed inside the checked run. The check asserted a property of the worktree's
+location, measured in that worktree.
+
+**Why the falsification discipline did not catch it, which is the part that
+generalises.** Five rows had already shown these goldens capable of failing — so
+they were falsifiable, and that is **necessary but not sufficient**. A check can
+be falsifiable and environment-dependent at once. **Every break the lane made was
+in the source; the input that actually varied was the environment.**
+
+#### The fix, and the correction to my instruction
+
+Each **distinct** identifier is normalised to `<id-1>`, `<id-2>`… in
+first-appearance order, with shape asserted separately on the **real** values
+(full `8-4-4-4-12`, and no two segments sharing one), so normalising hides
+nothing. `added` kept; `wire draw` unchanged.
+
+**And the implementer corrected my reasoning a second time, with a measurement.**
+I claimed a collapsing `<id>` normaliser would hide both a missing entry and a
+wrong order. It would not: a missing entry still changes the **count**. What
+collapsing destroys is **ordering** — with identical tokens a swap is
+unrepresentable, so no golden could fail on it. That is precisely why the
+placeholders are numbered, and it is a better reason than the one I gave.
+
+The lane also left its original "a golden working, not a golden breaking"
+paragraph standing with the correction beneath it, noting it had named the right
+mechanism and then not re-read the seed line. Same discipline the record uses
+everywhere else, applied by a lane to itself.
+
+**The other three goldens were checked, not assumed** — by grep for the identifier
+shape. `routed` and `routed_adjusted` carried it; `labels`, `blocked` and
+`invalid` carried none, their `added.wires` being empty and their only hex-looking
+string a hand-written eight-character one that is still compared verbatim.
+
+**Merged check on the main checkout, corpus included:** six gates green; **76
+test binaries** with `0 failed` and `0 ignored` in every one; oracle
+`hierarchies matched: 35/35`, `35 hierarchies loaded`. The contract test was run
+three times consecutively in that checkout, 13 passed each time.
+
+9. **PROPOSED: `falsification-control` should name environment variation as a
+   break worth making** — path, clock, locale, run order — against any check that
+   consumes a generated value. The lane's, and it follows directly from the
+   analysis above. **Recommendation: accept.** The skill currently directs every
+   break at the source, and this defect was invisible to every source break while
+   being trivially visible to a one-line directory rename. The cheapest concrete
+   form, from the lane's own note: **a lane whose test consumes a generated value
+   runs it once from a second directory before reporting green.**
