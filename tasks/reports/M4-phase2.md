@@ -447,8 +447,29 @@ Corrected: `tests/command_surface.rs` joins Lane B's row in `tasks/M4.md` and is
 held by one task at a time, on the same rule as `AGENT.md`, because the verb
 surface (T16) names the same check. **Counted as rejection one of two**, not
 waived — the defect was in the inputs, but the reviewer read its inputs
-correctly and the record was wrong. A re-review is running against corrected
-inputs; a second rejection escalates as a PROPOSED item.
+correctly and the record was wrong.
+
+**Reviewer verdict, re-review: APPROVE. TICKED.** A fresh reviewer checked every
+factual claim in the entry against the source and all held. It reported
+unprompted that its tool grant was read-only, so its APPROVE was reached by
+tracing code paths rather than by running anything — see the workflow
+retrospective for why the shell it was promised never arrived.
+
+**The three weighted falsification rows were then measured**, in a scratch copy
+outside the repository, against a baseline taken before and again after every
+revert (`command_surface` 17 passed, `delta_view` 11, `agent_doc` 5, zero failed
+throughout). Each break alone:
+
+| Break | Check | Observed |
+|---|---|---|
+| `Delta::between(&saved, &saved)` | `a_delta_right_after_a_mutation_reports_nothing_changed` | **passes** — vacuous on its own, as claimed |
+| the same break | `a_delta_reports_an_edit_made_outside_kicli` | **fails**: `left: []` against `right: ["~ S R1.Value \"10k\" -> \"22k\""]` |
+| `compared_form` always `values` | `a_delta_against_a_state_of_hashes_alone_says_so` | **fails** on the header |
+| `ExitCode::File` for an absent state | `a_delta_with_no_saved_state_exits_the_code_its_row_names` | **fails**: `left: 4`, `right: 1` |
+
+**The entry's centrepiece claim is now measured rather than asserted**: its own
+first check is vacuous, and only the control makes the pair evidence. Nothing was
+written, staged or committed inside the checkout or any worktree to obtain this.
 
 ## Session 2 workflow retrospective — running
 
