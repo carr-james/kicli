@@ -254,6 +254,26 @@ Diagnostic rather than graded. The interruption is itself retrospective data.
 - **`cargo` is not on `PATH` in the session shell.** Every command needs
   `export PATH="$HOME/.cargo/bin:$PATH"`. Undocumented anywhere; every brief had
   to carry it. Worth a line in the environment notes.
+
+  **This bit the new pre-commit hook, measured at this session's last commit,
+  and James ruled it fixed on the spot.** The first attempt failed with
+  `.githooks/pre-commit: line 10: exec: cargo: not found` and no commit was
+  made. A git hook does not read the interactive shell's profile, so it cannot
+  assume `cargo` is found the way a developer's terminal finds it.
+
+  **The defect was usability, not safety.** `exec` failing under `set -e` still
+  refused the commit, so no unchecked commit could pass — but the operator sees
+  a shell error naming a line number rather than a gate result, and the obvious
+  workaround is `KICLI_SKIP_HOOK=1`, which turns a missing tool into a skipped
+  gate suite.
+
+  Fixed: the hook resolves `cargo` on `PATH`, then under
+  `${CARGO_HOME:-$HOME/.cargo}/bin`, and refuses with a sentence that says the
+  gates could not run when it finds neither. **Both branches measured**, each
+  run with `env -i` and a bare `PATH=/usr/bin:/bin`: with cargo absent from PATH
+  the hook found it and all six gates passed; with `CARGO_HOME=/tmp/nope` it
+  printed the refusal and exited 1. The failing branch is the falsification —
+  the hook was shown capable of refusing, not only of passing.
 - **Whether a merged-but-unreviewed task may sit on `main`.** Decided yes, with
   the entry saying so in its own heading, because the alternative is either an
   unreviewed tick or discarding green work. The tick and the merge are separate
