@@ -1,6 +1,9 @@
 # M4 Phase 2 — consolidated session report
 
-**STATUS: IN PROGRESS — resumed session, checkpoint 1.** The first session
+**STATUS: CHECKPOINT 1 ALL BUT COMPLETE — four of five tasks ticked, A\* (T10)
+merged and green with its tick review the only outstanding item.** Usage limit
+approached; this report is the handoff and every touched entry is at its true
+state. The first session
 stopped on its token limit; this one reopened under the advisor's rulings on
 that stop. Its record is preserved below under "Session 1", unaltered, because a
 report that rewrites its own history is not a record. Session 2 begins at
@@ -108,7 +111,7 @@ ticks only on APPROVE. This is the correct outcome of the practice, not a gap in
 it: the work is merged and green, and the tick is a separate claim that has not
 been earned yet.
 
-### `wire delete` (T15), Lane B — merged, tick review running
+### `wire delete` (T15), Lane B — merged and TICKED
 
 Merged as `5753e4b` from `worktree-agent-ad5ebde9f056ce4cb` (lane commits
 `5c06d74`, `871d61e`, `3dfd528`). Merged check green: six gates, corpus,
@@ -138,6 +141,40 @@ alone.
 than the review demanded. Connectivity is the only instrument in play, so what
 three arms measure is where KiCad *joins* the port, not where it *draws* the
 graphic. The distinction was the implementer's, not the reviewer's and not mine.
+
+### A* over turn-aware states (T10), Lane A — merged and green, tick review RUNNING at the checkpoint
+
+Merged as `13e3ee0`-era merge commit from `worktree-agent-ab3fce95dc0125eb4`
+(lane commit `00402c7`). Merged check green: six gates, corpus,
+environment-gated, **zero ignored, oracle 35/35**. Seventeen falsifications
+recorded. `Heading::EVERY` moved to `route::terminal` with one order for the
+search, the U-shaped candidates and the derived comparison that settles queue
+ties — which also settles the shapes task's first PROPOSED item.
+
+**The tick review is the one outstanding item of checkpoint 1**, and it was
+dispatched with a specific instruction, because the implementer reported
+unprompted that its own first falsification sweep was contaminated:
+`git checkout --` cannot restore a not-yet-committed new file, and with multiple
+pathspecs it restores **nothing** when one fails, so an early sweep ran every
+break on top of the previous ones. A stacked sweep's readings are worthless — a
+check failing with five breaks applied says nothing about which break it detects.
+The implementer says it caught this. **The reviewer was told not to settle that
+by reading the entry's assurance**, but to reproduce at least three rows in
+isolation including one claiming a NARROW failure, since that is precisely the
+row a stacked sweep records wrongly. Its verdict is not in at the checkpoint.
+
+## Per-tick summary at checkpoint 1
+
+| Task | Merged | Tick | Rejections |
+|---|---|---|---|
+| the delta view (T17) | `71bb1d6` | ✅ APPROVE | 1 — undeclared scope excursion; the lane table was wrong |
+| the candidate shapes (T9) | `a0a4e03` | ✅ APPROVE | 0 |
+| `wire draw` (T14) | `686aa72` + `ed14794` | ✅ APPROVE | 1 — the claim outran the measurement |
+| `wire delete` (T15) | `5753e4b` | ✅ APPROVE | 0 |
+| A\* (T10) | merged, green | **review running** | — |
+
+Every merge ran the full check with corpus and the environment-gated run: six
+gates, zero ignored, netlist oracle **35/35**, at every one.
 
 ## Findings, by lane
 
@@ -502,7 +539,7 @@ throughout). Each break alone:
 first check is vacuous, and only the control makes the pair evidence. Nothing was
 written, staged or committed inside the checkout or any worktree to obtain this.
 
-### `wire draw` (T14), Lane B — merged, REJECTED, fix merged, re-review running
+### `wire draw` (T14), Lane B — merged, REJECTED, fixed, re-reviewed, TICKED
 
 Merged as `686aa72` from `worktree-agent-a702dd29e3d9c98dc` (lane commits
 `c7c40ca`, `f915b0b`, `1759a7d`, `2e7050e`). Merged check: six gates, corpus, and
