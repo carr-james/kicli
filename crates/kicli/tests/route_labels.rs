@@ -88,6 +88,17 @@ fn far_apart(name: &str) -> Probe {
     probe
 }
 
+/// The same, with the source pin's net already carrying a name.
+///
+/// A label on a pin's own anchor names that pin's net, which is the name the
+/// pair must take. Without this drawing the rule that a net's own name wins is
+/// measured on no drawing at all.
+fn far_apart_and_named(name: &str, net: &str) -> Probe {
+    let mut probe = far_apart(name);
+    probe.label_of_kind("label", "", net, ("50.8", "101.6"));
+    probe
+}
+
 /// Two symbols side by side, near enough that the best route is drawn.
 fn side_by_side(name: &str) -> Probe {
     let mut probe = Probe::new(name, scratch());
@@ -443,6 +454,40 @@ fn auto_labels_writes_the_pair_and_says_so() {
     assert!(
         net.pins.iter().any(|pin| pin.label() == "U2.2"),
         "the pair joins the two pins: {:?}",
+        net.pins.iter().map(|pin| pin.label()).collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn a_named_net_keeps_its_name() {
+    // The other half of the naming rule. `U1_SCK` is what a proposal falls
+    // back to; a net the drawing already names keeps that name, because a pair
+    // that renamed it would split the net it was asked to join.
+    let path = far_apart_and_named("performed-named", "SPI_SCK").write();
+    let project = path.parent().expect("the drawing sits in a directory");
+    let named = extract(&loaded(&path));
+    let before = named.net_of("U1", "1").expect("the pin is on a net");
+    assert_eq!(before.name, "SPI_SCK", "the drawing names this net already");
+
+    let run = auto_labels(project, "U1.1", "U2.2");
+    assert_eq!(
+        run.status.code(),
+        Some(0),
+        "the pair is written: {}",
+        stderr(&run)
+    );
+    assert!(
+        stdout(&run).contains("  labels: \"SPI_SCK\" at 50.80,99.06 and 152.40,82.55\n"),
+        "the pair takes the name the net had: {}",
+        stdout(&run)
+    );
+
+    let joined = extract(&loaded(&path));
+    let net = joined.net_of("U1", "1").expect("the pin is still on a net");
+    assert_eq!(net.name, "SPI_SCK");
+    assert!(
+        net.pins.iter().any(|pin| pin.label() == "U2.2"),
+        "and it now reaches the other pin: {:?}",
         net.pins.iter().map(|pin| pin.label()).collect::<Vec<_>>()
     );
 }
