@@ -1995,3 +1995,140 @@ load-bearing, and nobody has measured it.
     relative seed serves it strictly better. Do it as one chore across the three
     verbs rather than per-verb, so the convention cannot end up split; and
     measure first whether any committed fixture depends on the current values.
+
+### The label proposal (T13), Lane A — merged, awaiting tick review, carries a BLOCKED item
+
+Lane commits `3638d1d`, `7b20360`, on branch `lane-t13-label-proposal`. **Six
+gates green on the merged result.** `route::propose` answers when the best path
+exceeds `routing.label_threshold` or A\* reports blocked; `--auto-labels`
+performs it and the output says which happened.
+
+**The pair is two stubs and two labels, not two bare labels**, on a measurement
+rather than an assumption: a label 2 G off a pin with **nothing between it and
+the pin** is electrically nothing. The oracle confirms the whole path — before
+the write KiCad reads four `unconnected-(…)` nets; after
+`wire draw --auto-labels` it reads `/U1_SCK` carrying `U1.1` and `U2.2`, and
+kicli's partition matches KiCad's on both arms.
+
+**Two falsification rows are reasoned rather than tabulated, and the reasoning is
+the interesting part.** A "proposal writes" break **cannot be made inside the
+router**, because `route::propose` has no file access at all — the break is a
+no-op enforced by the module boundary. The lane classified this as **case 1**
+under today's amendment, not as a blind check, and made the *reachable* form of
+the same defect at the command layer, where it was caught. That is the amendment
+being used the way it was written, on the first task to work under it. The tick
+reviewer has been asked to judge that classification specifically, because case 2
+recorded as case 1 is the exact dishonesty the amendment names.
+
+### The worktree experiment — isolation held, and the flow cost nothing
+
+The ruling's three conditions, answered:
+
+| Condition | Result |
+|---|---|
+| the brief pinned the worktree path as the sole working directory | done, and stated as such |
+| file scope and standing rules unchanged | unchanged |
+| **isolation held?** | **yes** — `git diff --stat main...lane-t13-label-proposal` shows nine files, every one in the lane's declared scope, and the main checkout's `git status` was clean throughout |
+
+**The base matched on the first command** — the first dispatch of five this
+session to do so, and the entire point of the experiment. The lane's own words:
+"The explicit-worktree arrangement helped and got in the way nowhere. The base
+matched on the first command, which is the whole point, and having one named
+directory made every `cargo` invocation unambiguous."
+
+**Friction compared against the auto-created flow.** The auto flow cost three
+stale bases out of four dispatches, each one either a round trip or a
+fast-forward the lane had to reason about. The manual flow cost one `git worktree
+add` before dispatch and one extra paragraph of brief. The only friction the lane
+reported was environmental and unrelated to the flow: `cargo` is not on the
+non-interactive shell's `PATH`, so every command needed the usual `export` prefix
+— which is true in the auto flow too.
+
+**One dispatch is data, not adoption**, and the decision is the advisor's at the
+stop. The honest reading of this one: **the trade did not bite.** Isolation by
+instruction held, and it held in a lane that was simultaneously holding two
+halves of a split task across `route/` and `cli/`, which is more opportunity to
+stray than most. That is one sample, and the failure mode of instruction-based
+isolation is that it works until it doesn't.
+
+## BLOCKED — the recorded default threshold is two different numbers
+
+**Raised by the label proposal (T13), which could not proceed past it without
+choosing a value. Nothing has been changed. This is the session's stop
+condition.**
+
+`spec/SPEC.md` §9 and `research/wire-routing.md` §5.5 both write the default as
+**"30 G ≈ 381 mm"**. Those are not the same length, and the difference is a
+factor of ten.
+
+**Measured, not argued** (`crates/kicli/src/geometry.rs`):
+
+| Fact | Value |
+|---|---|
+| `UNITS_PER_MM` | `10_000` |
+| `GRID` | `Iu(12_700)` = **1.27 mm** |
+| 30 G | `Iu(381_000)` = **38.10 mm** |
+| 381 mm | `Iu(3_810_000)` = **300 G** |
+
+The config agrees with the grid-step reading: `config.rs:175` is
+`label_threshold: Iu(30 * GRID.0)`, and `config.rs:593` asserts
+`Iu(381_000)`, commented "30 grid steps". `AGENT.md:701` says `"30G"`.
+
+**The likely origin of the error, which matters for deciding it.** `Iu(381_000)`
+is *internal units*. Someone reading that number as millimetres — dropping the
+`UNITS_PER_MM` factor of 10,000 and seeing "381" — would write "≈ 381 mm". The
+gloss appears to have been derived from the internal-unit constant rather than
+from the millimetre value, which is exactly the class of mistake a typed length
+exists to prevent and which prose is not protected against.
+
+**Both readings have support in the record, which is why this is not a typo.**
+
+- **30 G = 38.10 mm** is what the code does today, what `AGENT.md` publishes, and
+  what the config test asserts.
+- **381 mm** is what the *rationale* rests on. `research/wire-routing.md:15`
+  states the design tension as "the router emits a wire at 250 mm and the linter
+  penalises wires over 381 mm"; `spec/SPEC.md:641` says a router that "penalises
+  above 381 mm would argue with itself". **A 250 mm example only makes sense
+  against a 381 mm boundary.** At 38.10 mm, that sentence's own example is over
+  the threshold by a factor of six.
+
+**And it is load-bearing, not cosmetic.** At 38.10 mm the boundary sits **2.54 mm
+above the wire the `routed` golden actually draws** (35.56 mm). A default that
+close to an ordinary two-resistor wire means most real wires approach the
+proposal boundary — which is not a plausible design intent for a knob whose
+gloss is "more than a sheet width".
+
+**Why it is BLOCKED rather than PROPOSED.** Three reasons, any one sufficient:
+
+1. `routing.label_threshold` is **one knob shared with M5's `KI-LBL-001`**
+   (C14). Changing it changes what the linter scores, in a milestone that has not
+   been written.
+2. This milestone's Rules say **the weights are not retuned in M4**, and that a
+   task reports a measured deviation and parks it rather than moving a value.
+3. It is a **value-level call**, which the orchestrator does not make.
+
+**Options, with a recommendation.**
+
+- **(a) The millimetre gloss is right; the default becomes 300 G (381 mm).** Fits
+  every stated rationale, including the 250 mm worked example and "more than a
+  sheet width". Costs: one config default, its test, and any check whose drawing
+  straddles the old boundary — the label proposal's own checks set their
+  threshold explicitly via `kicli.toml`, so they are insulated by construction.
+- **(b) The grid-step figure is right; the glosses become "30 G ≈ 38.10 mm".**
+  Costs nothing in code and contradicts the rationale in two documents, which
+  would then need rewriting to explain why a 38 mm wire is long.
+- **(c) Neither; the intended value is a third number.** Possible — 30 G may
+  simply have been chosen badly and 381 mm written aspirationally.
+
+**Recommendation: (a).** The arithmetic error is traceable to reading an
+internal-unit constant as millimetres, and the *reasoning* in both documents is
+consistent only with 381 mm. Under (b) the tool keeps a default that would
+propose labels instead of wires across an ordinary sheet, and two documents keep
+rationales that no longer argue for it. **But this is James's call**, and the M5
+coupling is why: whichever number stands is the number `KI-LBL-001` will score
+against.
+
+**Nothing was changed. The label proposal reads the configured value correctly
+under either ruling** — `the_threshold_is_the_configured_one` proves the
+configured value moves the boundary — so this decides a default, not a
+behaviour.
