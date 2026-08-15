@@ -1339,3 +1339,56 @@ itself data about what a WORKFLOW NOTE is worth before review.)*
    an entry is written, which is that skill's scope, and `CLAUDE.md`'s own rule
    says a new incident adds a worked example to the relevant skill rather than a
    rule to the file. The T11 paragraph and its correction are the worked example.
+
+### Rulings received mid-session: worktree currency, and green-after-a-break
+
+Provenance: advisor, 2026-08-15, promoting PROPOSED 4 and 5 above.
+
+**1. Worktree currency, mechanism and safety net together.** Both halves landed,
+each where it acts:
+
+- `CLAUDE.md`, Parallel work: **a lane worktree is created at, or reset to, the
+  brief's named base commit as part of dispatch.** Worktrees no longer start
+  stale by construction, which makes the existing verify-before-work rule a
+  safety net rather than the mechanism. Two stale worktrees in three dispatches
+  is the measurement behind it.
+- `.claude/agents/lane-implementer.md`, a new opening section replacing the bare
+  stop-if-stale: **fast-forward only if the named base is a descendant of the
+  worktree's commit AND the tree is clean; stop and report otherwise.** The two
+  conditions are what make it safe — a non-descendant base means moving discards
+  commits, a dirty tree means moving discards work, and neither is the lane's to
+  discard.
+
+The provenance is recorded in the definition itself: the determinism task (T11)
+hit exactly the fast-forwardable case under a rule that said only "stop", made
+the right call, and thereby deviated from its brief. **Recorded as a deviation
+despite the correct outcome — the rule was wrong, not the judgement.** That
+distinction is why the fix is a rule change rather than an excuse, and why the
+deviation stays in the record.
+
+**2. falsification-control, third amendment: green after a deliberate break is a
+finding about the instrument.** The trap the amendment names is that green
+*feels* like good news, so the row gets skipped and the table records a break
+that "did not apply". The rule now: a break that leaves the check green means the
+instrument may be blind, and **the instrument is investigated before any
+conclusion is drawn from that row.**
+
+Two cases, and telling them apart is the investigation: the break was a **no-op**
+— real evidence that something else enforces the rule — or **the check does not
+watch what it claims**, which is the dangerous one, because it will keep passing
+forever. The amendment states plainly that case 2 is never recorded as case 1:
+*"Removing it changes nothing" is the same sentence for "this rule is redundant"
+and "my test cannot see this rule", and those are opposite findings.*
+
+Worked examples quoted from T11 — the shuffle that permuted nothing, and every
+answer replaced by a constant, both green over innocent code — with the note that
+the tick reviewer re-made each against the current control *and* a reconstruction
+of the old one, so the record holds a contrast rather than a pass.
+
+**And the precedent for the other case is recorded beside them**, so the two are
+not conflated: the candidate shapes (T9) measured that with both `polyline`
+guards removed all five drawing checks still pass, and did **not** read that as
+the guards being safe. It found the structural reason — a terminal's own body box
+covers every neighbour of its own cell except the escape point — and kept both
+rules while moving their measurement to `route::shapes::tests`. Case 1, diagnosed
+as case 1, with the work shown.

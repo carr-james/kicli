@@ -20,6 +20,57 @@ entry.
 4. Restore the source; record in the task entry WHAT was broken and WHICH
    assertion caught it.
 
+## Green after a deliberate break is a finding about the instrument
+
+**Third amendment.** Step 3 says "if it stays green, the check is not watching
+what you thought" — and the trap is that green *feels* like good news, so the row
+gets skipped past and the table records a break that "did not apply". It is never
+good news. **A break that leaves the check green means the instrument may be
+blind, and the instrument is investigated before any conclusion is drawn from
+that row.**
+
+Two known cases, and telling them apart is the investigation:
+
+1. **The break was a no-op** — nothing about behaviour actually changed, so
+   nothing could have been caught. The row is real evidence about the code:
+   something else already enforces the rule.
+2. **The check does not watch what it claims.** The code was innocent and the
+   control was blind. This is the dangerous one, because the check will keep
+   passing forever and no one will look again.
+
+Never record case 2 as case 1. "Removing it changes nothing" is the same
+sentence for "this rule is redundant" and "my test cannot see this rule", and
+those are opposite findings.
+
+### Worked examples — the control was blind, twice, in one task
+
+From the determinism property test (T11). Both breaks left green checks over
+innocent code:
+
+- **A shuffle that permuted nothing.** `reordered()` was broken to ignore its
+  `order` argument, and the check passed — because the control compared the
+  drawing against its own text, so it agreed on layout alone. Rewritten to
+  compare against the same file through the same writer, unshuffled, the break
+  fails. A determinism check that passes when nothing varies is the exact
+  failure mode the check exists to prevent.
+- **Every answer replaced by a constant.** This passed the shuffled arm, which
+  carried no class counters. The baselines now must hold a shape route, an A\*
+  route and a refusal, and the break fails both arms.
+
+The tick reviewer re-made both breaks against the current control *and* against a
+reconstruction of the old one, so what the record holds is a **contrast** rather
+than a pass. That contrast is the evidence.
+
+### Related precedent — case 1, held apart on purpose
+
+The candidate shapes (T9) measured that with **both** `polyline` guards removed,
+all five drawing checks still pass, and did **not** read that as the guards being
+safe. It established the structural reason — a terminal's own body box covers
+every neighbour of its own cell except the escape point, so the map blocks the
+reversing leg anyway — and recommended keeping both rules while measuring them
+in `route::shapes::tests` where they can be seen. That is case 1 diagnosed as
+case 1, with the work shown.
+
 ## Commit the good state before you break anything
 
 **Git can only restore committed state.** Step 4 assumes the source can be put

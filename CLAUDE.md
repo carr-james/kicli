@@ -42,6 +42,13 @@ CLI tool giving LLM agents eyes and hands in KiCad 10 projects. Rust.
   checkpoint-1 stale-worktree near-miss: a worktree left behind by an earlier
   session looks like a clean lane and is not one, and work built on a stale base
   is discovered at merge, which is the most expensive possible moment.
+- **A lane worktree is created at, or reset to, the brief's named base commit as
+  part of dispatch.** Worktrees do not start stale by construction; the
+  verification above is then a safety net rather than the mechanism. Ruled after
+  three dispatches in one session produced two stale worktrees — at which point
+  a recurring cost stops being an incident. The lane's own half of this rule
+  lives in the `lane-implementer` definition, because that is where a lane acts
+  on it.
 - The BLOCKED rule applies inside lanes: a subagent that hits a governing-
   document conflict parks it and reports to the orchestrator; the orchestrator
   parks it for James.
