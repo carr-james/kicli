@@ -1,13 +1,12 @@
 # M4 Phase 2 — consolidated session report
 
-**STATUS: CHECKPOINT 1 COMPLETE.** All five tasks merged and ticked with
-recorded reviewer verdicts; six gates green on `main`; the netlist oracle at
-35/35 with zero tests skipped, measured at every merge. This report is the
-handoff and every touched entry is at its true state. The first session
-stopped on its token limit; this one reopened under the advisor's rulings on
-that stop. Its record is preserved below under "Session 1", unaltered, because a
-report that rewrites its own history is not a record. Session 2 begins at
-"Session 2 — resumed".
+**STATUS: CHECKPOINT 2 IN PROGRESS.** Checkpoint 1 is complete and closed — all
+five of its tasks merged and ticked with recorded reviewer verdicts, six gates
+green on `main`, the netlist oracle at 35/35 with zero tests skipped, measured at
+every merge. Checkpoint 2 opened under the advisor's rulings on the checkpoint-1
+review and is the live section: **Session 3 — checkpoint 2**, at the end of this
+file. Sessions 1 and 2 are preserved unaltered, because a report that rewrites
+its own history is not a record.
 
 Orchestrator sessions opened 2026-08-15. James holds intent; the advisor chat
 reviews and rules; the session coordinates the subagents that do the work.
@@ -832,3 +831,129 @@ copy is an hour not spent breaking code.
   recorded here with that provenance so the advisor can reverse it retroactively
   like any other. Nothing in the governing documents says whether a direct
   instruction from James is a ruling for this purpose; I read it as one.
+
+---
+
+# Session 3 — checkpoint 2, closing M4 Phase 2
+
+**STATUS: IN PROGRESS.** Opened 2026-08-15 under the advisor's rulings on the
+checkpoint-1 review. The /goal condition for this session: the determinism
+property test (T11), the four-way avoidance (T12), the label proposal (T13) and
+the wire CLI surface (T16) ticked with recorded reviewer verdicts;
+handle-addressable probe drawings (C5) done; the dogfood dry run executed against
+the wire verbs with its defect list in `tasks/dogfood.md`; six gates green on
+`main`; the netlist oracle at 35/35 with zero tests skipped; this report current.
+
+## Rulings applied, before any dispatch
+
+Seven, from the checkpoint-1 review. Each was recorded where its scope is rather
+than all in one document — which is `CLAUDE.md`'s own rule about where a rule
+lives. All seven landed in one commit, `8babffc`, before any lane opened.
+
+| # | Ruling | Where it landed |
+|---|---|---|
+| 1 | The tick reviewer's consolidated amendment — five parts | `.claude/agents/tick-reviewer.md`, new section "The scratch copy, and the evidence trail" |
+| 2 | falsification-control's first amendment — restoring a file git has never seen | `.claude/skills/falsification-control/SKILL.md`, new section |
+| 3 | A direct instruction from James in a session IS a ruling | `CLAUDE.md`, agentic-layer section |
+| 4 | Every brief states its base commit; the orchestrator verifies the worktree | `CLAUDE.md`, Parallel work section |
+| 5 | The wire CLI surface (T16) entry corrected before briefing | `tasks/M4.md`, new "Corrected before briefing" section in that entry |
+| 6 | Owners named on the open chores; C5 before T16 | `tasks/M4.md`, owners table at the head of `## Chores`, plus C4's own entry |
+| 7 | Mutation testing recorded as a milestone-exit criterion | `tasks/M4.md`, `## Milestone exit criteria` — a table row and a paragraph |
+
+Three of these deserve more than a table row.
+
+**Ruling 1 was five separate frictions consolidated into one amendment**, and
+they came from four different reviews in the checkpoint-1 batch. The new section
+states: a scratch directory the reviewer created itself, from `mktemp -d`, never
+a guessable fixed path — two reviews at one guessable name is a review reading
+another review's broken tree and reporting it as a finding; the tree checksummed
+BEFORE any reading, because a review of a truncated copy reaches real conclusions
+about a file that does not exist; a reviewer never writes into a path it did not
+create; `rsync -a` with three exclusions and never a naive `cp -r`, with the
+clean-gate skip named as **an artefact of the method, not a finding**; the
+reviewed state pinned with `git log <merge>..HEAD -- <lane files>` before reading;
+and a disturbed evidence trail re-established by re-measurement, never by the
+entry's assurance, with the A* (T10) review as the worked example. The `Bash`
+grant James ruled in session was already in the committed definition at
+`bf1c0d7`; it now takes effect for the first time, because this is the next
+session.
+
+**Ruling 3 answers the exact question the checkpoint-1 retrospective raised and
+could not answer from the record.** That session recorded: "Nothing in the
+governing documents says whether a direct instruction from James is a ruling for
+this purpose; I read it as one." The reading is now the rule, with the advisor's
+half stated beside it — the advisor reviews rulings for conflict with recorded
+principle and raises conflicts to James, and does not reverse him.
+
+**Ruling 5 was the largest.** The wire CLI surface entry (T16) had been written
+when Lane B's verbs were expected to carry their own CLI. They could not: a new
+`Command` variant fails `agent_doc_covers_every_command` until `AGENT.md`
+documents it, and `AGENT.md` is held by one task at a time — so `wire draw` (T14)
+and `wire delete` (T15) both merged as **library verbs with no CLI at all**, each
+recording that it left the verb behind. Three further obligations had landed on
+the entry from elsewhere. The correction states all seven owned items in one
+table with their provenance, so the brief is derived from the entry rather than
+from four other entries. It also **narrows the entry**, which is recorded as
+PROPOSED below.
+
+## Findings
+
+### The stale-worktree rule caught a stale worktree on its first dispatch
+
+Ruling 4 was promoted from a *near-miss* last checkpoint. On the first two
+dispatches under it, it became a **catch**.
+
+Both lanes were launched in one message, after `3563339` was committed to `main`.
+Lane A's worktree was created at `3563339` — correct. The chore lane's worktree
+was created at **`3aa4803`**, the commit `main` held at session start, **two
+commits stale**: it was missing both the rulings commit and the `proptest`
+dev-dependency. The chore-runner ran `git log --oneline -1` as its first action,
+compared it against the base commit its brief named, and stopped without touching
+a file.
+
+Measured, not inferred: `git worktree list` showed
+`agent-a216a44225205e17c 3563339` for Lane A, and the chore lane's worktree was
+already gone — the harness removes a worktree an agent left unchanged, which is
+the same reason nothing was lost.
+
+**Why it matters more than the near-miss did.** The chore lane's second chore
+edits `crates/kicli/src/edit/wire.rs`, whose rustdoc correction (C6) was filed by
+`wire delete`'s tick review. On a base two commits stale the edit would still
+have applied cleanly and the gates would still have passed — the divergence was
+in `Cargo.toml` and the governing documents, neither of which C5 or C6 reads.
+**It would have been discovered at merge, as a conflict in a file neither chore
+touched.** That is the failure mode the rule was written for, and it cost one
+re-dispatch instead of one debugging session.
+
+**What the re-dispatch changed, and it is worth keeping.** The second brief
+authorises the fix in advance, under three conditions checked together: the
+working tree is clean, the branch has no commits of its own, and the base commit
+is reachable. Only then may the lane `git reset --hard` to its stated base, and
+it must say that it did. The conditions are what make it safe — a reset is
+discarding work unless all three hold — and stating them in the brief costs less
+than a round trip.
+
+## PROPOSED items, in entry order
+
+1. **`wire connect` leaves the wire CLI surface (T16) and lands with the join
+   (T18).** Recorded in full in T16's corrected entry, with the three
+   alternatives and why two of them lose. In short: T18's own first sentence is
+   "The router behind the verb", there is no `route::connect` entry point today,
+   and building one in a Phase 2 lane moves Phase 3's join into Phase 2 — and the
+   phase split is James's workflow design, escalated to him once already.
+   Shipping `connect` as a placeholder that parses and refuses was the other
+   option, and it loses because the verb would sit in `AGENT.md` as available for
+   two tasks' worth of time, and an agent reading `AGENT.md` would call it.
+   **Recommendation: accept.** Cheap to reverse — if rejected, `connect` is one
+   more variant over the renderer this task builds either way.
+   `agent_doc_covers_every_command` asserts over the commands that exist, so
+   nothing breaks in the gap.
+2. **C4's owner is M5, with the rule catalogue.** A sheet pin whose angle
+   disagrees with its position is genuinely unowned, and both its open questions
+   are `spec/SPEC.md` §11.4's — whether it earns a `KI-…` code, and whether kicli
+   reports the disagreement or corrects it. §11.4 is what M5 builds; M4 scores no
+   drawing at all. Naming an M4 task would mean opening a scoring surface this
+   milestone deliberately has none of, and would decide the larger question by
+   default in the milestone least equipped to. **Recommendation: accept**, and
+   carry the entry into M5's file at the M4 close rather than leaving it in a
+   closed milestone.
