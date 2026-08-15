@@ -1392,3 +1392,24 @@ the guards being safe. It found the structural reason — a terminal's own body 
 covers every neighbour of its own cell except the escape point — and kept both
 rules while moving their measurement to `route::shapes::tests`. Case 1, diagnosed
 as case 1, with the work shown.
+
+### Ruling received mid-session: a claim about another lane expires
+
+Provenance: advisor, 2026-08-15, promoting PROPOSED 6 above. Landed in
+`.claude/skills/task-entry-recording/SKILL.md` under Evidence, which is where the
+orchestrator recommended it — a rule about how an entry is written belongs in the
+skill that governs entries, per `CLAUDE.md`'s own rule that a new incident adds a
+worked example to the relevant skill rather than a line to that file.
+
+The rule: **a claim about another lane's state is written pinned to a commit —
+"as of `<commit>`" — and treated as expiring.** It describes the tree at writing
+time, not at reading time. Whoever relies on it at merge or review time
+re-verifies against the merged tree rather than trusting the note.
+
+T11's "Carried" paragraph is the worked example, and two details of the fix are
+carried into the skill because they generalise: the correction was recorded
+**beneath the claim rather than over it**, since how a claim went stale is what a
+later reader needs; and **nothing about the test was wrong, only its stated
+justification** — which is the usual shape of this defect. The code is fine and
+the record is not, which is exactly the failure a record-driven review process
+has to be able to catch, and did.

@@ -29,6 +29,29 @@ Written at the moment of the claim, never backfilled by outcome.
 - Every check's falsification is recorded (see falsification-control).
 - Carried gaps are recorded in the task files that owe them at the moment
   they are identified, not when they bite.
+- **A claim about ANOTHER lane's state is written pinned to a commit — "as of
+  `<commit>`" — and treated as expiring.** It describes the tree at *writing*
+  time, not at *reading* time, and a concurrent lane can land in between.
+  Whoever relies on such a claim at merge or review time **re-verifies it
+  against the merged tree** rather than trusting the note.
+
+### Worked example — a carried claim that expired between branch and merge
+
+The determinism task (T11) wrote a "Carried" paragraph stating that every item a
+probe draws answers to the handle `00000000`, and gave that as the reason its
+ambiguous-blame case had to be built from two symbols rather than two
+overlapping wires.
+
+True when that lane branched. **False by the time it merged**: the C5
+uuid-distinctness chore landed on `main` in a concurrent lane and is an ancestor
+of T11's own merge commit. The tick reviewer caught it by reading `01000001` and
+`01000006` out of the merged tree — a measurement, not an inference.
+
+Two things about how it was fixed are the point of this example. The correction
+was recorded **beneath the claim, not over it**, because how a claim went stale
+is what a later reader needs. And nothing about the test was wrong — only its
+stated justification, which is the usual shape of this defect: the code is fine
+and the record is not.
 
 ## Form
 
