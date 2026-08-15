@@ -35,17 +35,25 @@
 //! always two points. The write goes through [`crate::model::mutate`], which is
 //! the only path to disk: the invariants run on what was built, and a file is
 //! written only when all of them hold.
+//!
+//! **A delete removes what it was asked for and nothing else.** It does not
+//! cascade into junctions. A junction the removal leaves sitting on two ends is
+//! a legal drawing, and taking it away is a second decision that belongs to
+//! whoever asks for it: a delete that tidies up after itself is a delete an
+//! agent cannot predict. So [`delete`] **reports** every junction on the
+//! segment it removed that is now left joining fewer than [`JOINING`] wire
+//! ends, and the caller decides what to do about each.
 
 use std::path::Path;
 
-use kicli_sexpr::{SexprError, quote};
+use kicli_sexpr::{NodeId, SexprError, quote};
 
 use crate::edit::insert::{Identifiers, insertion_index};
-use crate::edit::mark::PinAddress;
+use crate::edit::mark::{PinAddress, WireEnd, wire_ends_at};
 use crate::geometry::{Iu, Point, on_segment, resolve_pins};
 use crate::model::config::Routing;
 use crate::model::hierarchy::{Hierarchy, LoadedFile};
-use crate::model::items::{ReadError, Schematic, SheetPath, Uuid};
+use crate::model::items::{Line, LineKind, ReadError, Schematic, SheetPath, Uuid};
 use crate::model::library::{definition_of, read_library};
 use crate::model::mutate::{Mutation, MutationError, Target, commit, state_before};
 use crate::route::cost::{Cost, Tally, Uncostable};
@@ -83,6 +91,45 @@ pub struct Polyline {
 pub struct DrawnWire {
     /// The result, in the shape the output contract prints.
     pub report: Report,
+    /// What the write changed, and what kicli checked afterwards.
+    pub mutation: Mutation,
+}
+
+/// How many wire ends a junction joins before it is doing a junction's work.
+///
+/// Three. Two wire ends that meet are joined without a dot, so a junction on
+/// two ends draws something the drawing already said; on fewer, it says nothing
+/// at all. The number is the same one [`crate::edit::mark`] refuses a four-way
+/// junction against, read from the other side.
+pub const JOINING: usize = 3;
+
+/// A junction a delete left joining fewer than [`JOINING`] wire ends.
+///
+/// It is still in the file. This is the report that lets a caller decide.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Stranded {
+    /// The junction's identifier.
+    pub junction: Uuid,
+    /// Where it sits.
+    pub at: Point,
+    /// The wire ends it is left joining, which is fewer than [`JOINING`].
+    pub ends: Vec<WireEnd>,
+}
+
+/// What one deleted segment produced.
+#[derive(Clone, Debug)]
+pub struct DeletedWire {
+    /// The identifier of the record that was removed.
+    pub removed: Uuid,
+    /// One end of the segment that was removed.
+    pub from: Point,
+    /// The other end.
+    pub to: Point,
+    /// The junctions the removal left joining fewer than [`JOINING`] ends.
+    ///
+    /// Every one of them is still in the file: the command reports, and never
+    /// cascades.
+    pub stranded: Vec<Stranded>,
     /// What the write changed, and what kicli checked afterwards.
     pub mutation: Mutation,
 }
@@ -181,6 +228,39 @@ pub enum WireError {
     NoSuchPort {
         /// The port name the caller gave.
         name: String,
+    },
+
+    /// No wire of this sheet carries the identifier given.
+    #[error(
+        "no wire of this sheet carries the identifier {identifier}. \
+         A layout view prints the identifier of every segment."
+    )]
+    NoSuchWire {
+        /// The identifier the caller gave.
+        identifier: String,
+    },
+
+    /// More than one segment answers to the identifier given.
+    #[error(
+        "{identifier} names {} segments: {}. Give the whole identifier of the one you mean.",
+        .matched.len(),
+        .matched.join(", ")
+    )]
+    AmbiguousWire {
+        /// The identifier the caller gave.
+        identifier: String,
+        /// Every segment it named, by its whole identifier.
+        matched: Vec<String>,
+    },
+
+    /// The identifier names a bundle rather than a wire.
+    #[error(
+        "{identifier} is a bus, not a wire. A bundle carries several nets, and \
+         removing one is not this verb's decision."
+    )]
+    NotAWire {
+        /// The identifier the caller gave.
+        identifier: String,
     },
 
     /// The file to edit is not one of the project's.
@@ -352,6 +432,118 @@ fn segment_fragment(from: Point, to: Point, uuid: &Uuid) -> String {
         to.y,
         quote(&uuid.0)
     )
+}
+
+/// Delete one wire segment, by the identifier a report writes.
+///
+/// `identifier` is either a segment's whole identifier or the eight-character
+/// handle a view prints for it. A handle that names more than one segment is
+/// refused with the list, because choosing one of them for the caller is
+/// guessing at which wire they meant to lose.
+///
+/// The record named is removed and nothing else is. Every junction that sits
+/// on the removed segment and is now left joining fewer than [`JOINING`] wire
+/// ends comes back in [`DeletedWire::stranded`], **still in the file**.
+///
+/// # Errors
+///
+/// Returns [`WireError::NoSuchWire`] when no segment answers to the
+/// identifier, [`WireError::AmbiguousWire`] when more than one does, and
+/// [`WireError::NotAWire`] when the one that does is a bus. None of those
+/// writes a byte, and neither does a failed invariant.
+pub fn delete(
+    hierarchy: &mut Hierarchy,
+    identifier: &str,
+    target: &Target<'_>,
+    taken: &str,
+) -> Result<DeletedWire, WireError> {
+    let file = file_of(hierarchy, target.path)?;
+    let named = segment_named(&hierarchy.files[file].schematic, identifier)?;
+
+    let loaded = &mut hierarchy.files[file];
+    let before: Snapshot = state_before(&loaded.doc, &loaded.schematic, target.sheet_path, taken)?;
+    loaded.doc.remove(named.node);
+    let mutation = commit(&loaded.doc, target, &before, taken)?;
+    loaded.schematic = Schematic::read(&loaded.doc)?;
+
+    // Read after the write, so what is reported is what the file now says
+    // rather than what the arithmetic expected it to say.
+    let stranded = stranded_by(&loaded.schematic, named.from, named.to);
+    Ok(DeletedWire {
+        removed: named.uuid,
+        from: named.from,
+        to: named.to,
+        stranded,
+        mutation,
+    })
+}
+
+/// The one segment an identifier names.
+struct Named {
+    uuid: Uuid,
+    node: NodeId,
+    from: Point,
+    to: Point,
+}
+
+/// Which segment an identifier names, or why none does.
+///
+/// Two forms are accepted and no others: the whole identifier, and the handle
+/// a report prints, which is its first eight characters. A prefix of any other
+/// length is not a form kicli ever writes, and accepting one would let a typo
+/// address a segment the caller never saw named.
+///
+/// Ambiguity is judged over the segments alone, because they are the objects
+/// this verb can act on: a handle shared with a symbol says nothing about
+/// which wire is meant.
+fn segment_named(schematic: &Schematic, identifier: &str) -> Result<Named, WireError> {
+    let matched: Vec<&Line> = schematic
+        .lines()
+        .filter(|line| line.uuid.0 == identifier || line.uuid.short() == identifier)
+        .collect();
+    let [line] = matched[..] else {
+        if matched.is_empty() {
+            return Err(WireError::NoSuchWire {
+                identifier: identifier.to_owned(),
+            });
+        }
+        return Err(WireError::AmbiguousWire {
+            identifier: identifier.to_owned(),
+            matched: matched.iter().map(|line| line.uuid.0.clone()).collect(),
+        });
+    };
+    if line.kind == LineKind::Bus {
+        return Err(WireError::NotAWire {
+            identifier: identifier.to_owned(),
+        });
+    }
+    Ok(Named {
+        uuid: line.uuid.clone(),
+        node: line.node,
+        from: line.from,
+        to: line.to,
+    })
+}
+
+/// The junctions on a removed segment that are left joining too few ends.
+///
+/// Only junctions the segment touched can have changed, and a junction on the
+/// segment's interior loses as much as one on its end. Everything else on the
+/// sheet joins exactly what it joined before, so naming it would be noise the
+/// caller has to read past.
+fn stranded_by(schematic: &Schematic, from: Point, to: Point) -> Vec<Stranded> {
+    schematic
+        .junctions()
+        .filter(|junction| on_segment(from, to, junction.at))
+        .filter_map(|junction| {
+            let ends = wire_ends_at(schematic, junction.at);
+            (ends.len() < JOINING).then(|| Stranded {
+                junction: junction.uuid.clone(),
+                at: junction.at,
+                ends,
+            })
+        })
+        .collect()
 }
 
 /// The terminal one end of a request names.
