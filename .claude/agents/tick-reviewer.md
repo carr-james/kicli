@@ -41,10 +41,19 @@ These are mechanics, and each one has cost a review an hour or a verdict.
   cannot run `cargo xtask check`'s `clean` gate, which needs a git repository,
   so you get **five gates and a clean-gate skip — that skip is an artefact of
   your method, not a finding**, and reporting it as one is a false positive.
-- **Pin what you are reviewing before you start.** Commits land underneath a
-  running review. Run `git log <merge>..HEAD -- <the lane's files>` first, so you
-  know whether the working tree still shows the state you were asked about, and
-  say in your verdict what you pinned.
+- **Pin what you are reviewing before you start, and again before you write your
+  verdict.** Commits land underneath a running review — with lanes running
+  concurrently and a review taking ten minutes or more, that is the normal case
+  rather than the exception. Run `git log <merge>..HEAD -- <the lane's files>`
+  **at both ends**, and say in your verdict what you pinned and that it still
+  held at the finish. Provenance: the four-way (T12) review, where a lane landed
+  mid-review; the next review met the same thing and re-pinned by habit.
+- **Do not run the full `cargo xtask check` in the live checkout while other
+  lanes are active.** Its `clean` gate compares the working tree before and
+  after, and the orchestrator writes the consolidated report *per tick* — so a
+  full run in the shared checkout can show a phantom `clean` failure caused by a
+  file you never touched. Targeted `cargo test --test <name>` runs in your
+  verified scratch copy give the same evidence without the race.
 - **A disturbed evidence trail is re-established by re-measurement, never by the
   entry's assurance.** If a mishap is disclosed to you, if the workspace is
   shared, or if you have any doubt that what you are reading is what was

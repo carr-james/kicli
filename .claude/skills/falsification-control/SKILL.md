@@ -20,6 +20,15 @@ entry.
 4. Restore the source; record in the task entry WHAT was broken and WHICH
    assertion caught it.
 
+**Record exactly what you removed, not only where the failure surfaced.** A row
+naming a single line number for what was really a two-assertion removal reads as
+precise and is not: the next reader removes that one line, watches a *different*
+assertion catch the break, and has to work out whether the row is imprecise or
+fabricated. Name the assertions by their message or their function, and if you
+removed several to isolate one, say so. Provenance: the four-way (T12) review,
+where exactly this cost the reviewer real time — it resolved as imprecision, but
+only after the work of ruling out the alternative.
+
 ## Green after a deliberate break is a finding about the instrument
 
 **Third amendment.** Step 3 says "if it stays green, the check is not watching

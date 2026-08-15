@@ -157,6 +157,17 @@ the expected shape of this exercise, not a contradiction.
 >    log line, so I'm flagging it as "message reappears where the doc implies it
 >    shouldn't" rather than a confirmed timing bug.
 
+### Triage — RATIFIED IN FULL by advisor ruling, 2026-08-15
+
+The triage below was written by the orchestrator and **ratified in full**. Two
+items were promoted at ratification: **D1 runs as a chore after the checkpoint**,
+golden changes included as part of the change; **D2 goes to the M5 planning list
+as a task**, noting that the answer already exists internally in
+`route::terminal` (`Terminal::of_pin`) and is merely unexposed. D3–D6 proceed as
+filed. Two standing instructions for the next run: **a clean shell environment**,
+and **the brief-writer owns the brief-ambiguity lesson** — an ambiguous brief
+spends the run on the brief rather than on the tool.
+
 ### Triage
 
 Every defect gets one of three outcomes: fixed, PROPOSED, or recorded with the

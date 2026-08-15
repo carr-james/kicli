@@ -1914,3 +1914,84 @@ programmatically". Next run's sandbox starts from a clean shell.
 12. **PROPOSED: a read-only way to ask where a symbol's pins are** — a task for
     M5 planning, not a chore. Recommendation: accept. It is a design decision
     about the agent-facing surface and deserves an entry rather than a patch.
+
+### Rulings received mid-run: the review practices tighten, and the dogfood triage is ratified
+
+Provenance: advisor, 2026-08-15, after reading the full record.
+
+**PROPOSED 7 and 8 promoted**, both into the instruments that had just been shown
+to need them. The `tick-reviewer` definition now requires the pin **at both ends**
+of a review, with the verdict saying it still held at the finish — and, folded in
+from PROPOSED 10, that a reviewer does not run the full `cargo xtask check` in
+the live checkout while lanes are active, because the `clean` gate and the
+orchestrator's per-tick report writing are in direct tension. `falsification-control`
+now requires a row to record **exactly which assertions were removed**, not only
+where the failure surfaced, with the four-way (T12) A2b ambiguity as its
+provenance.
+
+**The dogfood triage is ratified in full**, with D1 promoted to a chore after the
+checkpoint (golden changes included) and D2 to the M5 planning list as a task.
+Both standing instructions for the next run are the orchestrator's own defects
+from this one: a clean shell environment, and the brief-writer owning the
+brief-ambiguity lesson.
+
+**Recorded now, decided at the milestone boundary: `AGENT.md` worked examples
+become measured output rather than typed prose.** This is the right shape of fix
+and worth stating why. D3's defect class — a documented format the tool has never
+produced — is **invisible to tick review by construction**: the reviewer reads a
+diff and a check set, and neither contains the tool's actual output. Closing it
+per-instance means a chore every time someone types an example from memory.
+Closing it by mechanism means the example cannot drift, because it is generated
+from a run.
+
+### Directed question, answered: why does the seed keep the absolute path?
+
+**No. The T16 entry does not record why**, and the reason it does not is that
+**T16 never chose it.**
+
+What the entry records is the seed's *construction*, read by the reviewer from
+the source while verifying the path-dependence claim:
+`format!("{} wire {} to {}", target.path.display(), from.name, to.name)`, hashed
+by `Identifiers::for_document`. It records no reasoning for the absolute path,
+because the question never arose as a decision inside that task — the lane
+inherited the convention and only discovered its consequence.
+
+**Measured before answering, and it widens the PROPOSED.** The absolute path in a
+seed is not the wire verb's invention. Three write verbs seed the same way:
+
+| Verb | Site |
+|---|---|
+| `label add` | `crates/kicli/src/edit/label.rs:294` |
+| `wire draw` | `crates/kicli/src/edit/wire.rs:382` |
+| `text add` | `crates/kicli/src/edit/text.rs:98` |
+
+All three predate this checkpoint's wire work. `edit::insert`'s own module doc
+explains why identifiers come from **a seed rather than a random source** — "one
+command run twice over one design produces one file and a test is repeatable" —
+and says nothing about the path. So the recorded reasoning covers the
+seed-versus-random choice and **stops short of the path-versus-relative-path
+choice**, which appears to have been made once and never argued.
+
+**So the question does not close, and the PROPOSED stands — but it is wider than
+T16.** A project-relative seed would make identifiers checkout-independent,
+restore literal goldens for future write-tests, and cost one line **per verb** —
+three today, and every future write verb inherits whichever convention stands.
+The advisor's lean is seed-side and nothing in the record contradicts it: the
+only recorded justification is repeatability, which a project-relative seed
+serves **strictly better**, since it is repeatable across checkouts as well as
+across runs.
+
+**Not changed, and will not be without a ruling.** Recorded as PROPOSED 13 below.
+Two things a ruling should weigh that the record does not yet answer: whether two
+different projects at the same relative path colliding matters (the identifier is
+checked against the file's existing ones, so a collision is resolved rather than
+shipped), and whether any committed fixture or golden currently depends on the
+absolute-path values — the fixtures were generated before this convention was
+load-bearing, and nobody has measured it.
+
+13. **PROPOSED: the identifier seed becomes project-relative rather than
+    absolute**, at all three sites. **Recommendation: accept**, on the reasoning
+    above — the only justification the record carries is repeatability, and a
+    relative seed serves it strictly better. Do it as one chore across the three
+    verbs rather than per-verb, so the convention cannot end up split; and
+    measure first whether any committed fixture depends on the current values.
