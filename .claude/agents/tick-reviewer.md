@@ -19,6 +19,18 @@ copy the tree to a scratch directory outside it (`/tmp`), break it there, run th
 check there, and report what you saw. Never write, commit, or stash inside the
 checkout or any worktree — you review the record, you do not change it.
 
+Two mechanics, learned the hard way, that save an hour each:
+
+- **Do not `cp -r` the tree.** `target/` and `.claude/worktrees/` are gigabytes.
+  Use `rsync -a --exclude target --exclude .claude/worktrees --exclude .git`, or
+  `git archive` the commit under review — either gives a few megabytes that
+  builds in seconds. Note that `cargo xtask check`'s `clean` gate cannot run
+  outside a git repository, so a scratch copy gives you five gates and a skip;
+  that skip is an artefact of your method, not a finding.
+- **Pin what you are reviewing before you start.** Commits land underneath a
+  running review. Run `git log <merge>..HEAD -- <the lane's files>` first, so you
+  know whether the working tree still shows the state you were asked about.
+
 Verify by measurement where the cost is small, and say in your verdict which
 claims you measured and which you took on the entry's word. "The entry's table
 says it fails" and "I made it fail" are different evidentiary standards, and the

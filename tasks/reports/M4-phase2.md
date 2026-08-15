@@ -471,7 +471,7 @@ throughout). Each break alone:
 first check is vacuous, and only the control makes the pair evidence. Nothing was
 written, staged or committed inside the checkout or any worktree to obtain this.
 
-### `wire draw` (T14), Lane B — merged, tick review running
+### `wire draw` (T14), Lane B — merged, tick review REJECTED, fix running
 
 Merged as `686aa72` from `worktree-agent-a702dd29e3d9c98dc` (lane commits
 `c7c40ca`, `f915b0b`, `1759a7d`, `2e7050e`). Merged check: six gates, corpus, and
@@ -490,6 +490,37 @@ control, two symbol pins joined by a plain wire in the same drawing, is one net 
 **both** arms, so the instrument was working when it reported the break. The
 provenance above `of_sheet_pin` now says measured; I verified that diff is
 comment-only, no logic, as the lane claimed.
+
+**Reviewer verdict: REJECT — the claim outruns the measurement.** The review
+audited the measurement hardest, as instructed, and most of it stood. The control
+is real: moved 1.27 mm off its pins it fires **before any port is judged**, and
+it lives in the same file as the ports so any harness failure takes it down with
+them. Only the angle changed between arms — verified by diffing the written
+files, which differ on the four `(pin …)` records alone with byte-identical child
+sheets. One confound was found and ruled out: the probe derives `(justify …)`
+from the angle, so justify differed too; swapping justify alone, angles
+untouched, still connects all four. `kicad-cli` 10.0.5 genuinely ran. Five
+falsification rows reproduced verbatim.
+
+**The gap is narrow and real.** Two arms show the angle is load-bearing and that
+the stub at the written position no longer meets the port. They do NOT
+distinguish *relocation to the named edge* from *the port stays put and only
+accepts an approach along the angle* — both predict the reflected arm's netlist
+exactly, and nothing in the test looks at where the port ended up. But the
+provenance comment and PROPOSED 2 both assert relocation. PROPOSED 2 stakes a
+future ruling on it, and an entry must support a retroactive ruling from the
+record alone.
+
+**The reviewer measured the missing arm before rejecting, and the claim is
+true** — relocating each stub to the position the angle predicts rejoins all
+four. So the fix is additive: a third arm, re-measured by the implementer rather
+than adopted from the review, because a reviewer's numbers are a report and not
+the implementer's evidence. A fresh implementer is closing it, along with the
+second finding: PROPOSED 2 has no executable half and no owner, deferring to
+"whichever task owns the sheet-pin lint" without naming one.
+
+**Rejection one of two, counted.** Two tick reviews this session, two rejections,
+both sustained on inspection. The practice is not producing rubber stamps.
 
 **The CLI verb is not in this task, and that is a coordination defect of mine
 surfacing.** A new `Command` variant fails `agent_doc_covers_every_command` until
@@ -618,6 +649,43 @@ inside it.)*
 > `git checkout --` cannot restore it — falsification runs on a brand-new file
 > need a commit of the good state first, which the falsification-control skill
 > does not mention.
+
+**Tick review of the candidate shapes (T9) — APPROVE:**
+
+> The brief was unusually good — naming the two claims to press hardest (the
+> tie-break correction and the one-home constraint) sent me straight to the two
+> breaks that actually decide them, and my going-in objection to 3a was
+> answerable by a single measurement rather than by argument. Two frictions:
+> `cargo xtask check`'s `clean` gate cannot run in a `git archive` copy, so a
+> reviewer using the prescribed /tmp method gets five gates and a skip, not six —
+> worth saying in the brief so the skip is not read as a finding; and the entry's
+> falsification table lists the two `polyline` guards as separate rows while the
+> PROPOSED text measures them jointly, so verifying the rows as written cost an
+> extra break that a single sentence ("each was also dropped alone") would have
+> saved.
+
+**Tick review of `wire draw` (T14) — REJECT:**
+
+> The brief was the right shape — naming the two granted excursions with
+> instructions to verify rather than trust the comment-only one caught nothing
+> wrong but cost minutes, not hours, and naming which falsification rows carried
+> the most weight let me spend the whole budget on those. Two things were in the
+> way: `cargo` needed `export PATH="$HOME/.cargo/bin:$PATH"` as warned, but the
+> repo's `target/` is 11 GB and `.claude/worktrees/` another 11 GB, so a naive
+> `cp -r` to `/tmp` is a trap — `rsync -a --exclude target --exclude
+> .claude/worktrees --exclude .git` gives a 3 MB tree that builds in seconds, and
+> that recipe belongs in the tick-reviewer definition. Second, the diff commit
+> was still HEAD-adjacent when I started but two more commits landed underneath
+> me mid-review; `git log <merge>..HEAD -- <lane files>` at the start is what let
+> me be sure I was measuring the reviewed state, and it should be a named step
+> rather than something a reviewer thinks of.
+
+**Both of T14's reviewer frictions are now in the `tick-reviewer` definition**,
+and T9's `clean`-gate friction with them: the rsync/`git archive` recipe, the
+note that a scratch copy yields five gates and a skip which is an artefact and
+not a finding, and pinning the reviewed state with `git log <merge>..HEAD` before
+starting. PROPOSED, cheap to reverse — a reviewer that loses an hour to a 22 GB
+copy is an hour not spent breaking code.
 
 ### What earned its keep, so far
 
