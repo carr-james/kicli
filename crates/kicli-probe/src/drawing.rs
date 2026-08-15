@@ -119,10 +119,48 @@ impl Probe {
         at: (&str, &str),
         angle: &str,
     ) {
-        let pin_uuid = self.uuid();
-        let justify = if angle == "0" { "right" } else { "left" };
+        self.sheet_of_size(
+            uuid,
+            name,
+            at,
+            ("25.4", "25.4"),
+            &[Port {
+                name: port,
+                at,
+                angle,
+            }],
+        );
+    }
+
+    /// A sheet symbol of a stated size, carrying the ports the caller names.
+    ///
+    /// The corner, the size and each port position are given separately,
+    /// because a probe that asks where KiCad puts a port must be free to write
+    /// the port somewhere other than the corner. A probe that measures the
+    /// port rule needs a body with four distinguishable edges, which one fixed
+    /// size and one port cannot give it.
+    pub fn sheet_of_size(
+        &mut self,
+        uuid: &str,
+        name: &str,
+        at: (&str, &str),
+        size: (&str, &str),
+        ports: &[Port<'_>],
+    ) {
+        let pins: Vec<String> = ports
+            .iter()
+            .map(|port| {
+                let pin_uuid = self.uuid();
+                let justify = if port.angle == "0" { "right" } else { "left" };
+                format!(
+                    "(pin \"{}\" bidirectional (at {} {} {})\n\
+                     (effects (font (size 1.27 1.27)) (justify {justify})) (uuid \"{pin_uuid}\"))",
+                    port.name, port.at.0, port.at.1, port.angle
+                )
+            })
+            .collect();
         self.items.push(format!(
-            "(sheet (at {} {}) (size 25.4 25.4)\n\
+            "(sheet (at {} {}) (size {} {})\n\
              (exclude_from_sim no) (in_bom yes) (on_board yes) (dnp no)\n\
              (stroke (width 0) (type solid)) (fill (color 0 0 0 0.0000))\n\
              (uuid \"{uuid}\")\n\
@@ -130,10 +168,17 @@ impl Probe {
              (effects (font (size 1.27 1.27)) (justify left bottom)))\n\
              (property \"Sheetfile\" \"{name}.kicad_sch\" (at {} {} 0)\n\
              (effects (font (size 1.27 1.27)) (justify left top)))\n\
-             (pin \"{port}\" bidirectional (at {} {} {angle})\n\
-             (effects (font (size 1.27 1.27)) (justify {justify})) (uuid \"{pin_uuid}\"))\n\
+             {}\n\
              (instances (project \"probe\" (path \"/{ROOT}\" (page \"2\"))))\n)",
-            at.0, at.1, at.0, at.1, at.0, at.1, at.0, at.1
+            at.0,
+            at.1,
+            size.0,
+            size.1,
+            at.0,
+            at.1,
+            at.0,
+            at.1,
+            pins.join("\n")
         ));
     }
 
@@ -387,6 +432,22 @@ impl Probe {
     pub fn directory(&self) -> &Path {
         &self.directory
     }
+}
+
+/// One port of a sheet symbol, as a probe writes it.
+///
+/// The position and the angle are separate, and a probe may write them in
+/// disagreement on purpose: the angle names the edge KiCad puts the port on,
+/// which is not what the same number means on a symbol pin, and the way to
+/// measure that is to write a port off the edge its angle names and ask the
+/// tool where it ended up.
+pub struct Port<'a> {
+    /// The port name. A hierarchical label in the child sheet must match it.
+    pub name: &'a str,
+    /// Where the port is written, in millimetres.
+    pub at: (&'a str, &'a str),
+    /// The port angle: `0`, `90`, `180` or `270`.
+    pub angle: &'a str,
 }
 
 /// One placed symbol, as a probe describes it.
