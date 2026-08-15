@@ -1,16 +1,24 @@
 # M4 Phase 2 — consolidated session report
 
-**STATUS: INTERRUPTED (token limit).** The session stopped on its token limit,
-not on a task boundary and not on the goal condition. One task of nine is
-merged and none is ticked. Everything below is the state as of the stop.
+**STATUS: IN PROGRESS — resumed session, checkpoint 1.** The first session
+stopped on its token limit; this one reopened under the advisor's rulings on
+that stop. Its record is preserved below under "Session 1", unaltered, because a
+report that rewrites its own history is not a record. Session 2 begins at
+"Session 2 — resumed".
 
-Orchestrator session opened 2026-08-15. James holds intent; the advisor chat
-reviews and rules; this session coordinates the subagents that do the work.
+Orchestrator sessions opened 2026-08-15. James holds intent; the advisor chat
+reviews and rules; the session coordinates the subagents that do the work.
 Review happens in batches rather than at task boundaries, so this report and the
 task entries in `tasks/M4.md` are the review surface: every tick, PROPOSED item
 and finding is recorded with the evidence a retroactive ruling needs.
 
 Appended per tick, not written at the end.
+
+---
+
+# Session 1 — interrupted on a token limit
+
+**STATUS AT ITS STOP: INTERRUPTED.** One task of nine merged, none ticked.
 
 ## What holds on `main` at the stop
 
@@ -340,3 +348,165 @@ three lanes mid-task. Three concurrent implementer lanes plus an orchestrator
 holding the full governing-document set is the shape that ran out. The next
 session may want fewer concurrent lanes, or an orchestrator that reads less and
 points more.
+
+---
+
+# Session 2 — resumed, checkpoint 1
+
+Opened 2026-08-15 under the advisor's rulings on the interrupted stop, with the
+amendment text that Session 1 recorded as ruled-but-missing. The
+governing-document conflict Session 1 parked is therefore closed rather than
+carried: `CLAUDE.md` no longer contradicts a ratified reading.
+
+## Rulings applied, before any dispatch
+
+Provenance throughout: advisor rulings, interrupted-stop review.
+
+| Ruling | What it changed | Where |
+|---|---|---|
+| R9 — environment-gated checks in lanes | `CLAUDE.md`'s line now reads that a lane-worktree run never counts toward done — only the orchestrator's merged run does — and that a lane MAY run one to make a measurement its task owes | `25be0cf` |
+| R10 — session grain | `CLAUDE.md`'s "sessions end at task boundaries" replaced: work is dispatched, merged and recorded at task grain; the session runs under `/goal` to a checkpoint stop; an interrupted session is wound down per the orchestrator definition | `25be0cf` |
+| R2 — drafts are reference, not resumption | added to `CLAUDE.md`'s Parallel work section as a standing rule, beside the `lane-implementer` definition that already carried it | `25be0cf` |
+| R3 — the hook refusal | **already applied** in `1030aab`; verified, not re-done. The refusal names PATH and rustup and never `KICLI_SKIP_HOOK` | — |
+| R4, R5, R6 — the three coordination calls | **already promoted** into `tasks/M4.md`'s Phase 2 status in `47174b8`; verified | — |
+| R7 — the delta view's six | **already promoted** in the T17 entry in `47174b8`; verified | — |
+| R8 — the `scope.rs` twin | **already written** as chore C2 with its chore-runner eligibility condition; verified | — |
+
+## Ruling received mid-session: mutation testing joins the exit criteria
+
+**James's ruling, on the advisor's recommendation.** Recorded in `tasks/M4.md`'s
+exit-criteria section. **Nothing was run** — the ruling scopes it to the M4
+close, after every task is ticked and the gates are green.
+
+The shape of it: `cargo-mutants`, once, scoped to `crates/kicli/src/route/`, as
+an hours-scale batch verification run that is explicitly **never** a per-commit
+gate. Every survived mutant is triaged into a genuine coverage gap — filed as a
+chore or task with the mutant quoted — or a benign survivor recorded with the
+reason it stands. Four counts reported: generated, killed, survived-genuine,
+survived-benign. The M4 run also writes
+`.claude/skills/mutation-run/SKILL.md` with its own results as the worked
+example.
+
+**Why it is not a duplicate of the falsification rule, which is the question it
+invites.** Hand falsification proves a check can fail *at birth*: the implementer
+breaks the code and watches it go red. Nothing re-proves it afterwards. A
+surviving mutant is a check whose coverage *decayed* — the code moved underneath
+it and no one was watching. This session has already produced the case in
+miniature: the delta view's "nothing changed" check was vacuous on the day it was
+written, and only its deliberate control caught it. A mutant run is that control,
+mechanised, for every check at once, later.
+
+**The prohibition is the load-bearing half.** "Do not silently iterate tests to
+zero survivors during the close" — a survivor count driven to zero by unrecorded
+test edits destroys exactly the evidence the run exists to produce.
+
+**R9 was the load-bearing one.** Read the old way it forbade `wire draw` (T14)
+from making the sheet-pin measurement that is the point of that task. The
+amendment is what makes this checkpoint's most important measurement dispatchable
+at all.
+
+## What holds on `main` at checkpoint 1
+
+Baseline measured at `25be0cf`, before any lane of this session merged, so that
+every later measurement has a green control behind it:
+
+| | |
+|---|---|
+| Six gates | pass — run by the pre-commit hook at `25be0cf` and again at the reviewer amendment commit |
+| `KICLI_TEST_KICAD_CLI=1 cargo test --features corpus` | pass, **zero ignored in every binary** |
+| `corpus::netlist_partition_matches_kicad_corpus` | green, **hierarchies matched: 35/35** — the largest is `vme-wren` at 2353 nets |
+
+*(per-lane rows appended as they land)*
+
+## Per-tick record
+
+### The delta view (T17), Lane B — merged, tick review REJECTED on the first pass
+
+Landed in Session 1: `sch view --view delta` wired to machinery that already
+existed. Evidence in the T17 entry of `tasks/M4.md`, sections "Implemented and
+merged, 2026-08-15" and "Tick review, 2026-08-15"; commit `71bb1d6`, merged as
+`f144493`.
+
+**Reviewer verdict, first pass: REJECT.** The gap named: the diff modifies
+`crates/kicli/tests/command_surface.rs`, 62 lines and two new test functions,
+which is outside the file list Lane B was given and which the entry's six
+recorded decisions never declare as a scope excursion. Two excursions were
+declared and ruled; this would be a third, undeclared.
+
+**Resolution: the finding is real, and it lands on the orchestrator.** This
+entry's own second check bullet reads `cargo test --test command_surface`, so the
+two flagged functions ARE that check and writing them is executing the task. What
+is genuinely wrong is the Phase 2 lane table: it listed Lane B's files and omitted
+a file that two of Lane B's own task entries require. The implementer was handed a
+check it could not satisfy inside its granted scope, and no brief said what to do
+about that. The reviewer's own brief compounded it by presenting the lane file
+list as the answer to "does the diff exceed the entry's stated scope" — the
+entry's scope is what the entry's checks require.
+
+Corrected: `tests/command_surface.rs` joins Lane B's row in `tasks/M4.md` and is
+held by one task at a time, on the same rule as `AGENT.md`, because the verb
+surface (T16) names the same check. **Counted as rejection one of two**, not
+waived — the defect was in the inputs, but the reviewer read its inputs
+correctly and the record was wrong. A re-review is running against corrected
+inputs; a second rejection escalates as a PROPOSED item.
+
+## Session 2 workflow retrospective — running
+
+Appended as evidence arrives, not composed at the end.
+
+### Subagent WORKFLOW NOTEs, quoted verbatim
+
+**Tick review of the delta view (T17), first pass — REJECT:**
+
+> The inputs gave the lane's declared file scope but not the reasoning for why
+> `tests/command_surface.rs` was excluded from it despite the task's own check
+> bullets naming it — the reviewer had to infer the gap from a
+> diffstat/decisions-list mismatch rather than being handed a scope document that
+> reconciled the two; future tick-review dispatches should include the lane
+> assignment rationale alongside the file list so an omission like this is
+> checkable without cross-referencing the pre-implementation task text.
+
+**Tick review of the delta view (T17), re-review — APPROVE:**
+
+> My actual tool grant was Read/Grep/Glob only — no Bash/shell was available
+> despite the brief's explicit "You have a shell this time. Use it" and its
+> `cp -r`/`cargo test` instructions; I substituted static code-path tracing
+> (cross-checked against already-passing structurally-identical unit tests) for
+> live execution and measured zero rows empirically. If live execution is
+> required for this review to count, the tool grant needs to actually include a
+> shell, not just the brief claiming one.
+
+### What earned its keep, so far
+
+- **The tick-review practice, on its first use, rejected.** It found a real
+  defect on the first tick it ever reviewed. The defect was not where it aimed —
+  it named the implementer's diff and the fault was the orchestrator's lane
+  table — but a review that only ever approves is decoration, and this one was
+  not. It cost one re-review and bought a corrected lane table before two more
+  Lane B tasks hit the same file.
+- **`ENGINEERING.md`'s "controls before conclusions".** Applied to the session
+  itself: the corpus and oracle baseline was measured on `main` BEFORE any lane
+  merged, so every later measurement has a green control behind it. 35/35, zero
+  ignored, at `25be0cf`.
+- **R9, the amendment that arrived this session.** Read the old way, `CLAUDE.md`
+  forbade the very measurement the `wire draw` task exists to make. The
+  amendment is what made this checkpoint's most important probe dispatchable.
+
+### What I worked around, and what was ambiguous
+
+- **An agent definition's tool grant does not take effect mid-session.** I
+  amended `tick-reviewer` to carry `Bash` on James's ruling, dispatched the
+  re-review, and the reviewer reported it still had Read/Grep/Glob only. The
+  amendment is committed and correct; it binds the next session. **The verdict
+  it produced is therefore a traced APPROVE, not a measured one, and the
+  reviewer said so unprompted rather than letting it pass as measurement** —
+  which is the amendment's other half working even though its tool grant did
+  not. Worked around by dispatching a separate shell-carrying agent to make the
+  three weighted breaks and report observations, with the verdict staying the
+  reviewer's.
+- **`CLAUDE.md` says agent definitions are "version-controlled working practice,
+  changed only via ruling".** James ruled the shell grant in session, directly,
+  rather than through the advisor. Treated as a ruling — he holds intent — and
+  recorded here with that provenance so the advisor can reverse it retroactively
+  like any other. Nothing in the governing documents says whether a direct
+  instruction from James is a ruling for this purpose; I read it as one.
