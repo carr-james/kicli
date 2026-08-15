@@ -1602,3 +1602,90 @@ isolation by instruction.** Neither dominates. The decision is made at the stop
 report on both flows' evidence, and this report will carry whether isolation held
 — checkable at review, by whether the lane's commits touched only lane paths —
 and how the friction compared.
+
+### Tick review of the four-way avoidance (T12) — APPROVE. TICKED
+
+**Eight of the entry's rows were re-made by the reviewer rather than read**,
+including both sides of the off-by-one (`CROWDED = 4` at `:240`, `CROWDED = 2` at
+`:295` — a genuinely different assertion, which was the claim that mattered), both
+sides of the applied/reported split, both sides of `mark::FOUR_WAY`, the rename
+sweep, and the presence control pointed at an empty directory, **confirmed red
+rather than silently clean**. `edit/mark.rs` verified byte-for-byte unchanged, so
+no second implementation of the four-end count exists. The oracle arm ran for
+real with `kicad-cli` present (0.40 s against 0.02 s without).
+
+**It re-pinned mid-review**, because the verb surface (T16) landed on `main`
+underneath it. None of those commits touched T12's files, but the reviewer
+checked rather than assumed — and its note asks for that re-check to become
+routine rather than a one-off.
+
+**One discrepancy found and resolved rather than absorbed.** Row A2b claimed that
+with the `:240` assertion removed, `:248` also catches the break. Removing *only*
+the literal four-line `assert_eq!` leaves it caught by an adjacent `assert_ne!`
+instead; removing that too reproduces the entry's claim exactly. The reviewer
+judged it an imprecision in naming "the `:240` assertion" rather than a
+fabricated result, confirmed the substantive claim by re-measurement, and **wrote
+it into the verdict**. A review that silently absorbs a mismatch is not a review,
+and this one did not.
+
+**The task-text override was checked against the rule that permits it**, not
+waved through. `task-entry-recording` requires the citation in the entry; the
+citation is the geometric fact — P keeps exactly three ends after a correct
+offset — which the reviewer verified. The check text in `tasks/M4.md` is now
+corrected **beside the clause rather than over it**, so the next reader does not
+re-derive what cost this implementer a substantial share of its reasoning.
+
+**What it took on the entry's word, and said so**: A5/A5b, A9/A10, B1/B2/B5, and
+A8 — where its own attempt at the break was caught by a different assertion than
+the entry names, and where the entry already discloses that row as caught
+elsewhere and not claimed for the oracle.
+
+**WORKFLOW NOTE, tick review of the four-way avoidance (T12), verbatim:**
+
+> The repo advanced with unrelated lane commits (T16) during this review; none
+> touched T12's files, but re-pinning after the initial `git log` check was
+> necessary to be sure — worth building that re-check into the reviewer's default
+> routine rather than relying on one pin at the start. Separately,
+> falsification-table rows that cite a single line number for a multi-assertion
+> removal (A2b) cost real review time to disambiguate; recording exactly which
+> lines were removed (not just the resulting catch line) would remove that
+> ambiguity for the next reviewer.
+
+**WORKFLOW NOTE, the four-way avoidance (T12) implementer, verbatim:**
+
+> The brief's stated base was right and the worktree was wrong again — a third
+> consecutive stale dispatch; the verification step earns its place, but
+> something upstream is handing lanes worktrees that were never reset.
+> Separately, T12's own check text contains a clause that cannot be satisfied as
+> written ("`add_junction` at the terminus is still refused afterwards" — after a
+> correct offset the terminus keeps three ends, and three ends take a junction),
+> which cost a substantial share of the task's reasoning to resolve; a check
+> whose literal reading contradicts the rule it guards should be corrected in the
+> task file rather than left for each implementer to re-derive.
+
+**WORKFLOW NOTE, the verb surface (T16) implementer, verbatim:**
+
+> The brief said the goldens were "one per status" but the `adjusted` field the
+> contract gained today is empty in every status a producer exists for, so a
+> fifth golden had to be invented to see the new field rendered at all — a brief
+> that adds a field should say which check is expected to see it non-empty. Third
+> stale-base dispatch in a row: the pre-flight check the brief prescribes works,
+> but the dispatcher is still not running it.
+
+*(Both implementers independently reported the stale base as an upstream fault,
+and both were right — see the rescission above. The verb surface's second point
+is a fair hit on the orchestrator's brief: it named the field to render and did
+not say which check would see it non-empty, and the lane had to invent a fifth
+golden to see it at all.)*
+
+7. **PROPOSED: the reviewer re-pins at the end of a review, not only at the
+   start.** From the tick reviewer's note. **Recommendation: accept**, into the
+   `tick-reviewer` definition beside the existing pin instruction. Two lanes ran
+   concurrently all session and a review takes ten minutes or more, so a commit
+   landing underneath a running review is the normal case rather than the
+   exception — this review had one.
+8. **PROPOSED: a falsification row records which lines were removed, not only
+   where the failure surfaced.** Also the reviewer's, from the A2b ambiguity.
+   **Recommendation: accept**, into `falsification-control`. The row was not
+   wrong; it was under-specified, and disambiguating it cost the reviewer real
+   time — which is exactly the cost the falsification table exists to avoid.
