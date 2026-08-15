@@ -44,6 +44,13 @@ thiserror = "2"
 # resolves the dev-only cycle.
 kicli-probe = { path = "../kicli-probe", version = "0.0.0" }
 
+# Property testing for the router's determinism gate (M4 T11). Already a
+# dev-dependency of kicli-sexpr, so it adds no new crate to the tree; the
+# determinism claim is over an input space — every fixture, every terminal pair,
+# every item order — that enumerated examples cannot cover, which is the one
+# thing a property test does that a table of cases does not.
+proptest = "1"
+
 [features]
 # Tests that read KiCad's GPL demo files from target/.
 corpus = []

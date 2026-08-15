@@ -271,6 +271,7 @@ dependencies = [
  "clap",
  "kicli-probe",
  "kicli-sexpr",
+ "proptest",
  "serde_json",
  "sha2",
  "thiserror",
