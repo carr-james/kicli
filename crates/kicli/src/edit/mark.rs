@@ -482,7 +482,13 @@ fn net_phrase(net: Option<&str>) -> String {
 ///
 /// A segment's body is not an end. A pin or a wire end on another segment's
 /// interior does not join it, so the interior is not part of this count.
-fn wire_ends_at(schematic: &Schematic, at: Point) -> Vec<WireEnd> {
+///
+/// Visible to the rest of the crate because two questions rest on it and must
+/// rest on the same answer: whether a junction being added is a four-way one,
+/// and whether a junction a deleted wire left behind still joins enough ends
+/// to be doing anything. A second implementation of "the ends at this point"
+/// is a second answer waiting to disagree with the first.
+pub(crate) fn wire_ends_at(schematic: &Schematic, at: Point) -> Vec<WireEnd> {
     let mut ends = Vec::new();
     for line in schematic.lines() {
         if line.from == at {
