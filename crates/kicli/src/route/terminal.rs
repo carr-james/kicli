@@ -32,6 +32,16 @@ pub enum Heading {
 }
 
 impl Heading {
+    /// Every heading, in the order `research/wire-routing.md` §4.3 expands
+    /// them: `+x, −x, +y, −y`.
+    ///
+    /// One order in the router rather than two. The search expands its
+    /// successors in it, the U-shaped candidates take their four sides in it,
+    /// and it is the order the derived comparison gives — which is what settles
+    /// a tie in the search's queue, so the two must agree. The test below holds
+    /// them together.
+    pub const EVERY: [Self; 4] = [Self::PlusX, Self::MinusX, Self::PlusY, Self::MinusY];
+
     /// The heading an angle in schematic sense names.
     ///
     /// Schematic sense is the one [`ResolvedPin::direction`] uses: 0 towards
@@ -247,5 +257,30 @@ pub fn escape(
             at,
         }),
         None => Ok(at),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Heading;
+
+    #[test]
+    fn every_heading_is_in_the_expansion_order() {
+        for heading in Heading::EVERY {
+            // The match is exhaustive, so a fifth heading is a compile error
+            // here, and its arm is what puts it in the list.
+            let place = match heading {
+                Heading::PlusX => 0_usize,
+                Heading::MinusX => 1,
+                Heading::PlusY => 2,
+                Heading::MinusY => 3,
+            };
+            assert_eq!(Heading::EVERY[place], heading);
+        }
+        // And the list is the order the derived comparison gives, which is the
+        // last rung of the search's queue order.
+        let mut sorted = Heading::EVERY;
+        sorted.sort_unstable();
+        assert_eq!(sorted, Heading::EVERY);
     }
 }
