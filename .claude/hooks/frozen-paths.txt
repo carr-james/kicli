@@ -1,4 +1,12 @@
 # Frozen surface. One path per line, relative to the repo root.
 # A path is added or removed here only via ruling — lifting the freeze IS
 # the ruling path. The orchestrator is not exempt.
+# Lifted once, by advisor ruling 2026-08-15, for exactly one change: the output
+# contract gained a structured `adjusted` field, with §8 amended in the same
+# commit. Restored in that commit. The freeze continues, and the next change
+# needs its own ruling.
+# Lifted once, by advisor ruling 2026-08-15, for exactly one change: the output
+# contract gained a structured `adjusted` field, with §8 amended in the same
+# commit. Restored in that commit. The freeze continues, and the next change
+# needs its own ruling.
 crates/kicli/src/route/report.rs

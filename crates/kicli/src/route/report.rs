@@ -87,6 +87,44 @@ pub struct Added {
     pub junctions: Vec<Uuid>,
 }
 
+/// Why the router put a terminal somewhere other than where it was asked to.
+///
+/// A closed set, deliberately. An agent decides what to do next by matching on
+/// this, so a new reason is a new variant and a compile error at every match —
+/// which is the point. Free text would push the decision back onto a parser.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Adjustment {
+    /// Terminating where it was asked would have made a fourth wire end meet at
+    /// one point, which `spec/SPEC.md` §9 Q2 rules is refused and offset by 1 G.
+    FourWayJunction,
+}
+
+impl Adjustment {
+    /// The word the output contract prints for this reason.
+    #[must_use]
+    pub fn token(self) -> &'static str {
+        match self {
+            Self::FourWayJunction => "four-way",
+        }
+    }
+}
+
+/// One terminal the router moved, and what it moved it by.
+///
+/// The point it moved **to** is not stored: it is the corresponding end of
+/// `Report::path`, and a stored derivative is a second answer waiting to
+/// disagree with the first. `by` is a displacement rather than a position —
+/// `Rect::offset` uses `Point` the same way.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Adjusted {
+    /// Which terminal moved, naming itself exactly as `from` or `to` does.
+    pub terminal: String,
+    /// How far it moved, and in which direction.
+    pub by: Point,
+    /// Why it moved.
+    pub why: Adjustment,
+}
+
 /// The answer to one route request.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Report {
@@ -110,6 +148,13 @@ pub struct Report {
     pub labels: Option<LabelPair>,
     /// What stood in the way, when the status is `blocked`.
     pub blocked_by: Vec<String>,
+    /// The terminals the router moved, empty when it moved none.
+    ///
+    /// Structured because an agent acts on it: an adjusted terminus means the
+    /// wire does not end where the request said, and the agent may want to move
+    /// a symbol instead of accepting that. `reason` says the same thing in
+    /// English for a person, and carries no load this field does not.
+    pub adjusted: Vec<Adjusted>,
     /// One sentence for a person, naming the numbers a decision rests on.
     ///
     /// A proposal says both the length and the threshold; a refusal says what
@@ -134,6 +179,7 @@ impl Report {
             added: Added::default(),
             labels: None,
             blocked_by: Vec::new(),
+            adjusted: Vec::new(),
             reason: None,
             alternatives_considered: 0,
         }
@@ -165,7 +211,7 @@ impl Report {
 
 #[cfg(test)]
 mod tests {
-    use super::{Added, Crossing, LabelPair, Report, Status};
+    use super::{Added, Adjusted, Adjustment, Crossing, LabelPair, Report, Status};
     use crate::geometry::{GRID, Iu, Point};
     use crate::model::Config;
     use crate::route::cost::{Cost, Tally};
@@ -229,5 +275,43 @@ mod tests {
         assert_eq!(report.added, Added::default());
         assert_eq!(report.segments(), 0, "a proposal draws no wire");
         assert_eq!(report.cost.total(), 0);
+    }
+
+    #[test]
+    fn a_route_that_moved_nothing_reports_no_adjustment() {
+        let report = Report::of(Status::Routed, "U1.14", "R7.1");
+        assert!(
+            report.adjusted.is_empty(),
+            "an empty collection, not an absent one"
+        );
+    }
+
+    #[test]
+    fn an_adjusted_terminal_says_which_by_how_much_and_why() {
+        let mut report = Report::of(Status::Routed, "U1.14", "R7.1");
+        report.path = vec![
+            Point::new(1_397_000, 889_000),
+            Point::new(1_524_000, 889_000),
+        ];
+        report.adjusted = vec![Adjusted {
+            terminal: "R7.1".to_owned(),
+            by: Point::new(0, 12_700),
+            why: Adjustment::FourWayJunction,
+        }];
+
+        let moved = &report.adjusted[0];
+        assert_eq!(
+            moved.terminal, report.to,
+            "it names the terminal as `to` does"
+        );
+        assert_eq!(moved.why.token(), "four-way");
+
+        // Where it ended up is the path's own end, so it is not stored twice:
+        // the point the caller asked for is that end less the displacement.
+        assert_eq!(
+            report.path[1] - moved.by,
+            Point::new(1_524_000, 876_300),
+            "the requested point is the terminus less the offset, not a stored field"
+        );
     }
 }

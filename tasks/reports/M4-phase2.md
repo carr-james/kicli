@@ -957,3 +957,114 @@ than a round trip.
    default in the milestone least equipped to. **Recommendation: accept**, and
    carry the entry into M5's file at the M4 close rather than leaving it in a
    closed milestone.
+
+## The control, measured before any lane merged
+
+`ENGINEERING.md`'s "controls before conclusions", applied to the session itself.
+Measured on `main` at `dcd99b7`, while the first two lanes were still working, so
+that every later measurement this checkpoint has a green control behind it.
+
+| | |
+|---|---|
+| Six gates | pass: fmt, clippy, test, doc, deny, clean |
+| `cargo xtask corpus` | fetched and canonicalised, no change |
+| `KICLI_TEST_KICAD_CLI=1 cargo test --features corpus` | pass across 36 test binaries, **`0 ignored` in every one** |
+| `corpus::netlist_partition_matches_kicad_corpus` | **`hierarchies matched: 35/35`**, read from the test's own output rather than from its exit code |
+| `corpus::every_corpus_hierarchy_loads` | `35 hierarchies loaded` |
+
+The 35/35 line is quoted from `--nocapture` output rather than inferred from a
+green test, because a corpus test that silently loaded nothing would also be
+green — the same reason every absence check in this repository carries a presence
+control.
+
+### Found while deriving the four-way brief: the adjustment has nowhere structured to go
+
+The four-way avoidance task (T12) says the router "offsets by 1 G and **reports
+that it did**". `spec/SPEC.md` §9's ruling Q2 says the same: "refuse and offset by
+1 G, reporting the adjustment". Deriving the brief from the entry meant asking
+where in the output that report lands, and the answer is: nowhere structured.
+
+Measured rather than assumed:
+
+- `research/wire-routing.md` §8's contract — the text form and the JSON keys —
+  has **no field for an adjustment**. `status`, `from`, `to`, `path`, `segments`,
+  `corners`, `length_mm`, `cost`, `crossings`, `added`, `alternatives_considered`,
+  and that is the whole of it.
+- `route::report::Report` has one free-text field, `reason: Option<String>`,
+  documented as "One sentence for a person, naming the numbers a decision rests
+  on. A proposal says both the length and the threshold; a refusal says what it
+  refused. A route that simply worked needs none."
+- **`crates/kicli/src/route/report.rs` is the only entry in
+  `.claude/hooks/frozen-paths.txt`.** Adding a field to it is a frozen-surface
+  change, which is BLOCKED by definition and not a lane's to make — and the hook
+  enforces that against the orchestrator too, which is the rule working as
+  intended rather than an obstacle.
+
+**PROPOSED: the four-way task reports the adjustment through `reason`, and does
+not touch the frozen file.** The fit is good but not perfect. `reason`'s own
+rustdoc says a route that simply worked needs none — and an offset route did not
+simply work, it was adjusted, so it is exactly a decision resting on numbers that
+a person should see. The task's check ("the report names the adjustment") is
+satisfied by prose. **Recommendation: accept**, and dispatch on it. It is cheap to
+reverse in the direction that matters: a structured field added later can be
+populated from the same call site.
+
+**The half that is genuinely for the advisor, recorded and not decided here.**
+Prose is not actionable by the agent this tool is built for. An agent that reads
+`"reason": "terminus offset 1 G to avoid a four-way junction"` cannot branch on
+it the way it can branch on `cost.turns`; it would have to parse English, which
+is the thing the §8 contract exists to avoid. The alternative is a structured
+field — `adjusted: { from, to, why }` or similar — in §8 and in `Report`, which
+**is** a frozen-surface change and therefore a ruling, not a lane decision.
+Raised now rather than at the merge, because the call site is the same either way
+and the cost of deciding late is one small follow-up rather than a rewrite.
+
+## Per-tick record
+
+### C5 and C6, chore lane — implemented, sent back at merge review, NOT merged on the first pass
+
+Branch `worktree-agent-a45c9420429a8414d`, commits `278c678` (C5), `23a2504`
+(C6), `1728d52` (the entries). Six gates green in the lane. **Not merged.** Two
+defects found reviewing the diff against the entries, one substantive.
+
+**The lane reset its own stale base, correctly and under the conditions the brief
+set.** It reported the stale base as `3aa4803`, checked that the tree was clean,
+that the branch held no commits of its own and that `3563339` was reachable, then
+reset and said so. The three conditions are what make a `reset --hard` safe
+rather than destructive, and the lane checked all three before acting.
+
+**Defect 1 — C5's fix does not cover the case a hierarchy actually needs, and its
+control could not have seen that.** `Probe::uuid` became
+`{:08x}-0000-4000-800{series}-{:012x}` over `self.next_uuid`. **The leading eight
+digits no longer carry the series.** `Probe::named_child_of` creates a sibling
+probe with its own counter starting from zero, so:
+
+- `crates/kicli/tests/net_probe_rules.rs:180-181` builds `left` at series 2 and
+  `right` at series 3;
+- `left`'s first object takes handle `00000001`, and so does `right`'s;
+- they collide — which is the exact defect C5 was filed to remove, surviving in
+  the multi-sheet case. The pattern recurs at `:221`, `:249`, `:293` and `:323`.
+
+The control was not wrong; it was **too narrow to have caught this**. It counts
+distinct handles within one drawing, and the collision exists only across sibling
+drawings. That is the more interesting half: a control that measures the easy
+case and passes is how a fix comes to look complete. Sent back with the fix, a
+widened control over a parent and two siblings, and a falsification that must
+show the **contrast** — the cross-sibling assertion failing while the
+within-one-drawing assertion still passes, which is the evidence that the wider
+control watches something the narrow one could not.
+
+**Defect 2 — C6's replacement sentence reintroduces the ambiguity it was filed to
+remove.** It landed as "This is a boundary on how many wire ends meet at a point,
+**shared with** `crate::edit::mark`'s refusal boundary, measured from opposite
+directions." Read plainly, the boundary is the shared thing — which is the false
+claim the chore exists to delete. It also dropped the substantive true part: what
+is genuinely shared is the **implementation**, `edit::mark::wire_ends_at`, made
+`pub(crate)` by `wire delete` (T15) precisely so both boundaries rest on one
+answer. Sent back to say what the entry says is true: two boundaries on one
+measurement, from opposite directions, sharing an implementation rather than a
+value.
+
+**And the entry itself is being corrected**, because as written the C5 "Done"
+section claims a fix broader than what was measured. A chore entry that
+overstates its own reach is the thing the record exists to prevent.

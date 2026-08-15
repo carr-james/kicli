@@ -272,8 +272,11 @@ Text:
 routed U1.14 -> R7.1   via 3 segments, 2 corners, 38.10mm
   cost 62 = len 30 + turns 12 + crossings 20 + text 0 + near 0
   crossings: 1 (net GND at 152.40,88.90 on wire da5aa983)
+  adjusted: R7.1 by 0.00,1.27mm (four-way)
   wires added: 3   junctions added: 1
 ```
+
+The `adjusted` line is omitted entirely when nothing was adjusted.
 
 JSON (`--output json`):
 
@@ -285,6 +288,7 @@ JSON (`--output json`):
   "cost": { "total": 62, "length": 30, "turns": 12, "crossings": 20,
             "text": 0, "proximity": 0 },
   "crossings": [ { "wire": "da5aa983", "net": "GND", "at": [152.4,88.9] } ],
+  "adjusted": [ { "terminal": "R7.1", "by": [0.0,1.27], "why": "four-way" } ],
   "added": { "wires": ["uuid…","uuid…","uuid…"], "junctions": ["uuid…"] },
   "alternatives_considered": 7 }
 ```
@@ -293,6 +297,27 @@ JSON (`--output json`):
 of the whole exercise: the agent can see *why* a route is bad and decide to move
 a symbol instead of accepting it — which is the loop Constitution §3 is asking
 for.
+
+**A terminal the router moved is reported structurally, not in prose.** Ruled
+2026-08-15, on the frozen-surface question the four-way avoidance task raised.
+§9's Q2 rules that a route which would make a fourth wire end meet at one point
+is refused and offset by 1 G, "reporting the adjustment" — and this contract had
+nowhere to report it but `reason`, which is one English sentence for a person.
+An agent cannot branch on English; branching on the cost breakdown rather than
+parsing prose is the whole point of this contract. So `adjusted` is a list, empty
+when nothing moved, of `{ terminal, by, why }`:
+
+- `terminal` names itself exactly as `from` and `to` do, so the caller can tell
+  which end moved without comparing coordinates;
+- `by` is a **displacement**, not a position. Where the terminal ended up is the
+  corresponding end of `path`, and this contract does not store what it can work
+  out — the requested point is that end less `by`;
+- `why` is a **closed set**, currently the single value `four-way`. A new reason
+  is a new value and a compile error at every match on it, which is what makes it
+  safe for an agent to switch on. It is never free text.
+
+`reason` continues to say the same thing in English for a person, and carries no
+load an agent must parse.
 
 **A crossing names the wire it crossed, and the net is attributed at the seam.**
 The first draft of this contract reported a crossing as `{ net, at }`. The
