@@ -368,6 +368,11 @@ impl Obstacles {
     }
 
     /// Every grid point of the window inside an area.
+    ///
+    /// The points are the **window's** lattice, not the page's. A body box is
+    /// under no obligation to land on the grid, so the first point is the box's
+    /// start corner rounded up to the lattice, and the walk stops at the last
+    /// point the box holds.
     fn points_in(&self, area: Rect) -> Vec<Point> {
         let grid = self.window.grid().0;
         let window = self.window.area();
@@ -395,5 +400,75 @@ impl Obstacles {
             y += grid;
         }
         found
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    //! The one rule of this module that no drawing can exercise.
+    //!
+    //! `points_in` walks the **window's** lattice rather than the page's. Every
+    //! window a route request can build starts on the grid, because a terminal
+    //! off the grid is refused and the page starts at the origin, so on any
+    //! real drawing the two alignments agree and neither is measured. They stop
+    //! agreeing the moment a window starts off the grid, and [`Window::cell`]
+    //! already defines the lattice that way, so a body sorted onto the page's
+    //! grid instead would name no cell at all and land nowhere.
+    //!
+    //! Everything else here is measured on probe drawings, where the geometry
+    //! is KiCad's own rather than this test's.
+
+    use super::{Feature, Obstacles, SheetGeometry};
+    use crate::geometry::{GRID, Iu, Point, Rect};
+    use crate::route::terminal::Obstruction;
+    use crate::route::window::Window;
+
+    #[test]
+    fn the_lattice_belongs_to_the_window() {
+        // A window whose corner misses the grid by a third of a step.
+        let step = GRID.0;
+        let corner = Point::new(step / 3, step / 3);
+        let page = Rect::new(Point::default(), Point::new(40 * step, 40 * step));
+        let window = Window::around(corner, Point::new(20 * step, 20 * step), Iu(0), page, GRID);
+        assert_eq!(window.area().start(), corner);
+        assert!(
+            !corner.is_on_grid(),
+            "the window starts off the page's grid"
+        );
+
+        let body = [Obstruction {
+            handle: "U1".to_owned(),
+            area: Rect::new(
+                Point::new(corner.x.0 + step, corner.y.0 + step),
+                Point::new(corner.x.0 + 3 * step, corner.y.0 + 3 * step),
+            ),
+        }];
+        let map = Obstacles::build(
+            window,
+            &SheetGeometry {
+                symbol_bodies: &body,
+                ..SheetGeometry::default()
+            },
+        );
+
+        // Nine points of the window's own lattice, none of them on the page's.
+        let mut marked = Vec::new();
+        for column in 0..=20 {
+            for row in 0..=20 {
+                let cell = super::Cell { column, row };
+                if map
+                    .features(cell)
+                    .iter()
+                    .any(|feature| matches!(feature, Feature::SymbolBody(_)))
+                {
+                    marked.push(window.point(cell));
+                }
+            }
+        }
+        assert_eq!(marked.len(), 9, "{marked:?}");
+        for point in &marked {
+            assert!(body[0].area.contains(*point), "{point} is outside the body");
+            assert!(!point.is_on_grid(), "{point} is on the page's grid");
+        }
     }
 }

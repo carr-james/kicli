@@ -247,6 +247,25 @@ impl Probe {
         ));
     }
 
+    /// Draw a no-connect marker, which says a pin joins nothing on purpose.
+    pub fn no_connect(&mut self, at: (&str, &str)) {
+        let uuid = self.uuid();
+        self.items.push(format!(
+            "(no_connect (at {} {}) (uuid \"{uuid}\"))",
+            at.0, at.1
+        ));
+    }
+
+    /// Draw free text, which connects nothing and still takes room.
+    pub fn free_text(&mut self, text: &str, at: (&str, &str)) {
+        let uuid = self.uuid();
+        self.items.push(format!(
+            "(text \"{text}\" (at {} {} 0)\n\
+             (effects (font (size 1.27 1.27)) (justify left bottom)) (uuid \"{uuid}\"))",
+            at.0, at.1
+        ));
+    }
+
     /// Draw a label of any of the three kinds.
     pub fn label_of_kind(&mut self, head: &str, shape: &str, text: &str, at: (&str, &str)) {
         let uuid = self.uuid();

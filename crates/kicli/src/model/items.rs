@@ -17,6 +17,32 @@ use kicli_sexpr::{Doc, NodeId, SexprError};
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Uuid(pub String);
 
+impl Uuid {
+    /// The first eight characters, which is the short form a report writes.
+    ///
+    /// Eight characters are what a caller may type back at a command, so a
+    /// report writes what a caller can use. They do not always identify: a
+    /// command that takes one refuses an ambiguous prefix and lists what it
+    /// matched.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kicli::model::Uuid;
+    /// let uuid = Uuid("da5aa983-0000-4000-8000-000000000001".to_owned());
+    /// assert_eq!(uuid.short(), "da5aa983");
+    /// ```
+    #[must_use]
+    pub fn short(&self) -> &str {
+        let end = self
+            .0
+            .char_indices()
+            .nth(8)
+            .map_or(self.0.len(), |(index, _)| index);
+        &self.0[..end]
+    }
+}
+
 /// A reference designator, such as `R12`.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Refdes(pub String);
