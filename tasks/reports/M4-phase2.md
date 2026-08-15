@@ -1155,3 +1155,95 @@ is exactly as unrecoverable as an untracked file, and reads as safe because the
 file is tracked. Recommendation: accept, and keep the existing new-file wording
 as the worked example under the wider rule. Cost of the incident: re-applying
 four edits, and it would have been a whole task's work in a lane.
+
+### Ruling received mid-session: the restore rule widens to any uncommitted state
+
+Provenance: advisor ruling, 2026-08-15, promoting the PROPOSED above immediately.
+The falsification-control skill's restore rule now reads: **git can only restore
+committed state — before any deliberate break, the good state is committed,
+whether the file is new or tracked-with-uncommitted-changes. A tracked file reads
+as safe and is not: `checkout --` takes uncommitted work with it.**
+
+Both incidents stay as worked examples, quoted rather than summarised: the
+`wire draw` (T14) new-file case in the implementer's own words, and the
+contract-amendment (`dd4f659`) tracked-file case in the orchestrator's. The
+section is retitled "Commit the good state before you break anything", because
+the old title named the symptom — a file git does not know about — and the rule
+is about the state, not the file.
+
+### The determinism property test (T11), Lane A — merged `986daab`, awaiting tick review
+
+Lane commits `e2d662e`, `2d1724f`, `05d4a58`. Merged check: **six gates green.**
+Diff confined to `route/obstacles.rs`, two new test files, and the entry.
+
+**The shuffled arm found a defect rather than confirming an absence, which is
+the best thing a determinism check can do.** `Obstacles::entering` named the
+**first** `Block` feature laid down, and that order is the file's item order.
+With two overlapping symbol bodies, the same drawing saved two ways reports
+**different blockers** — same routes, same tallies, same costs, different name.
+KiCad reorders items when it saves, so the report would blame one symbol today
+and its neighbour tomorrow for an identical drawing. Fixed by `keep_smallest`,
+which decides between equally true names by the names themselves. Recorded as
+**PROPOSED** by the implementer, recommendation keep, because it changes Phase 1
+behaviour no ruling covers. The rustdoc at both the method and the helper states
+why, so the reason cannot go stale away from the rule.
+
+**Two falsification rows are the ones worth reading, because the break produced a
+GREEN check and the fault was the control rather than the code:**
+
+| Broken | What happened |
+|---|---|
+| the shuffle permutes nothing | **nothing failed, first time.** The control compared against the drawing's own text, so it passed on layout alone. Rewritten to compare against the same file through the same writer, unshuffled; the rerun fails |
+| every answer replaced by a constant | passed the shuffled arm, which had **no class counters**. Baselines now must hold a shape route, an A\* route and a refusal; the rerun fails both arms |
+
+**One row caught nothing and is recorded as catching nothing** — successors
+expanded from a `HashSet`, on the argument that a state carries its direction, so
+successors of one pop are never the same state and the queue's total order fixes
+every pop. Recorded rather than deleted, on the same principle T10 used for its
+four unreachable rules.
+
+**Proptest configuration, and the trade it takes:** 64 cases, ChaCha,
+`RngSeed::Fixed`, shrinking on, persistence off. The seed is fixed deliberately —
+coverage is bought by the case count and by each case being a whole sweep of
+every pair, not by a varying seed, and a varying seed makes a gate that fails on
+someone else's machine. Recorded because it is exactly the trade the brief asked
+to be named.
+
+**Sizing was measured, not guessed:** a hundred runs over every pair costs what
+the pairs cost — three-symbol drawings 18.4 s, four-symbol 33 s, against a ~20 s
+suite without this check, with the engines dominating (166 ms of a 193 ms pass).
+Two two-symbol drawings hold all three answer classes at 11.5 s.
+
+Tick review dispatched. **Not ticked.**
+
+## PROPOSED items raised by the lanes, for the advisor
+
+3. **`Obstacles::entering` blames the smallest name rather than the first.** The
+   implementer's, on a defect its own check found. It changes Phase 1 behaviour
+   and no ruling covers it. **Recommendation: keep.** Every candidate name is
+   equally true, so choosing between them by the names costs nothing, and the
+   alternative is a report that changes its answer when KiCad re-saves an
+   unchanged drawing. Cheap to reverse.
+4. **A third amendment to falsification-control: a break that produces a green
+   check may mean the CONTROL is wrong rather than the check.** The determinism
+   implementer's, from its WORKFLOW NOTE, and two of its seven rows were exactly
+   that case. **Recommendation: accept**, with those two rows as the worked
+   example — they are the clearest instance in the record, because in both the
+   code was innocent and the instrument was blind. The existing skill tells you
+   to break the code and watch the check fail; it does not say what a green
+   result means, and the intuitive reading — "the code is fine" — is the wrong
+   one exactly when it matters.
+5. **The base-commit dispatch rule needs a fast-forward branch.** Also the
+   determinism implementer's. Its worktree came up at `3aa4803`, two commits
+   behind the named base, and `3aa4803` was a **strict ancestor** of it — so it
+   fast-forwarded and worked on exactly the named base rather than burning the
+   dispatch on a stop-and-report. **This is a deviation from the brief as
+   written, and it is recorded as one**: the brief said stop, and it did not
+   stop. The judgement was good and the outcome was correct, which is precisely
+   why the rule should be fixed rather than the deviation excused.
+   **Recommendation: amend the rule to "fast-forward if the named base is a
+   descendant of the worktree's commit and the tree is clean; stop otherwise",**
+   so the safe case does not cost a round trip and the unsafe case still stops.
+   Note this is the **second** stale worktree of the session out of three
+   dispatches, which makes the underlying defect — recorded at C5 as "lane
+   worktrees start stale" — a recurring cost rather than an incident.
