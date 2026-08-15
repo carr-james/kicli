@@ -498,7 +498,7 @@ surfacing.** A new `Command` variant fails `agent_doc_covers_every_command` unti
 the file that makes them buildable. The lane parked it correctly rather than
 reaching for `AGENT.md`. The whole wire CLI surface now sits in T16.
 
-### The candidate shapes (T9), Lane A — merged, tick review running
+### The candidate shapes (T9), Lane A — merged and TICKED
 
 Merged as `a0a4e03` from `worktree-agent-a554f83be40bd0b4a` (lane commit
 `44f080d`). Merged check: six gates, corpus, and the environment-gated run with
@@ -511,6 +511,22 @@ interesting part.** The brief and the entry both framed it as "two shapes cost
 the same yields the earlier one in the enumeration". Only true of an exact tie on
 §7's whole chain: equal-cost shapes with different paths are separated by the
 lexicographic rung, not by enumeration order. The check had to measure both.
+
+**Reviewer verdict: APPROVE — and it measured six of the twelve rows itself**,
+one break at a time with reverts between, against a green baseline taken from a
+`git archive` copy at `/tmp`. The other six it took on the entry's word and said
+which. Two of its six settle the entry's load-bearing claims:
+
+- Its own going-in objection to the tie-break correction was that the drawing's
+  lexicographically smallest L is *also* the enumeration-first L, so the
+  assertion would pass under either theory. Reversing the lexicographic rung
+  alone moved the winner to `LVerticalFirst` with enumeration order untouched.
+  The drawing does separate the rungs; the correction stands on a measurement.
+- On the one-home constraint: no second implementation exists in `shapes.rs`,
+  the one home is `cost.rs:185`, removing it there fails all five drawing
+  checks, and dropping the `polyline` guards leaves the drawings green while
+  turning the unit check red. So "unreachable" and "untested" are held apart,
+  and the second is closed rather than assumed away.
 
 **The target-cell exception did not grow a second home, and the lane measured
 rather than assumed it.** With both `polyline` guards removed, all five drawing
@@ -530,7 +546,8 @@ does not read as a shape, while kicli's lenient reader does. Real defect, and T9
 lost a debugging cycle inside an environment-gated oracle to it.
 
 **But T9 reported that five callers in `tests/net_probe_rules.rs` "pass over a
-file KiCad reads differently", and that is wrong.** Checked before recording:
+file KiCad reads differently", and that is wrong — found independently by me and
+by that task's tick reviewer, which cited more of them.** Checked before recording:
 those callers pass `""` for plain labels or the full `"(shape input)"`
 (`net_probe_rules.rs:123-127`). Both correct. **No existing test is
 compromised.** Recorded as chore **C3** with the correction stated, because a
@@ -538,6 +555,16 @@ finding that overstates its blast radius sends the next reader hunting five
 broken tests that are not broken. The smaller true finding — kicli read a file
 KiCad would not — is the more interesting one, and C3 proposes opening it
 separately rather than settling it in passing.
+
+**And the reviewer caught a trap in my own chore text.** C3 as I first wrote it
+asked for a check that the helper produces the `(shape …)` form. If the helper
+starts wrapping its argument, every existing caller — all of which already pass
+the parenthesised form — double-wraps to `(shape (shape input))`. The fix is not
+"make the helper wrap" but "make the argument a type that cannot be either
+form", with the six callers moving in the same commit. C3 now records the trap,
+the six call sites, and an oracle check run against KiCad rather than against
+kicli's lenient reader, because kicli accepting a file is not evidence KiCad
+does. **A chore I wrote, corrected by a reviewer reviewing something else.**
 
 ## Session 2 workflow retrospective — running
 
