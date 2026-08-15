@@ -471,6 +471,74 @@ throughout). Each break alone:
 first check is vacuous, and only the control makes the pair evidence. Nothing was
 written, staged or committed inside the checkout or any worktree to obtain this.
 
+### `wire draw` (T14), Lane B — merged, tick review running
+
+Merged as `686aa72` from `worktree-agent-a702dd29e3d9c98dc` (lane commits
+`c7c40ca`, `f915b0b`, `1759a7d`, `2e7050e`). Merged check: six gates, corpus, and
+the environment-gated run with **zero ignored and the netlist oracle at 35/35**.
+Evidence in the T14 entry, sections "The sheet-pin measurement, made 2026-08-15"
+and "Implemented, 2026-08-15". Nine falsifications recorded.
+
+**The measurement this task has owed since T6 is made, with a control that
+behaved.** A sheet pin's angle names the edge KiCad puts the port on. Measured
+against kicad-cli 10.0.5, not read from `parseSchSheetPin`: one drawing, four
+ports, a stub wire leaving each outwards to a resistor pin, measured twice with
+**only the angle changed**. Angles agreeing with the edges the ports are written
+on carry all four stubs through to the child. Angles naming the opposite edge —
+same positions, same wires — leave all four reading `unconnected-(Rx-Pad1)`. The
+control, two symbol pins joined by a plain wire in the same drawing, is one net in
+**both** arms, so the instrument was working when it reported the break. The
+provenance above `of_sheet_pin` now says measured; I verified that diff is
+comment-only, no logic, as the lane claimed.
+
+**The CLI verb is not in this task, and that is a coordination defect of mine
+surfacing.** A new `Command` variant fails `agent_doc_covers_every_command` until
+`AGENT.md` documents it, and `AGENT.md` is held by T16. So the lane was granted
+`cli/edit/wire.rs` and `cli/args.rs` by a lane table that simultaneously withheld
+the file that makes them buildable. The lane parked it correctly rather than
+reaching for `AGENT.md`. The whole wire CLI surface now sits in T16.
+
+### The candidate shapes (T9), Lane A — merged, tick review running
+
+Merged as `a0a4e03` from `worktree-agent-a554f83be40bd0b4a` (lane commit
+`44f080d`). Merged check: six gates, corpus, and the environment-gated run with
+**zero ignored and the oracle at 35/35**. Evidence in the T9 entry, section
+"Done, 2026-08-15": a twelve-row falsification table, two task-text corrections,
+three PROPOSED items. `report.rs` untouched, `kicli-probe` untouched — verified.
+
+**The task text was corrected on the tie-break, and the correction is the
+interesting part.** The brief and the entry both framed it as "two shapes cost
+the same yields the earlier one in the enumeration". Only true of an exact tie on
+§7's whole chain: equal-cost shapes with different paths are separated by the
+lexicographic rung, not by enumeration order. The check had to measure both.
+
+**The target-cell exception did not grow a second home, and the lane measured
+rather than assumed it.** With both `polyline` guards removed, all five drawing
+checks still pass, because a reversal is always co-blocked by the terminal's own
+body. The guards were kept with the measurement recorded beside them rather than
+deleted. Whether "removing it changes nothing" means redundant or means untested
+is exactly what I asked that task's reviewer to judge.
+
+## Findings
+
+**Lane A, the candidate shapes (T9): a probe-crate footgun, and a blast-radius
+claim that does not survive checking.** `Probe::label_of_kind` interpolates its
+`shape` argument verbatim (`kicli-probe/src/drawing.rs:318`), so the parameter is
+not a shape but a complete s-expression fragment. A caller passing `"input"` —
+what the name invites — writes `(hierarchical_label "IN" input …)`, which KiCad
+does not read as a shape, while kicli's lenient reader does. Real defect, and T9
+lost a debugging cycle inside an environment-gated oracle to it.
+
+**But T9 reported that five callers in `tests/net_probe_rules.rs` "pass over a
+file KiCad reads differently", and that is wrong.** Checked before recording:
+those callers pass `""` for plain labels or the full `"(shape input)"`
+(`net_probe_rules.rs:123-127`). Both correct. **No existing test is
+compromised.** Recorded as chore **C3** with the correction stated, because a
+finding that overstates its blast radius sends the next reader hunting five
+broken tests that are not broken. The smaller true finding — kicli read a file
+KiCad would not — is the more interesting one, and C3 proposes opening it
+separately rather than settling it in passing.
+
 ## Session 2 workflow retrospective — running
 
 Appended as evidence arrives, not composed at the end.
@@ -496,6 +564,33 @@ Appended as evidence arrives, not composed at the end.
 > live execution and measured zero rows empirically. If live execution is
 > required for this review to count, the tool grant needs to actually include a
 > shell, not just the brief claiming one.
+
+
+**The candidate shapes (T9), Lane A:**
+
+> The brief's framing of the tie-break check — "two shapes cost the same yields
+> the earlier one in the enumeration" — is only true of an exact tie on §7's
+> whole chain; equal-cost shapes with different paths are separated by the
+> lexicographic rung, not by enumeration order, so the check had to measure both
+> and the task text needed correcting. Also, the brief said `kicli-probe` was
+> off-limits but not that its hierarchical-label helper emits a token KiCad
+> ignores; that cost a debugging cycle inside an environment-gated oracle, and it
+> is a live correctness risk for the five kicli-only tests already relying on it.
+
+*(The last clause is wrong — see the finding above. The five callers pass the
+correct form. Quoted verbatim as the rule requires; corrected beside it, not
+inside it.)*
+
+**`wire draw` (T14), Lane B:**
+
+> The brief designated `cli/edit/wire.rs` and `cli/args.rs` to this lane, but a
+> CLI verb cannot be added without `AGENT.md`, which the same brief withholds as
+> T16's — `agent_doc_covers_every_command` fails on any undocumented verb, so
+> that pairing is unbuildable and the CLI surface has to sit entirely in T16.
+> Second: `crates/kicli/src/edit/wire.rs` is untracked until the first commit, so
+> `git checkout --` cannot restore it — falsification runs on a brand-new file
+> need a commit of the good state first, which the falsification-control skill
+> does not mention.
 
 ### What earned its keep, so far
 
