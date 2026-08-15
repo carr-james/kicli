@@ -271,7 +271,7 @@ Text:
 ```
 routed U1.14 -> R7.1   via 3 segments, 2 corners, 38.10mm
   cost 62 = len 30 + turns 12 + crossings 20 + text 0 + near 0
-  crossings: 1 (net GND at 152.40,88.90)
+  crossings: 1 (net GND at 152.40,88.90 on wire da5aa983)
   wires added: 3   junctions added: 1
 ```
 
@@ -284,7 +284,7 @@ JSON (`--output json`):
   "segments": 3, "corners": 2, "length_mm": 38.10,
   "cost": { "total": 62, "length": 30, "turns": 12, "crossings": 20,
             "text": 0, "proximity": 0 },
-  "crossings": [ { "net": "GND", "at": [152.4,88.9] } ],
+  "crossings": [ { "wire": "da5aa983", "net": "GND", "at": [152.4,88.9] } ],
   "added": { "wires": ["uuid…","uuid…","uuid…"], "junctions": ["uuid…"] },
   "alternatives_considered": 7 }
 ```
@@ -293,6 +293,17 @@ JSON (`--output json`):
 of the whole exercise: the agent can see *why* a route is bad and decide to move
 a symbol instead of accepting it — which is the loop Constitution §3 is asking
 for.
+
+**A crossing names the wire it crossed, and the net is attributed at the seam.**
+The first draft of this contract reported a crossing as `{ net, at }`. The
+search cannot answer that: the obstacle map knows the **wire** on a cell, and
+whose net a wire carries is connectivity's answer, not geometry's. So `wire` is
+the search's own truth and is always present; `net` is filled by the caller on
+the same seam that sorts a wire into the route's own or another's, and is `null`
+when the caller did not attribute it. The text form omits the `net` clause in
+that case and prints the wire alone. Having the router ask the extractor instead
+would put connectivity inside the search, which is the thing the caller-supplied
+net list exists to prevent.
 
 ---
 

@@ -643,6 +643,12 @@ penalises above 381 mm would argue with itself.
 `status` ∈ `routed | labels | blocked | invalid`. `blocked` reports the blocking
 objects' handles, never a bare failure.
 
+**A reported crossing names the wire; the net is attributed at the seam**
+(`wire-routing.md` §8). The search knows which wire sits on a cell and never
+learns net names: the command layer fills the net when it states which wires
+belong to the net being routed. An unattributed crossing carries a null net and
+is still a crossing.
+
 **Determinism is a test, not an aspiration:** for every fixture and terminal
 pair, routing 100 times and across a shuffled input item order (KiCad reorders
 items) must yield byte-identical output.
