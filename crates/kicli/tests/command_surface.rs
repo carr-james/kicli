@@ -572,6 +572,68 @@ fn a_positional_argument_always_names_something_that_exists() {
     );
 }
 
+/// The delta view is on the surface, and its help states what it answers.
+///
+/// The words matter. An agent that reads this help must not go looking for a
+/// command that replays its own edits, because the specification itself once
+/// expected the delta to be that.
+#[test]
+fn the_delta_view_help_says_which_question_it_answers() {
+    let run = kicli(&["sch", "view", "--help"]);
+    assert_eq!(code(&run), 0, "{}", stderr(&run));
+
+    let help = stdout(&run);
+    for words in [
+        "delta",
+        "--against",
+        "since kicli last wrote it",
+        "empty right after a mutation, by design",
+    ] {
+        assert!(help.contains(words), "the help says {words:?}: {help}");
+    }
+}
+
+/// A project kicli has never written has no state to compare against.
+///
+/// That is a refusal naming the state it looked for. An empty delta would say
+/// "nothing has touched this file", which nothing measured.
+#[test]
+fn a_delta_with_no_saved_state_exits_the_code_its_row_names() {
+    let project = fixtures().scratch_directory("surface_delta_no_state", "sch/nets");
+    let path = project.to_str().expect("the path is text");
+
+    for (arguments, named) in [
+        (vec!["sch", "view", "--view", "delta"], "@last-write"),
+        (
+            vec!["sch", "view", "--view", "delta", "--against", "review"],
+            "review",
+        ),
+    ] {
+        let mut arguments = arguments;
+        arguments.extend(["-p", path]);
+        let run = kicli(&arguments);
+
+        assert_eq!(
+            code(&run),
+            i32::from(ExitCode::Operation.code()),
+            "{arguments:?} exits {} ({}): {}",
+            ExitCode::Operation.code(),
+            ExitCode::Operation.name(),
+            stderr(&run)
+        );
+        assert!(
+            stdout(&run).is_empty(),
+            "no result reaches stdout: {}",
+            stdout(&run)
+        );
+        assert!(
+            stderr(&run).contains(named),
+            "the refusal names the state it looked for: {}",
+            stderr(&run)
+        );
+    }
+}
+
 #[test]
 fn a_verb_that_makes_an_object_takes_no_positional() {
     // The other half of the rule, and the control for the check above: a sweep

@@ -85,10 +85,11 @@ eventually draw is a picture of the same data; the view is the data.
 
 | Flag | What it does |
 |---|---|
-| `--view connectivity\|layout` | Which view. Connectivity is the default. |
+| `--view connectivity\|layout\|delta` | Which view. Connectivity is the default. |
 | `--include-power` | List power symbols, which are otherwise left out. |
 | `--uuids` | Add the first eight characters of each object's identifier. |
 | `--stats` | Report the size of the view in bytes. |
+| `--against <NAME>` | The saved state the delta compares against. The default is `@last-write`. The other two views ignore it. |
 
 Every line starts with a one-letter record type, so you can filter with `grep`
 and never need a parser.
@@ -159,6 +160,41 @@ is what you pass back to a rotate command. `F` lists a field **only** when it ha
 moved, so on a tidy sheet it is empty and on an untidy one it is the list of
 things to fix. A crossing is counted only where no junction sits on it: a
 junctioned crossing is a connection.
+
+#### The delta
+
+What has touched the file **since kicli last wrote it**. It is not a replay of
+what your own last command changed: that command already reported it, and
+nothing derives it again. Right after any kicli write, this view is empty. That
+is the design, not a fault.
+
+```
+# delta @last-write -> current  scope=sheet  sheet=/0000...0000  compared=values
+~ L R1  moved  (50.80,50.80) -> (50.80,63.50)
+~ S R2.Value  "1k" -> "2k2"
++ S R42 10k Device:R
+- S R7 4k7 Device:R
+= 231 objects unchanged
+```
+
+| Header field | What it says |
+|---|---|
+| `delta A -> B` | The saved state, and the file as it is now. |
+| `scope` | `sheet`, or `sheet-summary` when the lines do not fit the budget. |
+| `sheet` | The sheet path the saved state covers. One state covers one sheet. |
+| `compared` | `values` when the saved state carries the old positions and values, so a line can print them. `hashes` when it carries only hashes and names, which is what a state written by an older kicli holds. |
+
+`+` is a new object, `-` is one that is gone, and `~` is one that moved or whose
+content changed. The record letter is the one the other views print, so `L` is a
+placement, `S` a symbol or a field, `T` a label or free text, and `W` a wire.
+
+`--against <NAME>` compares against a saved state of another name.
+`--include-power` and `--uuids` do not change a delta, and kicli says so on
+standard error rather than ignoring them silently.
+
+**A project kicli has never written has no saved state.** That is an error
+naming `@last-write`, and exit 1. kicli does not tell you that nothing has
+touched a file it has never seen.
 
 #### Scope and budget
 
@@ -461,7 +497,7 @@ isn't one, and there should not be.
 | Question | Answered by | Empty when |
 |---|---|---|
 | What did **this command** change? | the result the command just printed | never |
-| What has touched the file **since kicli last wrote it**? | a comparison against the `@last-write` state under `.kicli/` | right after any kicli command, **by design** |
+| What has touched the file **since kicli last wrote it**? | `kicli sch view --view delta` | right after any kicli command, **by design** |
 
 Every mutating command reports its own changes. **Keep that output** if you need
 it later; nothing re-derives it for you.
@@ -472,7 +508,7 @@ KiCad beside you, another tool, a checkout or a merge. That is what it is for.
 Making it replay your own edits would make it a copy of the report you already
 have, and would leave you no way to notice the person editing beside you.
 
-The command that prints that comparison is not in this build.
+`kicli sch view --view delta` prints that comparison. See **The delta** above.
 
 ## Exit codes
 
