@@ -1517,3 +1517,88 @@ anything; the cost of the status quo is now measured at three of five dispatches
 starting stale, each one a round trip or a near-miss. Recorded here because the
 verification rule and the lane's fast-forward branch together have caught every
 instance so far, so this is a cost question rather than a correctness one.
+
+### The verb surface (T16), Lane B — implemented, FAILED THE MERGED CHECK, backed out
+
+Branch `worktree-agent-a8e75981ddd6a58db`, commits `2861254`, `dec0c0a`. The lane
+reported six gates green. **The merged result failed the `test` gate**, so the
+merge was backed out and `main` returned to `ddc2e84`, green. The branch keeps
+the work.
+
+This is the merged check earning its place. It is the orchestrator's job at every
+lane merge and is never skipped, and this is the first time this session it has
+found something a lane's own green run did not.
+
+**The defect: the `routed` goldens embed randomly generated UUIDs.**
+`wire_output_contract.rs` fails at line 67 on `a_drawn_route_matches_the_golden`
+and `a_moved_terminal_matches_the_golden`. `a_drawn_route` calls
+`edit::wire::draw`, which writes real wire records and puts **their freshly
+generated identifiers** into `report.added.wires`; the golden captures them
+verbatim:
+
+```
+golden:   "wires": [ "ebb43fde-5c3c-4534-8776-e35e3f8aefaf", … ]
+this run: "wires": [ "9d618919-5152-4a4e-8860-23f4945012d3", … ]
+```
+
+Everything else in both forms is byte-identical — path, segments, corners,
+`length_mm`, the five cost parts, `adjusted`, `labels`, `blocked_by`, `reason`.
+**Only the identifiers differ, and they differ every run.** Measured twice, two
+different sets, so this is neither a merge interaction with the four-way task
+(T12) nor anything about this checkout.
+
+**The part sent back is not the fix — it is the explanation.** A lane cannot
+report six gates green on a state carrying this golden, so either the gates ran
+before the goldens were written or something refreshed them inside the run that
+checked them. Today's third falsification amendment says a surprising green is a
+finding about the **instrument**, investigated before any conclusion is drawn
+from it, and that applies to a green `xtask check` exactly as it applies to a
+green assertion. The lane is asked to work out what happened and record it,
+because **if the gates were green on a state that differed from what was
+committed, that is worth more to the record than the fix is.**
+
+The fix directed: normalise identifiers in the comparison — a stable placeholder
+per distinct identifier in first-appearance order — so **count, ordering and
+shape stay asserted** while the RNG is not. The lane's own module doc already
+carries the principle that decides it: "a golden refreshed after a key was
+dropped passes as happily as one refreshed after a fix". A generated identifier
+is that problem one level down. Explicitly ruled out: dropping `added` from the
+golden (count and order are contract), and making the drawing produce fixed
+identifiers (fresh identifiers are correct behaviour; a test needing them changed
+is measuring the wrong thing). And the normalisation must itself be falsified —
+two identifiers where three belong, and segments in the wrong order — because a
+normaliser that collapses everything to one placeholder hides both, which is how
+this fix goes wrong.
+
+**The lane's own finding, filed as a chore below:** `agent_doc_covers_every_command`
+asserts a **mention, not a heading**. Deleting the entire `kicli wire draw`
+section left it green, because the `[routing]` prose names the verb.
+`agent_doc_covers_every_verb_flag` is what actually held the section in place.
+That check has been relied on all milestone.
+
+### Ruling received mid-session: worktree currency, restructured
+
+Provenance: advisor, 2026-08-15, superseding the dispatch half of the earlier
+ruling.
+
+**The orchestrator half is rescinded as written, and recorded rather than
+deleted, with the reason: it was drafted against an assumed mechanism, not the
+real one.** That reason is the point. A rule that cannot be performed reads, in
+the record, exactly like a rule that is being ignored — so deleting it would have
+lost the distinction between "we stopped doing this" and "this was never doable".
+
+**The lane rule is promoted from safety net to the mechanism**, on three saves in
+three dispatches. The brief names the base; the lane's first action verifies,
+fast-forwards only if the base is a descendant and the tree is clean, stops
+otherwise; and **the orchestrator confirms the lane's base verification appears
+in its output before treating the work as started** — which is the orchestrator's
+executable duty, replacing the one that was not.
+
+**The T13 experiment is approved with three conditions**, and one dispatch is
+data rather than adoption. The trade is named honestly and is worth restating,
+because the answer is not obvious: **the auto flow gives mechanical isolation
+with a stale base repaired by rule; the manual flow gives a chosen base with
+isolation by instruction.** Neither dominates. The decision is made at the stop
+report on both flows' evidence, and this report will carry whether isolation held
+— checkable at review, by whether the lane's commits touched only lane paths —
+and how the friction compared.

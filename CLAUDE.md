@@ -37,18 +37,24 @@ CLI tool giving LLM agents eyes and hands in KiCad 10 projects. Rust.
 - A parked lane's uncommitted draft is reference, not resumption: a fresh
   implementer starts from the entry, and any line adopted from a draft passes
   the falsification discipline as if newly written.
-- **Every brief states the base commit, and the orchestrator verifies the lane
-  worktree is at that commit before work starts.** Promoted from the M4
-  checkpoint-1 stale-worktree near-miss: a worktree left behind by an earlier
-  session looks like a clean lane and is not one, and work built on a stale base
-  is discovered at merge, which is the most expensive possible moment.
-- **A lane worktree is created at, or reset to, the brief's named base commit as
-  part of dispatch.** Worktrees do not start stale by construction; the
-  verification above is then a safety net rather than the mechanism. Ruled after
-  three dispatches in one session produced two stale worktrees — at which point
-  a recurring cost stops being an incident. The lane's own half of this rule
-  lives in the `lane-implementer` definition, because that is where a lane acts
-  on it.
+- **Worktree currency is the lane's first action, and that is the mechanism —
+  not a safety net.** Every brief names the base commit. The lane's **first**
+  action verifies its worktree against it, fast-forwards only if the base is a
+  descendant of the worktree's commit and the tree is clean, and stops and
+  reports otherwise. The orchestrator **confirms the lane's base verification
+  appears in its output before treating the work as started.** The rule as it
+  acts lives in the `lane-implementer` definition; this is the cross-agent half.
+  Three saves in three dispatches, which is why it is load-bearing rather than
+  defensive: work built on a stale base is discovered at merge, the most
+  expensive possible moment.
+- *Rescinded, and recorded rather than deleted: "a lane worktree is created at,
+  or reset to, the base as part of dispatch."* **It was never executable.** The
+  dispatch mechanism creates the worktree itself, at a commit the orchestrator
+  does not choose and cannot set, at the moment the agent starts — there is no
+  point between creation and the lane's first action where the orchestrator can
+  intervene. The rule was drafted against an assumed mechanism rather than the
+  real one, which is the reason it is kept here: a rule that cannot be performed
+  reads like a rule that is being ignored.
 - The BLOCKED rule applies inside lanes: a subagent that hits a governing-
   document conflict parks it and reports to the orchestrator; the orchestrator
   parks it for James.
