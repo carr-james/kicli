@@ -62,3 +62,38 @@ in M4, where it gates nothing.
   output that overflows or confuses its context. Defects are recorded verbatim
   in tasks/dogfood.md, then triaged like any finding — fixed, PROPOSED, or
   recorded with the reason it stands.
+
+## The agentic layer
+
+Adopted on advisor recommendation via PR, M4 Phase 2.
+
+- A rule lives where its scope is. Role-scoped rules live in that role's
+  `.claude/agents/` definition. Cross-agent policy lives here. Repeated
+  procedures with steps and worked examples live in `.claude/skills/`.
+  Mechanical prohibitions live in hooks. A new incident adds a worked example
+  to the relevant skill, not a rule to this file, unless the lesson is
+  genuinely cross-agent policy.
+- Agent definitions, skills, hooks and `.claude/settings.json` are
+  version-controlled working practice, changed only via ruling — like any
+  other governing document.
+- Implementation is dispatched to the `lane-implementer` agent; ticks go
+  through the `tick-reviewer` agent; dogfood runs use the `dogfooder` agent
+  with a sandbox directory prepared outside the repo (tool lists restrict
+  tools, not paths — the dogfooder's isolation is sandbox-plus-instruction,
+  and its transcript is spot-checkable); check-guarded chores go to
+  `chore-runner`.
+- If an implementer disputes a REJECT, the orchestrator re-runs the review
+  once with the main model before the two-rejection escalation counts.
+- The frozen surface is enforced by a PreToolUse hook over
+  `.claude/hooks/frozen-paths.txt`. Lifting a freeze IS the ruling path; the
+  orchestrator is not exempt. This is the only tool hook; further hooks
+  require a triggering incident.
+- Subagents do not spawn subagents (`.claude/settings.json` caps depth at 1,
+  concurrency at 4): every layer is a summarisation hop that loses evidence.
+- The gates run as a git pre-commit hook. One-time setup per checkout:
+  `git config core.hooksPath .githooks` (worktrees share it).
+- Workflow-retrospective findings are triaged by the advisor at each session
+  stop into amendments to agent definitions and skills. Milestone
+  retrospectives report four counts: reversed PROPOSED items, re-litigated
+  decisions, gate failures found after a tick, and BLOCKED items that were
+  decidable from the record.

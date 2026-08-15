@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Gates as physics: the six-gate suite runs before every commit.
+# Escape hatch for genuine emergencies only: KICLI_SKIP_HOOK=1 git commit …
+# — a skipped run is reported in the session report, not hidden.
+set -euo pipefail
+if [ "${KICLI_SKIP_HOOK:-0}" = "1" ]; then
+  echo "pre-commit: gates SKIPPED via KICLI_SKIP_HOOK — report this." >&2
+  exit 0
+fi
+exec cargo xtask check
