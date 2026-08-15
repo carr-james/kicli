@@ -108,6 +108,37 @@ ticks only on APPROVE. This is the correct outcome of the practice, not a gap in
 it: the work is merged and green, and the tick is a separate claim that has not
 been earned yet.
 
+### `wire delete` (T15), Lane B — merged, tick review running
+
+Merged as `5753e4b` from `worktree-agent-ad5ebde9f056ce4cb` (lane commits
+`5c06d74`, `871d61e`, `3dfd528`). Merged check green: six gates, corpus,
+environment-gated, **zero ignored, oracle 35/35**. Thirteen falsifications
+recorded.
+
+**The four-end detection did not fork**, which was the structural risk in
+granting this task `edit/mark.rs`. Verified at merge: the diff is exactly
+`fn wire_ends_at` → `pub(crate) fn wire_ends_at` plus a doc paragraph recording
+*why* it is visible — two questions rest on it and must rest on the same answer.
+No second implementation. T12 will find the reason at the function.
+
+**The oracle measurement is made**: KiCad reports one net becoming two across
+three joined segments, and the T losing its dropper leaving the crossbar joined
+and the stem alone.
+
+### The T14 gap fix — merged, and it sharpened the claim past what the review asked
+
+Merged as `ed14794`. The third arm is in, and the implementer **re-measured
+rather than adopting the reviewer's coordinates**; they reproduced exactly. The
+new arm is falsified three ways, including one the brief did not ask for: giving
+the third arm the *agreeing* angles with stubs left at relocated positions fails
+all four ports, which shows the arm depends on the angle and not on geometry
+alone.
+
+**Both claims were narrowed to the port's connection point** — a sharper reading
+than the review demanded. Connectivity is the only instrument in play, so what
+three arms measure is where KiCad *joins* the port, not where it *draws* the
+graphic. The distinction was the implementer's, not the reviewer's and not mine.
+
 ## Findings, by lane
 
 **Lane B, the delta view (T17): the task text was wrong about the degraded
@@ -471,7 +502,7 @@ throughout). Each break alone:
 first check is vacuous, and only the control makes the pair evidence. Nothing was
 written, staged or committed inside the checkout or any worktree to obtain this.
 
-### `wire draw` (T14), Lane B — merged, tick review REJECTED, fix running
+### `wire draw` (T14), Lane B — merged, REJECTED, fix merged, re-review running
 
 Merged as `686aa72` from `worktree-agent-a702dd29e3d9c98dc` (lane commits
 `c7c40ca`, `f915b0b`, `1759a7d`, `2e7050e`). Merged check: six gates, corpus, and
@@ -596,6 +627,40 @@ form", with the six callers moving in the same commit. C3 now records the trap,
 the six call sites, and an oracle check run against KiCad rather than against
 kicli's lenient reader, because kicli accepting a file is not evidence KiCad
 does. **A chore I wrote, corrected by a reviewer reviewing something else.**
+
+**Lane B, `wire delete` (T15): no probe drawing and no committed fixture can be
+addressed by a handle.** `Probe::uuid` writes
+`00000000-0000-4000-800{series}-{n:012}` (`kicli-probe/src/drawing.rs:94-100`),
+varying only the last twelve digits, so every object of every probe drawing
+shares the eight-character handle `00000000`.
+
+**Measured before recording, and wider than reported**: across
+`crates/kicli/tests/fixtures/sch/`, all **151** `uuid` atoms share the same eight
+leading characters. Neither instrument can exercise a handle-addressed command.
+No existing test is wrong — nothing addresses by handle today — but a whole class
+of test is unavailable, and `wire delete` could only test its handle path by
+rewriting an identifier in the drawing text after the harness wrote it. Recorded
+as chore **C5**, chore-runner eligible for the probe crate, with the fixtures
+named as a known second half rather than swept in silently.
+
+**Infrastructure, and a near-miss: lane worktrees are branched from a stale
+`main`.** Reported independently by two lanes. The T14-fix lane and the
+`wire delete` lane were both created at `47174b8` — two to four commits behind
+`main` — although both were dispatched after the merges they depended on. Both
+briefs said "X merged immediately before you, so the file exists"; in both
+worktrees it did not. Both implementers noticed and fast-forwarded before
+starting.
+
+**The near-miss is the finding.** In `wire delete`'s own words, "a lane that
+trusted the brief would have written the module from scratch" — which is a
+duplicate implementation of a module that already exists on `main`, arriving as a
+merge conflict at best and a silent second home at worst. The two other running
+lanes were checked at the moment this surfaced and both had their dependencies.
+
+PROPOSED: the orchestrator states the base commit in every brief and verifies the
+worktree is at it before the lane starts work, rather than saying "merged
+immediately before you". Recommendation: accept — it is one command at dispatch,
+and the failure it prevents is a lane silently rebuilding merged work.
 
 ## Session 2 workflow retrospective — running
 
