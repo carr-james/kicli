@@ -27,7 +27,17 @@ use crate::cli::args::{DrawArgs, Global, WireVerb};
 use crate::cli::edit::{Editing, Note, code_for, code_for_snapshot, report};
 use crate::cli::exit::ExitCode;
 use crate::cli::output::{Failure, Report};
-use crate::edit::wire::{DeletedWire, DrawnWire, Polyline, Stranded, WireError, delete, draw};
+use crate::connectivity::extract;
+use crate::edit::label::{LabelError, NewLabel, PortShape, add as add_label};
+use crate::edit::wire::{DeletedWire, DrawnWire, End, Polyline, Stranded, WireError, delete, draw};
+use crate::geometry::pins::ResolvedPin;
+use crate::geometry::{Angle, Iu};
+use crate::model::LoadedFile;
+use crate::model::config::Routing;
+use crate::model::items::{LabelKind, SheetPath};
+use crate::route::propose::{Proposal, label_name, walked};
+use crate::route::report::Added;
+use crate::route::{Terminal, pin_terminal};
 
 use super::address;
 
@@ -60,6 +70,17 @@ fn draw_wire(global: &Global, args: &DrawArgs) -> Result<Report, Failure> {
     let mut editing = Editing::open(global)?;
     let routing = editing.loaded.config.routing;
     let grid = editing.place.grid();
+
+    // The proposal comes first, because performing it draws no wire at all.
+    // Without the flag nothing here runs and the verb draws what it was asked
+    // for: a connection kicli would rather see labelled is still a connection
+    // an agent may draw.
+    if args.auto_labels {
+        if let Some(proposed) = proposed(&editing, &request, &routing, grid) {
+            return perform(&mut editing, &request, &proposed, &routing, grid);
+        }
+    }
+
     let (hierarchy, target, taken) = editing.tree_parts();
     let DrawnWire {
         report: route,
@@ -72,6 +93,205 @@ fn draw_wire(global: &Global, args: &DrawArgs) -> Result<Report, Failure> {
     let mut result = report(&mutation, Some(("wire", rendered.json)), &[]);
     result.text = format!("{}{}", rendered.text, result.text);
     Ok(result)
+}
+
+/// A connection kicli proposes as a pair of labels, and the ends it joins.
+struct Proposed {
+    /// The pair, and why it is proposed.
+    proposal: Proposal,
+    /// The end the connection leaves.
+    source: Terminal,
+    /// The end it reaches.
+    target: Terminal,
+}
+
+/// Is this request one kicli proposes as a pair of labels?
+///
+/// Nothing, when the connection is short enough to draw — and nothing when an
+/// end cannot be resolved or names no pin. An end that does not resolve is a
+/// refusal [`draw`] states far better than this could, so the request goes on
+/// to it; and a pair of ends with no pin between them gives no name to fall
+/// back to when the drawing names no net.
+///
+/// The length judged is the vertices the caller gave. Two ends and no corners
+/// measure the Manhattan distance between them, which no orthogonal route can
+/// beat, so a request that names no path is still judged against the shortest
+/// wire that could join it.
+fn proposed(
+    editing: &Editing,
+    request: &Polyline,
+    routing: &Routing,
+    grid: Iu,
+) -> Option<Proposed> {
+    let file = &editing.loaded.hierarchy.files[editing.file];
+    let sheet = editing.place.sheet_path();
+    let (source, source_pin) = end_terminal(file, sheet, &request.from)?;
+    let (target, target_pin) = end_terminal(file, sheet, &request.to)?;
+
+    let mut vertices = Vec::with_capacity(request.via.len() + 2);
+    vertices.push(source.at);
+    vertices.extend(request.via.iter().copied());
+    vertices.push(target.at);
+
+    let name = name_for(editing, &request.from, source_pin.as_ref())
+        .or_else(|| name_for(editing, &request.to, target_pin.as_ref()))?;
+    Proposal::of(
+        &source,
+        &target,
+        Some(walked(&vertices)),
+        &name,
+        routing,
+        grid,
+    )
+    .map(|proposal| Proposed {
+        proposal,
+        source,
+        target,
+    })
+}
+
+/// The terminal one end of a request names, with the pin when it names one.
+///
+/// The pin comes back because a proposed label is named after it when the
+/// drawing names no net. [`crate::edit::wire`] resolves the same three forms
+/// for the wire it draws; the pin arm is the one with a rule in it, and both
+/// paths read it from [`pin_terminal`].
+fn end_terminal(
+    loaded: &LoadedFile,
+    sheet: &SheetPath,
+    end: &End,
+) -> Option<(Terminal, Option<ResolvedPin>)> {
+    match end {
+        End::At(at) => Some((Terminal::of_point(*at, &at.to_string()), None)),
+        End::Port(name) => loaded
+            .schematic
+            .sheets()
+            .flat_map(|child| &child.pins)
+            .find(|port| port.name == *name)
+            .map(|port| (Terminal::of_sheet_pin(port), None)),
+        End::Pin(pin) => pin_terminal(loaded, sheet, &pin.reference.0, &pin.number)
+            .map(|(terminal, resolved)| (terminal, Some(resolved))),
+    }
+}
+
+/// What to call the pair, from the end a name can be taken from.
+///
+/// The net's own name when the drawing gives the pin one, and
+/// `<reference>_<pin name>` when it does not. A synthetic name is one kicli
+/// invented for a net the drawing does not name, so it is not a name to label
+/// with — it would freeze a handle that renumbers when another net gains a
+/// label.
+fn name_for(editing: &Editing, end: &End, pin: Option<&ResolvedPin>) -> Option<String> {
+    let (End::Pin(address), Some(resolved)) = (end, pin) else {
+        return None;
+    };
+    let nets = extract(&editing.loaded.hierarchy);
+    let named = nets
+        .net_of(&address.reference.0, &address.number)
+        .filter(|net| !net.synthetic)
+        .map(|net| net.name.clone());
+    Some(label_name(
+        named.as_deref(),
+        &address.reference.0,
+        &resolved.name,
+        &resolved.number,
+    ))
+}
+
+/// Write the pair of labels the router proposed, and no wire between them.
+///
+/// Each label sits [`crate::route::propose::REACH`] grid steps along its own
+/// pin's direction, on a stub drawn from the pin to it. The stub is what makes
+/// the label electrically the pin's: a label standing two grid steps off a pin
+/// with nothing between them names a net the pin is not on.
+///
+/// Every write goes through the mutation path and is verified on its own. The
+/// result reports **one** delta over all of them, taken against the state
+/// before the first, because "what did this command do" has one answer.
+fn perform(
+    editing: &mut Editing,
+    request: &Polyline,
+    proposed: &Proposed,
+    routing: &Routing,
+    grid: Iu,
+) -> Result<Report, Failure> {
+    let before = editing
+        .state()
+        .map_err(|why| Failure::new(code_for_snapshot(&why), why.to_string()))?;
+    let pair = &proposed.proposal.labels;
+    let ends = [
+        (&request.from, &proposed.source, pair.at[0]),
+        (&request.to, &proposed.target, pair.at[1]),
+    ];
+
+    let mut wires = Vec::new();
+    for (end, terminal, at) in ends {
+        // An end that fixes no direction is its own anchor, and a stub from a
+        // point to itself is no wire at all.
+        if at == terminal.at {
+            continue;
+        }
+        let stub = Polyline {
+            from: end.clone(),
+            to: End::At(at),
+            via: Vec::new(),
+        };
+        let (hierarchy, target, taken) = editing.tree_parts();
+        let DrawnWire { report: stub, .. } =
+            draw(hierarchy, &stub, routing, &target, taken).map_err(|error| refused(&error))?;
+        wires.extend(stub.added.wires);
+    }
+
+    for at in pair.at {
+        let request = NewLabel {
+            kind: LabelKind::Local,
+            text: pair.name.clone(),
+            at,
+            angle: Angle(0),
+            shape: PortShape::default(),
+        };
+        let root = editing.root();
+        let (doc, target, taken) = editing.parts();
+        add_label(doc, &target, &root, &request, taken).map_err(|error| label_refused(&error))?;
+    }
+
+    let mutation = editing
+        .commit(&before)
+        .map_err(|why| Failure::new(code_for(&why), why.to_string()))?;
+    let mut route = proposed.proposal.report(&proposed.source, &proposed.target);
+    route.added = Added {
+        wires,
+        junctions: Vec::new(),
+    };
+
+    let rendered = contract::render(&route, grid);
+    let notes = vec![Note::new(
+        "auto-labels",
+        format!(
+            "kicli wrote the label {:?} at each end instead of a wire. \
+             Each label sits on a short stub from its own pin. \
+             Nothing joins the two ends but the name they share.",
+            pair.name
+        ),
+    )];
+    let mut result = report(&mutation, Some(("wire", rendered.json)), &notes);
+    result.text = format!("{}{}", rendered.text, result.text);
+    Ok(result)
+}
+
+/// Which row of the table a refused label write is.
+///
+/// The same reading as the `label` noun's own, because it is the same library
+/// call. Two homes for one mapping is one more than the rule wants; the noun's
+/// is private to its module, so this states it rather than reaching into it.
+fn label_refused(error: &LabelError) -> Failure {
+    let code = match error {
+        LabelError::Mutation(inner) => code_for(inner),
+        LabelError::Snapshot(inner) => code_for_snapshot(inner),
+        LabelError::Read(_) | LabelError::Load(_) => ExitCode::File,
+        _ => ExitCode::Operation,
+    };
+    Failure::new(code, error.to_string())
 }
 
 /// Delete the one segment the caller named.

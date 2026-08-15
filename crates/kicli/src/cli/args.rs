@@ -203,6 +203,15 @@ pub struct DrawArgs {
     /// Give the flag once per corner, in the order the wire meets them.
     #[arg(long, value_name = "X,Y")]
     pub via: Vec<PointArg>,
+
+    /// Write a pair of labels instead of a wire, when kicli proposes one.
+    ///
+    /// kicli proposes a pair of labels when the connection is longer than
+    /// `routing.label_threshold`. Without this flag it draws what you asked
+    /// for. With it, kicli writes a short stub and a label at each end and
+    /// draws no wire between them.
+    #[arg(long)]
+    pub auto_labels: bool,
 }
 
 impl DrawArgs {

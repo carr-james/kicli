@@ -293,6 +293,7 @@ fn every_wire_verb_parses() {
         "--to-port",
         "--to-at",
         "--via",
+        "--auto-labels",
     ] {
         assert!(help.contains(flag), "the help names {flag}: {help}");
     }

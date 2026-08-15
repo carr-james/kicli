@@ -13,12 +13,13 @@
 
 use kicli_sexpr::{Doc, NodeId};
 
+use crate::geometry::pins::ResolvedPin;
 use crate::geometry::text::TextStyle;
 use crate::geometry::{Point, Rect, Size, resolve_pins, symbol_boxes, text_box};
 use crate::model::items::{Item, SheetPath, Uuid};
 use crate::model::{LoadedFile, definition_of, read_library};
 use crate::route::obstacles::{PinObstacle, Segment, SheetGeometry};
-use crate::route::terminal::{Heading, Obstruction};
+use crate::route::terminal::{Heading, Obstruction, Terminal};
 
 /// Internal units per mil, in a schematic.
 ///
@@ -257,6 +258,43 @@ impl SheetObjects {
     pub fn page(&self) -> Rect {
         self.page
     }
+}
+
+/// The terminal one pin of one placed symbol makes, with the pin itself.
+///
+/// The pin comes back beside the terminal because a proposed label is named
+/// after it when the drawing names no net, and the pin's own name is not
+/// something a [`Terminal`] carries.
+///
+/// The unit is a property of the sheet path rather than of the cache beside the
+/// `lib_id`: a sheet placed twice draws a different unit on each placement, and
+/// resolving from the cache would answer for the other placement's pin.
+///
+/// Nothing, when the placement, the definition or the pin is not there. A
+/// caller that needs to say which of the three was missing asks the verb that
+/// owns those refusals.
+#[must_use]
+pub fn pin_terminal(
+    loaded: &LoadedFile,
+    sheet: &SheetPath,
+    reference: &str,
+    number: &str,
+) -> Option<(Terminal, ResolvedPin)> {
+    let symbol = loaded.schematic.symbols().find(|symbol| {
+        symbol
+            .reference_on(sheet)
+            .is_some_and(|had| had.0 == reference)
+    })?;
+    let library = read_library(
+        &loaded.doc,
+        &loaded.schematic.library_symbols,
+        loaded.schematic.version,
+    );
+    let definition = definition_of(&library, symbol)?;
+    resolve_pins(&symbol.drawn_on(sheet), definition)
+        .into_iter()
+        .find(|resolved| resolved.number == number)
+        .map(|resolved| (Terminal::of_pin(reference, &resolved), resolved))
 }
 
 /// The page a schematic file draws on.
