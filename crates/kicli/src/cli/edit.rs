@@ -17,6 +17,7 @@ pub mod mark;
 pub mod net;
 pub mod symbol;
 pub mod text;
+pub mod wire;
 
 use super::args::Global;
 use super::exit::ExitCode;

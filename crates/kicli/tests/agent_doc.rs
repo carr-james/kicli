@@ -79,6 +79,39 @@ fn agent_doc_covers_every_verb_flag() {
     }
 }
 
+/// The routing settings are written down, with every key an agent may set.
+///
+/// A weight an agent cannot find is a weight it cannot tune, and the cost
+/// breakdown a route prints is built from exactly these. The list is written
+/// out rather than read from the parser, because a list the parser supplied
+/// would agree with the parser however wrong the document was.
+#[test]
+fn agent_doc_covers_the_routing_settings() {
+    let doc = agent_doc();
+    assert!(doc.contains("[routing]"), "AGENT.md has no routing section");
+    for key in [
+        "label_threshold",
+        "margin",
+        "u_max",
+        "w_len",
+        "w_turn",
+        "w_cross",
+        "w_text",
+        "w_near",
+    ] {
+        assert!(
+            doc.contains(key),
+            "AGENT.md does not document routing.{key}"
+        );
+    }
+    // The one knob two things read. An agent that changed it expecting only
+    // the router to move would be surprised by the style rules later.
+    assert!(
+        doc.contains("one knob read twice"),
+        "AGENT.md does not say that label_threshold is shared"
+    );
+}
+
 #[test]
 fn agent_doc_carries_the_whole_exit_code_table() {
     let doc = agent_doc();

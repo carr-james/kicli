@@ -6,6 +6,7 @@
 //! looked the number up would be misled.
 
 use crate::kicad::CliFailure;
+use crate::route::report::Status;
 
 /// What a kicli run reports to whoever started it.
 ///
@@ -127,6 +128,37 @@ impl ExitCode {
             CliFailure::Failed { .. } => Self::Operation,
         }
     }
+
+    /// The code a route request reports.
+    ///
+    /// The [`route`](crate::route) module names no exit code, deliberately:
+    /// nothing below the command layer may depend on one. This is the only
+    /// place the two meet.
+    ///
+    /// **A proposal is a result, not a failure.** A request that came back as a
+    /// pair of labels was answered — the router was asked what to do and it
+    /// said what to do — so it exits [`Self::Success`] alongside a drawn route.
+    /// Only a well-formed request that could not be completed leaves a non-zero
+    /// code, and that is [`Self::Operation`] for both of its kinds: a way that
+    /// is barred, and a request no drawing can hold.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kicli::cli::ExitCode;
+    /// use kicli::route::Status;
+    ///
+    /// assert_eq!(ExitCode::for_route(Status::Labels), ExitCode::Success);
+    /// assert_eq!(ExitCode::for_route(Status::Blocked), ExitCode::Operation);
+    /// ```
+    #[must_use]
+    pub fn for_route(status: Status) -> Self {
+        if status.is_failure() {
+            Self::Operation
+        } else {
+            Self::Success
+        }
+    }
 }
 
 impl From<ExitCode> for std::process::ExitCode {
@@ -151,6 +183,31 @@ mod tests {
     fn only_success_is_success() {
         for row in ExitCode::ALL {
             assert_eq!(row.is_success(), row.code() == 0, "{}", row.name());
+        }
+    }
+
+    #[test]
+    fn a_proposal_leaves_the_same_code_as_a_drawn_route() {
+        use crate::route::report::Status;
+
+        // The whole point of the mapping: a route and a proposal both answered
+        // the question, so both exit 0. A proposal that exited 1 would tell an
+        // agent its request failed when the router had just told it what to do.
+        for answered in [Status::Routed, Status::Labels] {
+            assert_eq!(
+                ExitCode::for_route(answered),
+                ExitCode::Success,
+                "{} is an answer",
+                answered.token()
+            );
+        }
+        for refused in [Status::Blocked, Status::Invalid] {
+            assert_eq!(
+                ExitCode::for_route(refused),
+                ExitCode::Operation,
+                "{} could not be completed",
+                refused.token()
+            );
         }
     }
 }

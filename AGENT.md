@@ -421,6 +421,105 @@ kicli noconnect delete --pin <REF.PIN>
 contradict the drawing. The refusal says what the pin is joined to, exits 1, and
 writes nothing.
 
+### `kicli wire draw`
+
+```
+kicli wire draw --from-pin <REF.PIN> | --from-port <NAME> | --from-at <X,Y>
+                --to-pin   <REF.PIN> | --to-port   <NAME> | --to-at   <X,Y>
+                [--via <X,Y>]...
+```
+
+You give the corners. kicli does **no searching**: it checks that what you asked
+for is drawable and refuses rather than drawing something illegal. Give `--via`
+once per corner, in the order the wire meets them.
+
+Each end takes one of three forms, because a port name can look like anything
+and kicli will not guess which kind a word is. Name exactly one form per end.
+
+Four rules decide, and every refusal names the vertex it is about. Every vertex
+sits on the grid. Every segment runs along one axis. Nothing a wire may not
+cross is in the way. And the wire leaves each end the way that end must be
+left — a wire leaves a pin along the pin's own direction, so the first corner
+after a pin is straight out from it.
+
+**A vertex off the grid is refused, not snapped.** Every other verb snaps a
+position you give it. A polyline is not a position: moving one corner changes
+the shape of the wire you asked for, and can turn a legal path into one that
+runs along another net.
+
+The result is the route contract, then the usual mutation report:
+
+```
+routed R1.1 -> R2.1   via 3 segments, 2 corners, 35.56mm
+  cost 44 = length 28 + turns 12 + crossings 0 + text 0 + proximity 4
++ W 3300f00e (50.80,50.80) -> (50.80,45.72)
+checked: every invariant passed
+```
+
+| Line | What it says |
+|---|---|
+| the first | the status, the two ends, and what the route is: segments, corners, length |
+| `cost` | the total, then the five parts it is the sum of |
+| `crossings` | how many other nets the route crosses, each with its wire and, when kicli knows it, its net. Absent when there are none |
+| `adjusted` | a terminal kicli had to move, how far **by**, and why. Absent when it moved none |
+| `wires added` | what reached the file. Absent when nothing did |
+
+**Read the cost, not just the total.** The parts are there so you can decide to
+move a symbol instead of accepting a bad route. `turns 12` on a two-corner route
+is normal; `crossings 40` means the route cuts two other nets and the drawing
+would read better if something moved.
+
+The status is one of four words, and it is the first thing on the line:
+
+| Status | Exit | What it means |
+|---|---|---|
+| `routed` | 0 | a wire was drawn |
+| `labels` | 0 | a pair of labels is **proposed** instead of a wire. A proposal is a result, not a failure |
+| `blocked` | 1 | no route exists, and kicli names what stood in the way |
+| `invalid` | 1 | the request itself was not drawable: a diagonal, a vertex off the grid |
+
+With `--output json`, the contract is under the `wire` key of the mutation
+result, and every key is there whatever the status — an empty list where nothing
+happened, `null` where there is no value. You never have to ask which keys came
+back.
+
+```json
+{ "status": "routed", "from": "R1.1", "to": "R2.1",
+  "path": [[50.8,50.8],[50.8,45.72],[76.2,45.72],[76.2,50.8]],
+  "segments": 3, "corners": 2, "length_mm": 35.56,
+  "cost": { "total": 44, "length": 28, "turns": 12, "crossings": 0,
+            "text": 0, "proximity": 4 },
+  "crossings": [], "adjusted": [],
+  "added": { "wires": ["…","…","…"], "junctions": [] },
+  "labels": null, "blocked_by": [], "reason": null,
+  "alternatives_considered": 0 }
+```
+
+`adjusted` carries `{ terminal, by, why }`. **`by` is a displacement, not a
+position** — where the terminal ended up is the matching end of `path`, and the
+point you asked for is that end less `by`. `why` is a closed set, currently the
+single word `four-way`, so you can switch on it and never parse English.
+
+### `kicli wire delete`
+
+```
+kicli wire delete <TARGET>
+```
+
+Removes the one segment you named and **nothing else**. It does not tidy up
+after itself: a junction the removal leaves sitting on fewer than three wire
+ends is still legal, and taking it away is a second decision that is yours.
+kicli reports every such junction as a note and leaves it in the file.
+
+```
+- W 3300f00e (50.80,50.80) -> (63.50,50.80)
+checked: every invariant passed
+note: stranded-junction  the junction 01000003 at (63.5,50.8) now joins 1 wire end(s), and is still there. Run junction delete --at 63.5,50.8 to take it away.
+```
+
+A bus is refused rather than deleted: a bundle carries several nets, and
+removing one is not this verb's decision.
+
 ### `kicli net rename`
 
 ```
@@ -552,6 +651,36 @@ is an error the moment you write it.
 [formats]  max_schematic_version = 20260306
 [tools]    kicad_cli_path = "/opt/kicad/bin/kicad-cli"
 ```
+
+### `[routing]`
+
+What a wire costs, and how far kicli looks. The commands that read it are
+`kicli wire draw` and `kicli wire delete`.
+
+```toml
+[routing]
+label_threshold = "30G"   # above this, a pair of labels is proposed, not a wire
+margin          = "8G"    # how far outside the wire kicli looks for obstacles
+u_max           = "6G"    # how far outward a U-shaped route may reach
+w_len           = 1       # the cost of one grid step of wire: the base unit
+w_turn          = 6       # the cost of one corner
+w_cross         = 20      # the cost of crossing another net
+w_text          = 12      # the cost of one grid step inside a label or text box
+w_near          = 2       # the cost of one grid step beside a symbol body
+```
+
+Distances take `"30G"` (whole grid steps), `"1.27mm"` or `"50mil"`. Weights are
+whole numbers and **none of them may be negative** — a negative term would make
+a longer route cheaper.
+
+The weights are what the `cost` line in a route's report is built from, so
+`w_turn = 6` is why a corner shows as `turns 6` per corner. Raise `w_cross` to
+make kicli detour further to avoid cutting another net; raise `w_turn` to make
+it prefer a longer straight run.
+
+**`label_threshold` is one knob read twice.** The router decides with it and the
+long-wire style rule judges with it. Changing it changes both, on purpose: a
+tool that draws at one distance and complains at another argues with itself.
 
 ## Two things that will bite you
 
