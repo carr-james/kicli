@@ -20,6 +20,28 @@ entry.
 4. Restore the source; record in the task entry WHAT was broken and WHICH
    assertion caught it.
 
+## Restoring a file git does not yet know about
+
+**First amendment, ruled at the M4 checkpoint-1 review.** Step 4 assumes the
+source can be put back. `git checkout -- <path>` restores a **tracked** file; a
+brand-new file that has never been committed is untracked, and `git checkout --`
+cannot restore it — the break you made in it is the only version there is. So
+**falsification runs on new files commit the good state first**, then break,
+watch, and restore from the commit.
+
+Two adjacent traps, from the same batch. `git checkout --` with several
+pathspecs restores **nothing** when one of them fails, so a multi-path restore
+that includes a new file silently leaves every break in place. And a restore is
+not complete because the command exited 0 — checksum the restored file against
+the good state before the next break.
+
+Worked example — the `wire draw` (T14) implementer's note, verbatim:
+
+> Second: `crates/kicli/src/edit/wire.rs` is untracked until the first commit, so
+> `git checkout --` cannot restore it — falsification runs on a brand-new file
+> need a commit of the good state first, which the falsification-control skill
+> does not mention.
+
 ## Worked examples from the record
 
 - **Sign inversion (M4 T6).** The escape rule was stated against the symbol's

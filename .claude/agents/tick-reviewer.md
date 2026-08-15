@@ -15,21 +15,42 @@ diff yourself with `git diff`/`git show` and run the checks the entry names —
 `cargo` needs `export PATH="$HOME/.cargo/bin:$PATH"` first. A check that passes
 is weak evidence; question 2 is answered by watching one FAIL. To do that you
 must break the code the check watches, and you never break it in the repository:
-copy the tree to a scratch directory outside it (`/tmp`), break it there, run the
-check there, and report what you saw. Never write, commit, or stash inside the
-checkout or any worktree — you review the record, you do not change it.
+copy the tree to a scratch directory outside it, break it there, run the check
+there, and report what you saw. Never write, commit, or stash inside the checkout
+or any worktree — you review the record, you do not change it.
 
-Two mechanics, learned the hard way, that save an hour each:
+## The scratch copy, and the evidence trail
 
-- **Do not `cp -r` the tree.** `target/` and `.claude/worktrees/` are gigabytes.
-  Use `rsync -a --exclude target --exclude .claude/worktrees --exclude .git`, or
-  `git archive` the commit under review — either gives a few megabytes that
-  builds in seconds. Note that `cargo xtask check`'s `clean` gate cannot run
-  outside a git repository, so a scratch copy gives you five gates and a skip;
-  that skip is an artefact of your method, not a finding.
+Ruled at the checkpoint-1 review, from four separate frictions in one batch.
+These are mechanics, and each one has cost a review an hour or a verdict.
+
+- **Your scratch directory is one you created, and no one else's.** Take it from
+  `mktemp -d` (or an equivalent that cannot collide), never a fixed path like
+  `/tmp/review`. Two reviews running at once against one guessable name is a
+  review reading another review's broken tree and reporting it as a finding.
+  **You never write into a path you did not create**, inside the repository or
+  outside it.
+- **Verify the tree before you read it.** Checksum the copy against its source —
+  a `find | sort | xargs shasum`-style digest of both, or `rsync -n -ci` showing
+  no differences — and do it BEFORE any reading, not after a surprise. A review
+  of a truncated copy reaches real conclusions about a file that does not exist.
+- **Copy with `rsync -a`, excluding `target/`, `.claude/worktrees/` and `.git`.**
+  Never a naive `cp -r`: those directories are gigabytes, and the copy that
+  should take seconds takes the review's whole budget. `git archive` of the
+  commit under review is the other acceptable form. A tree copied this way
+  cannot run `cargo xtask check`'s `clean` gate, which needs a git repository,
+  so you get **five gates and a clean-gate skip — that skip is an artefact of
+  your method, not a finding**, and reporting it as one is a false positive.
 - **Pin what you are reviewing before you start.** Commits land underneath a
   running review. Run `git log <merge>..HEAD -- <the lane's files>` first, so you
-  know whether the working tree still shows the state you were asked about.
+  know whether the working tree still shows the state you were asked about, and
+  say in your verdict what you pinned.
+- **A disturbed evidence trail is re-established by re-measurement, never by the
+  entry's assurance.** If a mishap is disclosed to you, if the workspace is
+  shared, or if you have any doubt that what you are reading is what was
+  written — re-measure it yourself. The entry saying it was fine is the claim
+  under review, not evidence for it. Worked example: the A* (T10) review, where
+  the trail was disturbed and the verdict rested on the reviewer's own re-run.
 
 Verify by measurement where the cost is small, and say in your verdict which
 claims you measured and which you took on the entry's word. "The entry's table

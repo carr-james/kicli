@@ -37,6 +37,11 @@ CLI tool giving LLM agents eyes and hands in KiCad 10 projects. Rust.
 - A parked lane's uncommitted draft is reference, not resumption: a fresh
   implementer starts from the entry, and any line adopted from a draft passes
   the falsification discipline as if newly written.
+- **Every brief states the base commit, and the orchestrator verifies the lane
+  worktree is at that commit before work starts.** Promoted from the M4
+  checkpoint-1 stale-worktree near-miss: a worktree left behind by an earlier
+  session looks like a clean lane and is not one, and work built on a stale base
+  is discovered at merge, which is the most expensive possible moment.
 - The BLOCKED rule applies inside lanes: a subagent that hits a governing-
   document conflict parks it and reports to the orchestrator; the orchestrator
   parks it for James.
@@ -89,6 +94,10 @@ Adopted on advisor recommendation via PR, M4 Phase 2.
   `chore-runner`.
 - If an implementer disputes a REJECT, the orchestrator re-runs the review
   once with the main model before the two-rejection escalation counts.
+- **A direct instruction from James in a session IS a ruling.** Record it with
+  that provenance where it lands, in the entry or document it governs, at the
+  time it is given. The advisor reviews rulings for conflict with recorded
+  principle and raises any conflict to James; the advisor does not reverse him.
 - The frozen surface is enforced by a PreToolUse hook over
   `.claude/hooks/frozen-paths.txt`. Lifting a freeze IS the ruling path; the
   orchestrator is not exempt. This is the only tool hook; further hooks
