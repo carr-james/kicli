@@ -1214,6 +1214,11 @@ the pairs cost — three-symbol drawings 18.4 s, four-symbol 33 s, against a ~20
 suite without this check, with the engines dominating (166 ms of a 193 ms pass).
 Two two-symbol drawings hold all three answer classes at 11.5 s.
 
+**Merged check on the main checkout, corpus included:** six gates green; **73
+test binaries** — two more than before this merge, which is the two new test
+files — with `0 failed` and `0 ignored` in every one; oracle
+`hierarchies matched: 35/35`, `35 hierarchies loaded`.
+
 Tick review dispatched. **Not ticked.**
 
 ## PROPOSED items raised by the lanes, for the advisor
@@ -1247,3 +1252,90 @@ Tick review dispatched. **Not ticked.**
    Note this is the **second** stale worktree of the session out of three
    dispatches, which makes the underlying defect — recorded at C5 as "lane
    worktrees start stale" — a recurring cost rather than an incident.
+
+### Tick review of the determinism property test (T11) — APPROVE. TICKED
+
+**The amended reviewer definition had its first outing, and every clause of it
+was used.** The reviewer pinned the state before reading (`986daab..HEAD` over
+the lane files, empty), took its scratch tree from `mktemp -d`, copied with
+`rsync -a` and the three exclusions, and — the new clause — **verified the copy
+with `rsync -n -ci` before reading a line of it**. It reported five gates and a
+`clean` skip and named that skip as its method's artefact rather than a finding,
+which is exactly what the amendment was written to prevent. It confirmed by
+`diff` after every restore that the real checkout was untouched.
+
+**It reproduced the entry's most valuable claim instead of accepting it**, which
+is the difference the amendment asks verdicts to state. Both "green check,
+faulty control" rows were re-made against the current control *and* against a
+reconstruction of the old one, so the evidence is a contrast rather than a pass:
+`reordered()` ignoring its argument fails the current control and passes the old
+one vacuously; `answer()` returning a constant fails both arms now, and with the
+baseline's class counts removed the shuffled arm alone passes vacuously. The
+entry's rows are true.
+
+**The row that caught nothing was judged on its reasoning rather than waved
+through.** There is no `HashSet` in `search.rs` to re-break, so the reviewer read
+the source: `State` derives `Ord` over `(at, dir)`, `Queued` over `(f, g, state)`,
+`BinaryHeap::pop` returns the maximal element by that total order regardless of
+insertion order, and successors of one pop never share `(at, dir)`. It then said
+in its verdict that this was read and not measured. That distinction is the whole
+point of the clause requiring it.
+
+**And it found something by measuring: a claim that went stale between branch
+time and merge time.** T11's "Carried" paragraph says every probe item answers to
+the handle `00000000`, and gives that as the reason its ambiguous-blame case had
+to be built from two symbols rather than two overlapping wires. True when the
+lane branched from `3563339` — **false in the merged tree**, because C5 landed on
+`main` in the chore lane while T11 was working, and `278c678`/`c31de4b` are
+ancestors of `986daab`. The reviewer read `01000001`, `01000006` and others
+directly out of the merged tree rather than inferring it.
+
+Nothing is wrong with the test; only its stated justification. The paragraph is
+**left standing with a correction beneath it**, because how it went stale is the
+part worth reading.
+
+**The general lesson is the reviewer's, and it is a genuine gap in how this
+session works.** A "Carried" note describes **another lane's state**. The lane
+writing it reads that state at **branch time**; the next owner reads the note at
+**merge time**; and between those moments the other lane can land. Two lanes ran
+concurrently all session, so this is structural, not a one-off.
+
+**WORKFLOW NOTE, tick review of the determinism property test (T11), verbatim:**
+
+> The entry's "Carried" paragraph asserts probe uuids are all `00000000` — true
+> when the lane branched from `3563339`, but false in the merged tree because the
+> C5 uuid-distinctness fix (`278c678`/`c31de4b`) landed on `main` first and is an
+> ancestor of the merge. Worth a standing reminder that "Carried" notes
+> describing another lane's state need re-checking against merge-time `main`, not
+> branch-time `main`, before they're trusted by the next lane owner.
+
+**WORKFLOW NOTE, the determinism property test (T11) implementer, verbatim:**
+
+> The brief's "stop and report if the base is not X" rule has no branch for the
+> case that actually occurred — the worktree was a lossless fast-forward away
+> from the named base — so following it literally would have burned the dispatch
+> on a one-command fix; the rule should say "fast-forward if the named base is a
+> descendant, stop otherwise". The falsification-control skill needs a third
+> amendment: a break that produces a green check may mean the *control* is wrong
+> rather than the check, and two of my seven rows were exactly that.
+
+**WORKFLOW NOTE, the C5/C6 chore lane, verbatim:**
+
+> The orchestrator's catch on defect 1 revealed a real gap in coverage — the
+> narrow control tested only within a single drawing, missing the multi-sheet
+> case entirely. The widened control using `named_child_of` siblings now forces
+> the issue. For defect 2, the ambiguous wording "shared boundary" was a subtle
+> regression that rewording alone corrected; the intra-doc link to mark still
+> verifies.
+
+*(The chore lane's first note, before the corrections, read "No issues with the
+brief, inputs, or configuration. Both chores complete cleanly." Both notes are
+kept: the first is quoted here as it was written, and the gap between the two is
+itself data about what a WORKFLOW NOTE is worth before review.)*
+
+6. **PROPOSED: a carried claim about another lane is re-checked at merge time.**
+   From the tick reviewer's note above. **Recommendation: accept**, as a line in
+   the `task-entry-recording` skill rather than in `CLAUDE.md` — it is about how
+   an entry is written, which is that skill's scope, and `CLAUDE.md`'s own rule
+   says a new incident adds a worked example to the relevant skill rather than a
+   rule to the file. The T11 paragraph and its correction are the worked example.
