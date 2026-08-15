@@ -260,6 +260,15 @@ impl Obstacles {
     ///
     /// A point outside the window is refused: the window is already clipped to
     /// the page, so its edge is the page border.
+    ///
+    /// **One cell can hold two objects that both refuse the step**, such as two
+    /// symbol bodies that overlap. The name the verdict carries is then the
+    /// smallest of the names offered rather than the first one laid down, so it
+    /// is a function of what covers the cell and not of the order the file
+    /// lists its items in. KiCad reorders items when it saves, so a report that
+    /// named the first would blame one symbol today and its neighbour tomorrow
+    /// for the same drawing. Every candidate name is equally true, so choosing
+    /// between them costs nothing.
     #[must_use]
     pub fn entering(&self, at: Point, heading: Heading) -> Verdict {
         let Some(cell) = self.window.cell(at) else {
@@ -271,18 +280,12 @@ impl Obstacles {
         let mut verdict = Verdict::default();
         for feature in self.features(cell) {
             match feature.treatment(heading) {
-                Treatment::Block => {
-                    verdict
-                        .blocked_by
-                        .get_or_insert_with(|| feature.handle().to_owned());
-                }
+                Treatment::Block => keep_smallest(&mut verdict.blocked_by, feature.handle()),
                 Treatment::Cross => verdict.crossings += 1,
                 Treatment::Text => verdict.text_steps += 1,
                 Treatment::Near => verdict.near_steps += 1,
                 Treatment::Terminate => {
-                    verdict
-                        .terminates_on
-                        .get_or_insert_with(|| feature.handle().to_owned());
+                    keep_smallest(&mut verdict.terminates_on, feature.handle());
                 }
             }
         }
@@ -400,6 +403,18 @@ impl Obstacles {
             y += grid;
         }
         found
+    }
+}
+
+/// Keep the smaller of the name held and the name offered.
+///
+/// Which of two equally true names a verdict carries has to be decided by the
+/// names themselves. The alternative is to keep the first one met, and the
+/// order features are met in is the order the file lists its items in, which
+/// KiCad rewrites every time it saves.
+fn keep_smallest(held: &mut Option<String>, offered: &str) {
+    if held.as_deref().is_none_or(|name| offered < name) {
+        *held = Some(offered.to_owned());
     }
 }
 
