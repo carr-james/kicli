@@ -97,3 +97,65 @@ fn a_probe_drawing_yields_distinct_handles_for_each_object() {
         handles
     );
 }
+
+#[test]
+fn sibling_probes_of_different_series_have_no_colliding_handles() {
+    // Probe::named_child_of creates siblings with different series values. Each
+    // starts its own next_uuid counter at zero. If series is not encoded in the
+    // leading digits, siblings collide: left's first object and right's first
+    // object both get handle 00000001. This control asserts that across a parent
+    // and two named children, all handles are distinct: count of distinct handles
+    // equals count of objects across all three drawings.
+    let mut parent = Probe::new("multi-sheet", scratch());
+    parent.place("R", "R1", ("50.8", "29.21"), &["1", "2"]);
+
+    let mut left =
+        Probe::named_child_of(&parent, "left", "aaaaaaaa-aaaa-4000-aaaa-aaaaaaaaaaaa", 2);
+    left.place("R", "R1", ("50.8", "29.21"), &["1", "2"]);
+    left.place("R", "R2", ("76.2", "29.21"), &["1", "2"]);
+
+    let mut right =
+        Probe::named_child_of(&parent, "right", "bbbbbbbb-bbbb-4000-bbbb-bbbbbbbbbbbb", 3);
+    right.place("R", "R1", ("50.8", "29.21"), &["1", "2"]);
+    right.place("R", "R2", ("76.2", "29.21"), &["1", "2"]);
+
+    // Extract handles from all three drawings
+    let extract_handles = |text: &str| -> Vec<String> {
+        let mut handles = Vec::new();
+        for line in text.lines() {
+            if let Some(start) = line.find("(uuid \"") {
+                let uuid_start = start + 7;
+                if let Some(end) = line[uuid_start..].find('"') {
+                    let uuid = &line[uuid_start..uuid_start + end];
+                    let handle = uuid.chars().take(8).collect::<String>();
+                    handles.push(handle);
+                }
+            }
+        }
+        handles
+    };
+
+    let mut all_handles = Vec::new();
+    all_handles.extend(extract_handles(&parent.text()));
+    all_handles.extend(extract_handles(&left.text()));
+    all_handles.extend(extract_handles(&right.text()));
+
+    let object_count = all_handles.len();
+    assert!(
+        object_count > 0,
+        "expected at least one UUID across the drawings"
+    );
+
+    // All handles must be distinct across all three drawings
+    let unique_count = {
+        use std::collections::HashSet;
+        let set: HashSet<_> = all_handles.iter().cloned().collect();
+        set.len()
+    };
+    assert_eq!(
+        unique_count, object_count,
+        "handles collided across sibling probes: {object_count} objects, {unique_count} unique handles. \
+         Handles: {:?}",
+        all_handles
+    );
+}
