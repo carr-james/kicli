@@ -50,9 +50,9 @@ routed R1.1 -> R2.1   via 3 segments, 2 corners, 35.56mm
   ],
   "added": {
     "wires": [
-      "3300f00e-dc07-4c4e-811a-f305c873c0c1",
-      "6aea2f35-b58c-4e72-83d9-bf9fd68b038d",
-      "414f47f3-0347-4f74-86ec-5e4a7179f8d3"
+      "<id-1>",
+      "<id-2>",
+      "<id-3>"
     ],
     "junctions": []
   },

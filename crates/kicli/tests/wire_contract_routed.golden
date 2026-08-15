@@ -39,9 +39,9 @@ routed R1.1 -> R2.1   via 3 segments, 2 corners, 35.56mm
   "adjusted": [],
   "added": {
     "wires": [
-      "ebb43fde-5c3c-4534-8776-e35e3f8aefaf",
-      "d42bd368-9119-4a59-878a-0f48386f36f1",
-      "85a91ae2-f39a-49d0-89e0-97f16559565a"
+      "<id-1>",
+      "<id-2>",
+      "<id-3>"
     ],
     "junctions": []
   },

@@ -30,6 +30,7 @@ use kicli::route::cost::{Cost, Tally};
 use kicli::route::report::{Added, Adjusted, Adjustment, Crossing, LabelPair, Report, Status};
 use kicli_probe::Probe;
 use serde_json::Value;
+use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 
 /// Where this binary writes the drawings it builds.
@@ -63,8 +64,85 @@ fn matches_golden(case: &str, report: &Report) {
         serde_json::to_string_pretty(&rendered.json).expect("the report prints as JSON")
     );
     let (text, json) = golden(case);
-    assert_eq!(rendered.text, text, "the text form of {case}");
-    assert_eq!(printed, json, "the JSON form of {case}");
+    assert_eq!(
+        without_generated_identifiers(&rendered.text),
+        text,
+        "the text form of {case}"
+    );
+    assert_eq!(
+        without_generated_identifiers(&printed),
+        json,
+        "the JSON form of {case}"
+    );
+}
+
+/// The identifiers a run generated, replaced by stable placeholders.
+///
+/// **A golden cannot assert which identifiers a run produced.**
+/// `edit::wire::draw` derives each one by hashing a seed that starts with the
+/// file's own **absolute path**, so the values are stable inside one checkout
+/// and different in the next one. A golden that froze them would assert where
+/// the repository is rather than what the contract promises — and it would
+/// pass forever in the checkout that wrote it, which is the worst way for a
+/// check to be wrong.
+///
+/// What the contract promises about `added.wires` is a count, an order and a
+/// shape: one identifier per segment, in the order the segments were written.
+/// All three survive this. Each **distinct** identifier becomes `<id-1>`,
+/// `<id-2>` … numbered in first-appearance order, so a missing entry changes
+/// the count and a swapped pair changes the order. The shape is asserted
+/// separately, on the real values, by
+/// [`what_was_added_is_named_by_identifier`] — normalising here would
+/// otherwise hide it.
+///
+/// Nothing that is not identifier-shaped is touched, so every other byte of
+/// both forms is still compared verbatim. The eight-character handles the
+/// constructed reports carry are shorter than this shape and are left alone.
+fn without_generated_identifiers(text: &str) -> String {
+    /// The length of the identifiers KiCad writes, `8-4-4-4-12`.
+    const WIDTH: usize = 36;
+
+    let mut out = String::with_capacity(text.len());
+    let mut seen: Vec<&str> = Vec::new();
+    let mut at = 0;
+    while at < text.len() {
+        if let Some(found) = text
+            .get(at..at + WIDTH)
+            .filter(|slice| is_identifier(slice))
+        {
+            let position = seen
+                .iter()
+                .position(|had| *had == found)
+                .unwrap_or_else(|| {
+                    seen.push(found);
+                    seen.len() - 1
+                });
+            let _ = write!(out, "<id-{}>", position + 1);
+            at += WIDTH;
+        } else {
+            let next = text[at..]
+                .chars()
+                .next()
+                .expect("at is a character boundary");
+            out.push(next);
+            at += next.len_utf8();
+        }
+    }
+    out
+}
+
+/// Is this text one identifier of the shape KiCad writes?
+fn is_identifier(slice: &str) -> bool {
+    let mut groups = slice.split('-');
+    for width in [8, 4, 4, 4, 12] {
+        let Some(group) = groups.next() else {
+            return false;
+        };
+        if group.len() != width || !group.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+            return false;
+        }
+    }
+    groups.next().is_none()
 }
 
 /// A point from two millimetre readings, as a KiCad file writes them.
@@ -333,12 +411,22 @@ fn what_was_added_is_named_by_identifier() {
         drawn.segments(),
         "one record per segment, which is what a KiCad wire is"
     );
+    // The golden compares these under placeholders, because their value is a
+    // hash of the file's own path. **The shape is asserted here, on the real
+    // values**, so normalising in the golden hides nothing.
     for uuid in written {
         assert!(
-            uuid.as_str().is_some_and(|text| text.len() >= 8),
-            "{uuid} is an identifier a view can print a handle of"
+            uuid.as_str().is_some_and(is_identifier),
+            "{uuid} is an identifier of the shape KiCad writes"
         );
     }
+    let distinct: std::collections::BTreeSet<&str> =
+        written.iter().filter_map(Value::as_str).collect();
+    assert_eq!(
+        distinct.len(),
+        written.len(),
+        "no two segments of one wire share an identifier"
+    );
 }
 
 #[test]
