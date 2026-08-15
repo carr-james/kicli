@@ -134,13 +134,17 @@ impl Terminal {
     /// (`tests/edit_wire_sheet_pin.rs`), which is what this rule rests on now:
     /// it was read from KiCad's parser until then and is no longer only that.
     /// One drawing, four ports, one stub wire leaving each port outwards to a
-    /// resistor pin, measured twice with nothing changed but the angle. With
-    /// each angle naming the edge its port is written on, all four stubs carry
-    /// through to the child sheet. With each angle naming the opposite edge —
-    /// same positions, same wires — all four stubs read `unconnected`, because
-    /// KiCad puts the port on the edge the angle names and not where the file
-    /// wrote it. A symbol-pin net in the same drawing is joined in both
-    /// readings, so the instrument was working when it reported the break.
+    /// resistor pin, built three times over the same written port positions.
+    /// With each angle naming the edge its port is written on, all four stubs
+    /// carry through to the child sheet. With each angle naming the opposite
+    /// edge — same positions, same wires — all four stubs read `unconnected`.
+    /// With those same reflected angles and each stub moved to the far edge,
+    /// the along-edge coordinate kept, all four join again exactly as in the
+    /// first drawing: so KiCad puts the port's **connection point** on the edge
+    /// the angle names rather than where the file wrote it, which the second
+    /// drawing alone could not tell from a port that merely refused an
+    /// approach. A symbol-pin net in the same drawing is joined in all three,
+    /// so the instrument was working when it reported the break.
     #[must_use]
     pub fn of_sheet_pin(pin: &SheetPin) -> Self {
         let escape = match pin.angle.0.rem_euclid(360) {
