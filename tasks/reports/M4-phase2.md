@@ -1413,3 +1413,107 @@ later reader needs; and **nothing about the test was wrong, only its stated
 justification** — which is the usual shape of this defect. The code is fine and
 the record is not, which is exactly the failure a record-driven review process
 has to be able to catch, and did.
+
+### The four-way avoidance (T12), Lane A — merged `8f86e87`, awaiting tick review
+
+Lane commits `2c6eb45`, `d0fb86c`, `2e389a1`. **Six gates green on the merged
+result.** Diff confined to `route/terminal.rs`, two new test files, and the entry.
+
+**The design.** `Approach::of(source, target, schematic, grid)` settles **both**
+terminals against the drawing **before the search sees them**, and answers with
+the terminals plus the `Vec<Adjusted>` a caller copies into `Report::adjusted` —
+the field the advisor's ruling added earlier today, populated at the call site
+the ruling anticipated. A crowded terminal steps 1 G **along a wire that already
+meets the point**, chosen in `Heading::EVERY` order rather than file order, so
+the terminus stays on the net the route was drawn to reach. Choosing in file
+order would have re-introduced exactly the defect the determinism task (T11)
+found hours earlier, in a different module.
+
+**The off-by-one was measured from both sides**, which is what this task was most
+likely to get silently wrong. `CROWDED = 3` against `mark::FOUR_WAY = 4`: that
+boundary counts the ends that **are** there, this one the ends there **would
+be**. `CROWDED = 4` and `CROWDED = 2` each break a *different* assertion. An
+off-by-one in the safe direction — never offsetting — is invisible to a
+badly-built suite, and this one is not.
+
+**`edit/mark.rs` was designated to this task and is unchanged**, because
+`wire_ends_at` already answered. That is the designation working as intended: the
+point was never that the file needed editing, it was that **no second
+implementation should appear**. `the_four_way_rule_has_one_home` now holds three
+thresholds to one measurement — the junction verb's refusal, the wire verb's
+stranded-junction report, and the router's avoidance — with a presence control on
+every absence arm, stated in the test's own module doc.
+
+**Task text yielded to measured reality, and the citation is recorded.** T12's
+check text says "`mark::add_junction` at the terminus is still refused
+afterwards". That **cannot mean what it says**: after a correct 1 G offset the
+terminus keeps three ends, and three ends *take* a junction rather than being
+refused one. Implemented as the counterfactual — a drawing carrying the two
+segments the router **declined to draw**, on which `add_junction(P)` refuses with
+`FourWayJunction` — with the control that on the drawing the router really
+produced, `add_junction(P)` **succeeds**. Flagged to the reviewer as the single
+most important thing to judge, because a substitute weaker than the original
+clause would be a REJECT.
+
+**The oracle says the offset preserves the connection, and that the junction is
+what makes it** (kicad-cli 10.0.5):
+
+| Arm | KiCad's nets |
+|---|---|
+| route written + junction at the landing point | `Net-(R1-Pad1)` = `{R1.1, R2.1}` |
+| same drawing, junction withheld | four `unconnected-` nets |
+
+kicli's partition equals KiCad's on both arms. **A wire end on another wire's
+interior is not a connection on its own** — which is why the second arm is worth
+more than the first.
+
+**18 falsification rows**, each watched failing and restored, **every restore
+checksum-verified against `2c6eb45` with `shasum -c`**. The good state was
+committed before the first deliberate break — today's amendment, applied by the
+first lane to work under it.
+
+One row caught nothing it was aimed at and says so: **A8**, an offset stepping
+perpendicular into empty space, was caught by `edit::wire::draw` refusing the
+path as `Blocked` rather than by the oracle, because an off-net landing beside
+that meeting point is unreachable without running along an arm.
+
+**Carried gap, recorded for Phase 3:** the join owes copying `approach.adjusted`
+into `Report::adjusted` at the real call site, **and** writing the landing-point
+junction into `Report::added.junctions`. The oracle above is what makes the
+second load-bearing rather than tidy.
+
+**Merged check on the main checkout, corpus included:** six gates green; **75
+test binaries** — two more than the last merge, which is this task's two new test
+files — with `0 failed` and `0 ignored` in every one; oracle
+`hierarchies matched: 35/35`. This task's own environment-gated arm runs and
+passes on the merged tree: `the_router_never_makes_a_four_way_junction` and
+`the_offset_terminus_still_joins_the_net_kicad_reads`, 2 passed.
+
+Tick review dispatched. **Not ticked.**
+
+### Finding: the dispatch half of the worktree ruling cannot be executed as written
+
+**Third consecutive stale worktree.** T12's came up at `d62aa69`, **five** commits
+behind its named base, and fast-forwarded under the rule promoted an hour
+earlier. The lane's half of that ruling worked exactly as designed: preconditions
+checked, one command, work done on the right base, and the fix disclosed in the
+final message.
+
+**The orchestrator's half did not, because the mechanism does not exist.** The
+ruling says a lane worktree is "created at, or reset to, the brief's named base
+commit **as part of dispatch**". The dispatch mechanism available creates the
+worktree itself, at a commit the orchestrator does not choose and cannot set,
+**at the moment the agent starts** — there is no point between creation and the
+lane's first action where the orchestrator can intervene. So the rule as written
+assigns a duty the tooling does not permit.
+
+This is recorded rather than worked around silently, and it is not a reason to
+weaken the rule — the rule is right, and the lane's half of it has now saved
+three dispatches. **PROPOSED: the orchestrator creates the worktree explicitly
+before dispatch** — `git worktree add -b <branch> <path> <base>` — and briefs a
+non-isolated lane to work in that path, so the base is chosen rather than
+inherited. Recommendation: adopt for the next dispatch and see whether it costs
+anything; the cost of the status quo is now measured at three of five dispatches
+starting stale, each one a round trip or a near-miss. Recorded here because the
+verification rule and the lane's fast-forward branch together have caught every
+instance so far, so this is a cost question rather than a correctness one.
