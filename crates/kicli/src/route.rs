@@ -9,6 +9,8 @@
 //! There is no floating point anywhere below this line: two runs over one sheet
 //! must produce the same route, on any machine, forever.
 
+pub mod cost;
+
 pub mod obstacles;
 
 pub mod sheet;
@@ -17,6 +19,7 @@ pub mod terminal;
 
 pub mod window;
 
+pub use cost::{Cost, Tally, Uncostable};
 pub use obstacles::{
     Axis, Feature, Obstacles, PinObstacle, Segment, SheetGeometry, Treatment, Verdict,
 };

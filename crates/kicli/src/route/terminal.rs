@@ -48,6 +48,22 @@ impl Heading {
         }
     }
 
+    /// The heading from one point to another.
+    ///
+    /// A pair of points that is diagonal, or that is the same point twice,
+    /// names no heading.
+    #[must_use]
+    pub fn between(from: Point, to: Point) -> Option<Self> {
+        match (to.x.0 - from.x.0, to.y.0 - from.y.0) {
+            (0, 0) => None,
+            (0, dy) if dy > 0 => Some(Self::PlusY),
+            (0, _) => Some(Self::MinusY),
+            (dx, 0) if dx > 0 => Some(Self::PlusX),
+            (_, 0) => Some(Self::MinusX),
+            _ => None,
+        }
+    }
+
     /// The opposite heading.
     #[must_use]
     pub fn reversed(self) -> Self {
