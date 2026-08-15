@@ -1844,3 +1844,73 @@ a phantom failure in a file it had nothing to do with.
     *reviewer* rule for an *orchestrator*-caused race, which is the cheap side to
     fix; the expensive alternative is the orchestrator batching report writes,
     which would cost the per-tick record the review process depends on.
+
+## Dogfood dry run — executed, nine defects, `tasks/dogfood.md`
+
+**Standing from M5; a dry run in M4, where it gates nothing.** It found a defect
+the tick review could not have, which is the argument for the gate in one line.
+
+Sandbox at `/tmp/kicli-dogfood-XNUf9M`, outside the repository: `AGENT.md`, the
+built binary, and a copy of the `nets` fixture as `board/` — 21 symbols, 28 nets.
+No source, no task files, no spec, and the agent was told not to go looking.
+Brief: add a third resistor to `NET_A` connected so it **genuinely joins the net,
+not merely so that it looks connected**, verify it, then take it back out.
+
+**Both halves achieved and verified.** It placed `R22`, drew a wire from its pin,
+added a `NET_A` local label, confirmed `N NET_A=/NET_A: R1.1 R2.1 R22.1`, then
+removed all three and confirmed the board matched its original counts exactly.
+**A successful run with a long friction list is the expected shape of this
+exercise**, not a contradiction — the brief was achievable, and nine things got
+in the way of achieving it.
+
+All nine are recorded verbatim in `tasks/dogfood.md` with triage. The three that
+matter here:
+
+**Defect 3 is a real defect introduced today, and the tick review could not have
+caught it.** `AGENT.md:455` and `:515` — added by the verb surface (T16) hours
+ago — show `+ W 3300f00e (50.80,50.80) -> (63.50,50.80)`. **Verified at source
+before filing**: `crates/kicli/src/view/snapshot.rs:781` formats that line
+`format!("{}..{}", …)`, and that code predates M4. So the examples document a
+format **kicli has never produced**, and a first-time reader trusting them
+"would misparse this line or assume something had gone wrong". The agent also
+noticed the endpoints read in the line record's order rather than the request's
+order — also true, also undocumented.
+
+That defect lives in the gap between a document and the tool's behaviour. T16's
+tick review approved on a diff and a check set, correctly; a check set does not
+cover that gap, and `agent_doc_covers_every_command` asserts only a mention
+(chore C7) — **even a fixed version asserting a heading would not have caught
+it.** This is the first time this session that two review instruments have been
+shown to cover genuinely different ground.
+
+**Defect 1 is C5's second half arriving with a price tag.** Every object in the
+committed fixture answers to the handle `@00000000`, so `--uuids` was unusable
+and the agent fell back to reading handles out of write-command reports. C5 fixed
+the probe crate and explicitly held the fixtures back as "a known second half
+rather than swept in silently" — this is what holding it back cost. The agent
+diagnosed it as a fixture artifact rather than a tool bug, unprompted, which is
+the same diagnosis C5 recorded.
+
+**Defect 2 is the largest, and it is a gap rather than a bug.** Nothing read-only
+will tell an agent where a pin is. It inferred an offset from a label kicli
+itself had placed, and learned its guess was wrong only from a **write command's**
+output. Defect 6 is the same wound from the other side: a wire vertex is refused
+rather than snapped — ruled, and correct — but nothing will say what would be
+accepted, so a first wire onto a new symbol is trial and error. The router
+already resolves pins internally; the answer exists and is not exposed.
+
+**Two defects are the orchestrator's, not the tool's, and are recorded as
+standing.** The brief said "take it back out" and then described removing only
+the wiring — the agent spotted the ambiguity, chose the reading that made its own
+verification claim true, and flagged the guess. And every command printed a
+`zoxide` shell warning inherited from the sandbox environment I prepared. The
+agent's own words are the reason to keep it: it is "exactly the kind of
+interleaved noise that would waste tokens/attention for an agent parsing output
+programmatically". Next run's sandbox starts from a clean shell.
+
+11. **PROPOSED: the fixture half of C5.** Recommendation: accept as a chore after
+    the checkpoint. It moves goldens, which is why C5 held it back, and the
+    golden change is part of the change.
+12. **PROPOSED: a read-only way to ask where a symbol's pins are** — a task for
+    M5 planning, not a chore. Recommendation: accept. It is a design decision
+    about the agent-facing surface and deserves an entry rather than a patch.
