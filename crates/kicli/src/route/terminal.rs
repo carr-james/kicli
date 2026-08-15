@@ -10,10 +10,22 @@
 //! carries a marker — a clock, an inversion bubble — it draws over the marker.
 //! This is a hard constraint and not a cost: a terminal that cannot escape is
 //! reported blocked, naming what blocked it.
+//!
+//! **The four-way rule.** A route's own end is a wire end. A terminus that
+//! already carries three of them would take the fourth, and `spec/SPEC.md` §9
+//! Q2 rules that refused and offset by one grid step, reporting the adjustment.
+//! [`Approach`] is where that happens, before the search runs: it answers with
+//! the terminals a route may really use and with the record of what moved. The
+//! count it decides on is `edit::mark::wire_ends_at`, which is the one
+//! implementation of "the wire ends at this point" and is also what the
+//! junction verb's own refusal reads. `tests/the_four_way_rule_has_one_home.rs`
+//! is the check that fails when a second one appears.
 
+use crate::edit::mark::wire_ends_at;
 use crate::geometry::pins::ResolvedPin;
 use crate::geometry::{Angle, Iu, Point, Rect};
-use crate::model::items::SheetPin;
+use crate::model::items::{Schematic, SheetPin};
+use crate::route::report::{Adjusted, Adjustment};
 
 /// Which way a route runs from a point.
 ///
@@ -258,6 +270,114 @@ pub fn escape(
         }),
         None => Ok(at),
     }
+}
+
+/// How many wire ends must already meet at a point for a route's own end to be
+/// the fourth.
+///
+/// Three. [`crate::edit::mark`] refuses a junction on the ends that **are**
+/// there; this asks about the ends there **would be** once the route arrives,
+/// so it is that boundary less the one end the route brings. Neither constant
+/// is written in terms of the other — they are two thresholds on one
+/// measurement, approached from opposite directions — and both read the count
+/// from [`wire_ends_at`], which is the single implementation of it.
+const CROWDED: usize = 3;
+
+/// Where a route will really begin and end, and which terminals moved.
+///
+/// A route is asked for between two terminals and may not be drawable between
+/// exactly those two points: ending on a point that already carries enough wire
+/// ends for the route's own to be the fourth would draw the junction
+/// `spec/SPEC.md` §9 Q2 refuses. So
+/// the terminals are settled against the drawing before the search sees them,
+/// and what moved is reported rather than left for the reader to notice.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Approach {
+    /// The terminal the route leaves, after any adjustment.
+    pub source: Terminal,
+    /// The terminal it arrives at, after any adjustment.
+    pub target: Terminal,
+    /// The terminals that moved, in the order the two were given.
+    ///
+    /// Empty when neither moved, which is the common answer. This is what a
+    /// caller copies into [`Report::adjusted`], so an agent reads which end
+    /// moved and by how far without comparing coordinates.
+    ///
+    /// [`Report::adjusted`]: crate::route::report::Report::adjusted
+    pub adjusted: Vec<Adjusted>,
+}
+
+impl Approach {
+    /// The terminals a route may use on this drawing.
+    ///
+    /// Both ends are asked, because both ends of a route are wire ends: a
+    /// source that already carries three of them makes the fourth just as a
+    /// target does.
+    #[must_use]
+    pub fn of(source: &Terminal, target: &Terminal, schematic: &Schematic, grid: Iu) -> Self {
+        let mut adjusted = Vec::new();
+        let moved_source = settle(source, schematic, grid, &mut adjusted);
+        let moved_target = settle(target, schematic, grid, &mut adjusted);
+        Self {
+            source: moved_source,
+            target: moved_target,
+            adjusted,
+        }
+    }
+}
+
+/// One terminal, moved off a four-way point if it stands on one, and recorded.
+///
+/// The move and the record are made together and from one answer, because a
+/// route that moved without saying so and a route that said so without moving
+/// are two different defects and both are silent.
+fn settle(
+    terminal: &Terminal,
+    schematic: &Schematic,
+    grid: Iu,
+    adjusted: &mut Vec<Adjusted>,
+) -> Terminal {
+    let Some(at) = clear_of_four_way(terminal.at, schematic, grid) else {
+        return terminal.clone();
+    };
+    adjusted.push(Adjusted {
+        terminal: terminal.name.clone(),
+        by: at - terminal.at,
+        why: Adjustment::FourWayJunction,
+    });
+    // The terminal is now a point on a wire rather than the pin or port it was
+    // asked for, and a point on a wire may be met from any side. Its name is
+    // kept, because the report names the end that moved as it names `from` and
+    // `to`.
+    Terminal::of_point(at, &terminal.name)
+}
+
+/// Where a terminus goes instead, when ending where it was asked would make a
+/// fourth wire end meet at one point.
+///
+/// Nothing, when the point is not crowded, which is the common answer.
+///
+/// The step is one grid step **along a wire that already meets the point**, so
+/// the terminus stays on the thing the route was drawn to reach: a step into
+/// empty space would move the wire off its own net, which is a worse drawing
+/// than the one being avoided. The direction is taken in [`Heading::EVERY`]
+/// order rather than in the order the file happens to list its wires, because
+/// KiCad reorders items when it saves and a decision made on file order gives
+/// one drawing two answers. A step that would land on another crowded point is
+/// passed over for the next direction.
+fn clear_of_four_way(at: Point, schematic: &Schematic, grid: Iu) -> Option<Point> {
+    if wire_ends_at(schematic, at).len() < CROWDED {
+        return None;
+    }
+    let along: Vec<Heading> = wire_ends_at(schematic, at)
+        .iter()
+        .filter_map(|end| Heading::between(at, end.far))
+        .collect();
+    Heading::EVERY
+        .into_iter()
+        .filter(|heading| along.contains(heading))
+        .map(|heading| heading.step(at, grid))
+        .find(|step| wire_ends_at(schematic, *step).len() < CROWDED)
 }
 
 #[cfg(test)]
