@@ -259,12 +259,7 @@ fn outlines(from: Point, to: Point, grid: Iu, u_max: Iu) -> Vec<(Shape, Vec<Poin
     let offsets = if grid.0 > 0 { u_max.0 / grid.0 } else { 0 };
     for offset in 1..=offsets {
         let reach = Iu(offset * grid.0);
-        for side in [
-            Heading::PlusX,
-            Heading::MinusX,
-            Heading::PlusY,
-            Heading::MinusY,
-        ] {
+        for side in Heading::EVERY {
             all.push((Shape::UOutside, detour(from, to, side, reach)));
         }
     }
