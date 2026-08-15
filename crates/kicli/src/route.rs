@@ -13,6 +13,8 @@ pub mod cost;
 
 pub mod obstacles;
 
+pub mod propose;
+
 pub mod report;
 
 pub mod search;
@@ -29,9 +31,10 @@ pub use cost::{Cost, Tally, Uncostable};
 pub use obstacles::{
     Axis, Feature, Obstacles, PinObstacle, Segment, SheetGeometry, Treatment, Verdict,
 };
+pub use propose::{Proposal, Trigger};
 pub use report::{Added, Crossing, LabelPair, Report, Status};
 pub use search::{Queued, Route, Search, State};
 pub use shapes::{Candidate, Shape, Shapes};
-pub use sheet::{Routed, SheetObjects, page_area};
+pub use sheet::{Routed, SheetObjects, page_area, pin_terminal};
 pub use terminal::{BlockedEscape, Heading, Obstruction, Terminal};
 pub use window::{Cell, Window};

@@ -426,7 +426,7 @@ writes nothing.
 ```
 kicli wire draw --from-pin <REF.PIN> | --from-port <NAME> | --from-at <X,Y>
                 --to-pin   <REF.PIN> | --to-port   <NAME> | --to-at   <X,Y>
-                [--via <X,Y>]...
+                [--via <X,Y>]... [--auto-labels]
 ```
 
 You give the corners. kicli does **no searching**: it checks that what you asked
@@ -452,7 +452,7 @@ The result is the route contract, then the usual mutation report:
 ```
 routed R1.1 -> R2.1   via 3 segments, 2 corners, 35.56mm
   cost 44 = length 28 + turns 12 + crossings 0 + text 0 + proximity 4
-+ W 3300f00e (50.80,50.80) -> (50.80,45.72)
++ W 3300f00e 50.80,45.72..50.80,50.80
 checked: every invariant passed
 ```
 
@@ -477,6 +477,45 @@ The status is one of four words, and it is the first thing on the line:
 | `labels` | 0 | a pair of labels is **proposed** instead of a wire. A proposal is a result, not a failure |
 | `blocked` | 1 | no route exists, and kicli names what stood in the way |
 | `invalid` | 1 | the request itself was not drawable: a diagonal, a vertex off the grid |
+
+**`--auto-labels` writes a pair of labels instead of a long wire.** A connection
+longer than `routing.label_threshold` reads better as two labels than as a wire
+across the sheet. Give the flag and kicli writes the pair; leave it off and
+kicli draws exactly what you asked for, however long it is.
+
+```
+kicli wire draw --from-pin U1.1 --to-pin U2.2 --auto-labels
+```
+```
+labels U1.1 -> U2.2
+  reason: path length 123.19mm is over the threshold 38.10mm
+  labels: "U1_SCK" at 50.80,99.06 and 152.40,82.55
+  wires added: 2   junctions added: 0
++ W 911e62dd 50.80,99.06..50.80,101.60
++ W a483082e 152.40,80.01..152.40,82.55
++ T 9bcbcb13 "U1_SCK"
++ T bc9b55d4 "U1_SCK"
+checked: every invariant passed
+note: auto-labels  kicli wrote the label "U1_SCK" at each end instead of a wire. Each label sits on a short stub from its own pin. Nothing joins the two ends but the name they share.
+```
+
+Four things to know about it.
+
+The name is the net's own name when the drawing gives the pin one, and
+`<reference>_<pin name>` when it does not. A pin with no name of its own is
+named by its number instead.
+
+Each label sits **two grid steps along its own pin's direction**, on a short
+stub drawn from the pin to it. The stub is what makes the label the pin's: a
+label standing off a pin with nothing between them names a net that pin is not
+on. `wires added` counts those stubs, and no wire joins the two ends.
+
+The flag needs a pin at one end, because that is where an unnamed net's name
+comes from. A request with no pin at either end is drawn rather than labelled.
+
+The length judged is the path you gave. Give no `--via` and it is the Manhattan
+distance between the two ends, which no orthogonal wire could beat — so
+`--auto-labels` with two pins and no corners is the whole request.
 
 With `--output json`, the contract is under the `wire` key of the mutation
 result, and every key is there whatever the status — an empty list where nothing
@@ -512,7 +551,7 @@ ends is still legal, and taking it away is a second decision that is yours.
 kicli reports every such junction as a note and leaves it in the file.
 
 ```
-- W 3300f00e (50.80,50.80) -> (63.50,50.80)
+- W 3300f00e 50.80,50.80..63.50,50.80
 checked: every invariant passed
 note: stranded-junction  the junction 01000003 at (63.5,50.8) now joins 1 wire end(s), and is still there. Run junction delete --at 63.5,50.8 to take it away.
 ```
