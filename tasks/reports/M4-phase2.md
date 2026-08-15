@@ -1773,3 +1773,74 @@ three times consecutively in that checkout, 13 passed each time.
    being trivially visible to a one-line directory rename. The cheapest concrete
    form, from the lane's own note: **a lane whose test consumes a generated value
    runs it once from a second directory before reporting green.**
+
+### Tick review of the verb surface (T16) — APPROVE. TICKED
+
+**The mechanism claim was reproduced independently, which is what the review
+turned on.** The reviewer read the seed's construction in `edit::wire::draw` and
+the SHA-256 in `edit::insert::Identifiers::for_document`, then **exported the
+pre-fix commit `dec0c0a` to a fresh path with `git archive` and ran the test
+there** — both golden tests failed, and the expected value printed
+`ebb43fde-5c3c-4534-8776-e35e3f8aefaf`, the identifier the entry names as the
+lane's committed golden. The post-fix tree passes 13/13 from two different
+absolute paths. Reproduction, not re-reading.
+
+**The numbering question was settled by measurement, in both directions**, and it
+confirms the implementer's correction of the orchestrator rather than the
+orchestrator's original instruction: swapping `<id-1>`/`<id-2>` in the golden
+fails; a uniform `<id>` normaliser with goldens updated to match **passes**,
+because order is no longer distinguishable; and deleting an entry from that
+uniform golden still fails, on count. A collapsing normaliser hides **ordering**
+and not a missing entry.
+
+Also measured: the shape assertion runs on the real unnormalised values; `KEYS`
+is a hand-written literal of 15 carrying a comment on why it is not derived from
+the renderer; three independent sites assert the exit-code mapping; the four
+stated baselines match exactly; `route/report.rs` is byte-identical across the
+lane, so the freeze held. No `wire connect` variant exists anywhere, and
+`agent_doc_covers_every_command` was correctly left alone for chore C7.
+
+**On question 2 the reviewer explicitly judged the entry's self-assessment honest
+rather than a rationalisation** — it distinguishes "shown falsifiable" from
+"shown falsifiable under the input that actually broke it", and proposes a skill
+amendment instead of defending its own procedure. Worth recording that a reviewer
+was asked to judge whether an admission was genuine and did so on the reasoning
+rather than on the tone.
+
+**It also re-pinned mid-review**, as the previous reviewer's note recommended,
+when `ab1a18f` landed underneath it. Report-only, no lane file. The practice
+proposed one tick ago was used on the next one.
+
+**WORKFLOW NOTE, tick review of the verb surface (T16), verbatim:**
+
+> Running `cargo xtask check` directly in the shared main checkout momentarily
+> showed a `clean`-gate failure caused by a concurrent lane's write to
+> `tasks/reports/M4-phase2.md` (resolved by the time I re-checked); reviewers
+> should not run the full gate suite in the live checkout while other lanes are
+> active — targeted `cargo test --test <name>` runs in a verified scratch copy
+> give the same evidence without the race.
+
+**That one is a hit on the orchestrator, and it is the second of its kind.** The
+`clean` gate compares the working tree before and after, and the orchestrator
+maintains the consolidated report *per tick* — which means writing
+`tasks/reports/M4-phase2.md` while reviewers and lanes are active. The report
+discipline and the `clean` gate are in direct tension, and the reviewer met it as
+a phantom failure in a file it had nothing to do with.
+
+**WORKFLOW NOTE, the verb surface (T16) implementer, second pass, verbatim:**
+
+> A lane's green `cargo xtask check` proves the code passes *at that path*, and
+> this repository generates identifiers from absolute paths — so any lane whose
+> test consumes a generated value should run once from a second directory before
+> reporting green, or the first honest signal is the orchestrator's merge. The
+> cheapest form is renaming the test's scratch directory, which took one line and
+> reproduced the merge failure exactly.
+
+10. **PROPOSED: a reviewer does not run the full gate suite in the live
+    checkout.** From the reviewer's note. **Recommendation: accept**, into the
+    `tick-reviewer` definition beside the scratch-copy section — targeted
+    `cargo test --test <name>` runs in the verified scratch copy give the same
+    evidence without racing the orchestrator's own writes. Note this is a
+    *reviewer* rule for an *orchestrator*-caused race, which is the cheap side to
+    fix; the expensive alternative is the orchestrator batching report writes,
+    which would cost the per-tick record the review process depends on.
