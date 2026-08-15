@@ -416,7 +416,12 @@ mod tests {
     //! grid instead would name no cell at all and land nowhere.
     //!
     //! Everything else here is measured on probe drawings, where the geometry
-    //! is KiCad's own rather than this test's.
+    //! is KiCad's own rather than this test's. Hand-built geometry is permitted
+    //! **only where no drawable request can distinguish the behaviour**, which
+    //! is the condition this test meets. A fixture and the code that reads one
+    //! share their assumptions and agree vacuously, and that is the reason for
+    //! the rule; the reason does not apply where no drawing can produce the
+    //! input at all.
 
     use super::{Feature, Obstacles, SheetGeometry};
     use crate::geometry::{GRID, Iu, Point, Rect};
