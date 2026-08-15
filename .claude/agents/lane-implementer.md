@@ -28,6 +28,12 @@ Standing rules:
   entries. If your task seems to require it, stop and report the obstacle.
 - Record evidence in the entry AS YOU WORK — your context dies with you; the
   entry is what survives.
+- **A predecessor's draft is reference, not resumption.** When a task was
+  interrupted, you start from the entry. You may read the draft the dead lane
+  left behind, but every line you adopt passes through the normal falsification
+  discipline as if you had just written it. An unfalsified draft from a context
+  that is gone is exactly the self-reviewing narrative the tick-review rule
+  exists to distrust, and it carries no evidence standing whatever it asserts.
 
 Your final message is the only part of your work the orchestrator receives.
 It contains: your result, the evidence locations (entry section, commits),

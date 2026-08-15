@@ -16,8 +16,13 @@ if command -v cargo >/dev/null 2>&1; then
 elif [ -x "${CARGO_HOME:-$HOME/.cargo}/bin/cargo" ]; then
   cargo="${CARGO_HOME:-$HOME/.cargo}/bin/cargo"
 else
+  # The remedy is naming the missing tool, never the escape hatch. An error
+  # that mentions KICLI_SKIP_HOOK turns a missing binary into a skipped gate
+  # suite, which is the opposite of what this hook is for.
   echo "pre-commit: cargo not found on PATH or under ${CARGO_HOME:-$HOME/.cargo}/bin." >&2
   echo "pre-commit: the gates cannot run, so the commit is refused." >&2
+  echo "pre-commit: put cargo on PATH, or install rustup from https://rustup.rs." >&2
+  echo "pre-commit: then commit again." >&2
   exit 1
 fi
 exec "$cargo" xtask check

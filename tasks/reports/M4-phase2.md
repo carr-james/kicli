@@ -186,9 +186,57 @@ measurement.
 
 ## BLOCKED items
 
-**None.** No governing-document conflict was hit, and no lane needed a change to
-the frozen surface. The session stopped on a resource limit, which is not a
-BLOCKED item and needs no ruling — only more budget.
+**None at the stop.** No governing-document conflict was hit, and no lane needed
+a change to the frozen surface. The session stopped on a resource limit, which
+is not a BLOCKED item and needs no ruling — only more budget.
+
+## Rulings received on this report, and what they changed
+
+The advisor ruled on the interrupted stop. Applied here:
+
+| Ruling | Effect |
+|---|---|
+| R1 wind-down accepted; merged-and-green vs ticked affirmed as precedent | the delta view (T17) stays merged and unticked; the next session's first act is its tick review |
+| R2 drafts are reference, not resumption | added to the `lane-implementer` definition — a fresh implementer starts from the entry, and every adopted line is falsified as if newly written |
+| R3 hook refusal message | amended: it names the remedy (put cargo on PATH, install rustup) and never the escape hatch. Both branches re-measured under `env -i` |
+| R4, R5, R6 the three coordination calls | PROMOTED, and written into the Phase 2 status section as binding rather than proposed |
+| R7 the delta view's six in-entry items | ALL PROMOTED; the entry now records them as ruled, with the note that proposing the two scope excursions was correct |
+| R8 the `scope.rs` twin | recorded as chore **C2** in the milestone's chore list, with the chore-runner eligibility condition the ruling attached |
+| R12, R13 | affirmed; nothing to change — the absences were already recorded as absences |
+
+**R11's citation rule is adopted and is already in use here**: a section is cited
+as role plus document plus number — "the output contract
+(`research/wire-routing.md` §8)". The rule is not yet written into a governing
+document, for the reason below.
+
+### Two amendments were ruled but arrived without their text
+
+R9 and R10 each say the amendment wording is "in the session opener below", and
+R11 adopts a citation rule whose binding home is not named. **No opener or
+amendment text arrived with the rulings.** Nothing has been invented in their
+place: writing my own wording for a binding governing document, where the author
+said they would supply it, is exactly the substitution these documents exist to
+prevent.
+
+What is ratified and is being followed in practice, pending its text:
+
+1. **R9 — environment-gated checks in lanes.** The reading is ratified: the rule
+   is gate discipline. A lane-local run never counts toward "done"; only the
+   orchestrator's merged run does. It was never a ban on a lane making a
+   measurement its own task owes. `CLAUDE.md`'s line still reads the old way.
+2. **R10 — session grain.** The continuous model wins: work is dispatched,
+   merged and recorded at task grain, but the session runs under `/goal` to its
+   stop. Two costs are paid — the wind-down procedure becomes standing practice
+   in the orchestrator definition, and `/goal` conditions become **checkpoints**
+   rather than whole phases, so a budget must survive about half a phase.
+   `CLAUDE.md`'s "sessions end at task boundaries" line still reads the old way.
+3. **R11 — the citation rule** binds the advisor's own prompts first, and wants
+   a home: the milestone's Rules section already carries the task-naming rule it
+   extends, which is the natural place.
+
+Until those three land, `CLAUDE.md` contradicts two ratified readings. That is a
+governing-document conflict of the kind the BLOCKED rule covers, so it is parked
+here rather than resolved by precedence.
 
 ## Workflow retrospective
 
