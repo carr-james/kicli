@@ -288,9 +288,9 @@ const CROWDED: usize = 3;
 /// A route is asked for between two terminals and may not be drawable between
 /// exactly those two points: ending on a point that already carries enough wire
 /// ends for the route's own to be the fourth would draw the junction
-/// `spec/SPEC.md` §9 Q2 refuses. So
-/// the terminals are settled against the drawing before the search sees them,
-/// and what moved is reported rather than left for the reader to notice.
+/// `spec/SPEC.md` §9 Q2 refuses. So the terminals are settled against the
+/// drawing before the search sees them, and what moved is reported rather than
+/// left for the reader to notice.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Approach {
     /// The terminal the route leaves, after any adjustment.
@@ -311,8 +311,8 @@ impl Approach {
     /// The terminals a route may use on this drawing.
     ///
     /// Both ends are asked, because both ends of a route are wire ends: a
-    /// source that already carries three of them makes the fourth just as a
-    /// target does.
+    /// source standing on a crowded point brings the fourth just as a target
+    /// does.
     #[must_use]
     pub fn of(source: &Terminal, target: &Terminal, schematic: &Schematic, grid: Iu) -> Self {
         let mut adjusted = Vec::new();
