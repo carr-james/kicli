@@ -99,8 +99,8 @@ pub struct DrawnWire {
 ///
 /// Three. Two wire ends that meet are joined without a dot, so a junction on
 /// two ends draws something the drawing already said; on fewer, it says nothing
-/// at all. The number is the same one [`crate::edit::mark`] refuses a four-way
-/// junction against, read from the other side.
+/// at all. This is a boundary on how many wire ends meet at a point, shared with
+/// [`crate::edit::mark`]'s refusal boundary, measured from opposite directions.
 pub const JOINING: usize = 3;
 
 /// How much of an identifier a caller must type to name a segment.
