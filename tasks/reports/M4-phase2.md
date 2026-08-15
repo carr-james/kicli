@@ -1068,3 +1068,90 @@ value.
 **And the entry itself is being corrected**, because as written the C5 "Done"
 section claims a fix broader than what was measured. A chore entry that
 overstates its own reach is the thing the record exists to prevent.
+
+### Merged: C5 and C6, second pass — `c27c195` and below, merge `HEAD~1`
+
+Both corrections landed. C5 became `{:02x}{:06x}-0000-4000-800{series}-{:012x}`,
+folding the series into the leading eight digits so two siblings can no longer
+collide. The widened control spans a parent and two `named_child_of` siblings,
+and **its falsification shows the contrast the finding needed**: with series-blind
+leading digits the narrow assertion still passes — 12 objects, 12 distinct handles
+in one drawing — while the wide one fails at 9 distinct handles against 18
+objects. That contrast is the evidence, not the pass.
+
+C6's sentence became: "This measures the same quantity as `crate::edit::mark`'s
+refusal boundary — how many wire ends meet at a point — and both boundaries call
+the same implementation. They are two different thresholds on one measurement,
+approached from opposite directions." It says what is shared (the measurement,
+the implementation) and what is not (the value), and names no number.
+
+Merged check, on the merged result in the main checkout: **six gates green; 71
+test binaries, `0 failed` and `0 ignored` in every one; oracle
+`hierarchies matched: 35/35`.** The oracle is the one that mattered here — C5
+changes the identifier of every object in every probe drawing, and 35/35 is the
+measurement that says KiCad still reads them the same way.
+
+## Ruling received mid-session: the output contract gains a structured adjustment
+
+Provenance: advisor ruling, 2026-08-15, answering the frozen-surface question
+raised above. **Ruled in favour of the structured field**, against the PROPOSED
+recommendation to use `reason`. Landed as one orchestrator commit, `dd4f659`.
+
+`Report::adjusted` is a list, empty when nothing moved, of
+`{ terminal, by, why }`. Three things about the shape are worth recording,
+because each was a choice inside the contract the ruling set:
+
+- **`terminal` names itself as `from` and `to` do**, so a caller learns which end
+  moved without comparing coordinates against a request it would have to remember.
+- **`by` is a displacement, not a position.** Where the terminal ended up is
+  already the corresponding end of `path`, and this module's stated principle is
+  that nothing derivable is stored — "a stored derivative is a second answer
+  waiting to disagree with the first". The requested point is the terminus less
+  `by`. `Point` was already used as a displacement by `Rect::offset`, so this
+  invents no type.
+- **`why` is a closed enum**, one variant so far. The ruling said never free text,
+  and the reason it is right is mechanical rather than stylistic: a new reason
+  becomes a compile error at every match on it, which is what makes it safe for
+  an agent to switch on.
+
+§8 was amended in the same commit — text form and JSON — per the standing rule
+that the spec and the frozen contract must not disagree. The text line is omitted
+entirely when nothing was adjusted.
+
+**The freeze procedure worked, including the part that failed.** The path was
+lifted from `.claude/hooks/frozen-paths.txt`, the change made, the path restored,
+all in the one commit. Midway I restored the path **before** the change compiled,
+and the hook refused the next edit — correctly. That is the mechanism working,
+not an obstacle, and it is worth recording that the orchestrator was the one it
+refused.
+
+Falsification of the three new assertions, each break made alone against the
+committed good state, watched, and reverted:
+
+| What was broken | Which assertion caught it |
+|---|---|
+| `Report::of` hands back a non-empty `adjusted` | `a_route_that_moved_nothing_reports_no_adjustment` — "an empty collection, not an absent one" |
+| `Adjustment::FourWayJunction`'s token changed to `"adjusted"` | `an_adjusted_terminal_says_which_by_how_much_and_why` — left `"adjusted"`, right `"four-way"` |
+| `by` read as a position rather than a displacement — the subtraction dropped | the same test's derivation assertion — left `(1524000, 889000)`, right `(1524000, 876300)` |
+
+Control re-run after the last revert: 5 passed, 0 failed.
+
+### And the amendment I wrote this morning is one case too narrow
+
+Found by walking into it. The falsification-control amendment ruled at
+checkpoint 1 says: **a brand-new untracked file** cannot be restored by
+`git checkout --`, so falsification on new files commits the good state first.
+
+The first falsification break above was made against `report.rs` while the whole
+contract change was **uncommitted**. `git checkout -- crates/kicli/src/route/report.rs`
+duly restored the file to `HEAD` — and took the entire change with it, not just
+the break. The file was tracked, so the amendment as written did not cover it;
+the failure is identical.
+
+**PROPOSED: widen the amendment from "a brand-new file" to "any state that is not
+committed".** The rule is not about whether git knows the file, it is about
+whether git knows the state you want back. An uncommitted edit to a tracked file
+is exactly as unrecoverable as an untracked file, and reads as safe because the
+file is tracked. Recommendation: accept, and keep the existing new-file wording
+as the worked example under the wider rule. Cost of the incident: re-applying
+four edits, and it would have been a whole task's work in a lane.
