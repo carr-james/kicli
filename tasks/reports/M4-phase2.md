@@ -2020,6 +2020,12 @@ being used the way it was written, on the first task to work under it. The tick
 reviewer has been asked to judge that classification specifically, because case 2
 recorded as case 1 is the exact dishonesty the amendment names.
 
+**Merged check on the main checkout, corpus included:** six gates green; **77
+test binaries** with `0 failed` and `0 ignored` in every one; oracle
+`hierarchies matched: 35/35`, `35 hierarchies loaded`.
+
+Tick review dispatched. **Not ticked.**
+
 ### The worktree experiment — isolation held, and the flow cost nothing
 
 The ruling's three conditions, answered:

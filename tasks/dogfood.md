@@ -177,7 +177,7 @@ reason it stands. Nothing is closed by being explained.
 |---|---|---|
 | 1 | **Real, and already half-known.** | C5's second half — see D1 below |
 | 2 | **Real, and the largest of the nine.** | D2, PROPOSED as a task |
-| 3 | **Real defect, introduced by the verb surface (T16) today.** | D3, chore — verified at source |
+| 3 | **Real defect, introduced by the verb surface (T16) today.** | D3 — **FIXED**, incidentally, by the label proposal (T13) |
 | 4 | **Real documentation defect.** | D4, chore |
 | 5 | **Real, small, and the doc invites it.** | D5, chore |
 | 6 | Consequence of a ruled design choice, sharpened by #2 | folded into D2 |
@@ -206,6 +206,14 @@ are**, as a task, not a chore. Recommendation: accept for M5 planning. This is a
 design decision about the agent-facing surface and it deserves an entry rather
 than a patch; note the router already resolves pins internally (`route::terminal`,
 `Terminal::of_pin`), so the answer exists and is simply not exposed.
+
+**D3 — FIXED, before the chore was ever run.** The label proposal (T13) was
+editing `AGENT.md` for `--auto-labels`, hit the same wrong examples, and corrected
+them as a disclosed incidental change in the same commit — its tick reviewer
+confirmed the correction and judged it in scope. **Verified after the fact: all
+four `W` examples in `AGENT.md` now carry the `..` form the tool actually
+produces** (`:455`, `:494`, `:495`, `:554`). The chore below is retained as the
+record of what the defect was and how it was found, not as outstanding work.
 
 **D3 — `AGENT.md` documents a wire delta format the tool does not produce.**
 **Verified at source before filing**, not taken on the agent's word.
