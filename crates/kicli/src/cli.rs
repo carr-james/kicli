@@ -16,8 +16,8 @@ mod tools;
 mod view;
 
 pub use args::{
-    Cli, Command, FieldVerb, Global, JunctionVerb, LabelVerb, NetVerb, NoconnectVerb, OutputFormat,
-    PinArg, PointArg, ProjectVerb, SchVerb, SizeArg, SymVerb, TextVerb,
+    Cli, Command, DrawArgs, FieldVerb, Global, JunctionVerb, LabelVerb, NetVerb, NoconnectVerb,
+    OutputFormat, PinArg, PointArg, ProjectVerb, SchVerb, SizeArg, SymVerb, TextVerb, WireVerb,
 };
 pub use exit::ExitCode;
 pub use output::{Failure, Report, Reporter};
@@ -87,6 +87,7 @@ fn dispatch(parsed: &Cli, reporter: &Reporter) -> Result<Report, Failure> {
         Command::Junction { verb } => edit::mark::junction(global, verb),
         Command::Noconnect { verb } => edit::mark::no_connect(global, verb),
         Command::Net { verb } => edit::net::run(global, verb),
+        Command::Wire { verb } => edit::wire::run(global, verb),
     }
 }
 

@@ -1,0 +1,30 @@
+invalid U1.14 -> R7.1
+  reason: the segment from (50.8,50.8) to (76.2,63.5) is diagonal
+---
+{
+  "status": "invalid",
+  "from": "U1.14",
+  "to": "R7.1",
+  "path": [],
+  "segments": 0,
+  "corners": 0,
+  "length_mm": 0.0,
+  "cost": {
+    "total": 0,
+    "length": 0,
+    "turns": 0,
+    "crossings": 0,
+    "text": 0,
+    "proximity": 0
+  },
+  "crossings": [],
+  "adjusted": [],
+  "added": {
+    "wires": [],
+    "junctions": []
+  },
+  "labels": null,
+  "blocked_by": [],
+  "reason": "the segment from (50.8,50.8) to (76.2,63.5) is diagonal",
+  "alternatives_considered": 0
+}

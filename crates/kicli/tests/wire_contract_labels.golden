@@ -1,0 +1,43 @@
+labels U1.14 -> U7.3
+  reason: path length 447.04mm is over the threshold 381.00mm
+  labels: "SPI_SCK" at 25.40,50.80 and 76.20,50.80
+---
+{
+  "status": "labels",
+  "from": "U1.14",
+  "to": "U7.3",
+  "path": [],
+  "segments": 0,
+  "corners": 0,
+  "length_mm": 0.0,
+  "cost": {
+    "total": 0,
+    "length": 0,
+    "turns": 0,
+    "crossings": 0,
+    "text": 0,
+    "proximity": 0
+  },
+  "crossings": [],
+  "adjusted": [],
+  "added": {
+    "wires": [],
+    "junctions": []
+  },
+  "labels": {
+    "name": "SPI_SCK",
+    "at": [
+      [
+        25.4,
+        50.8
+      ],
+      [
+        76.2,
+        50.8
+      ]
+    ]
+  },
+  "blocked_by": [],
+  "reason": "path length 447.04mm is over the threshold 381.00mm",
+  "alternatives_considered": 7
+}

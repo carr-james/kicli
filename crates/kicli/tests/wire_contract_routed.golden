@@ -1,0 +1,52 @@
+routed R1.1 -> R2.1   via 3 segments, 2 corners, 35.56mm
+  cost 44 = length 28 + turns 12 + crossings 0 + text 0 + proximity 4
+  wires added: 3   junctions added: 0
+---
+{
+  "status": "routed",
+  "from": "R1.1",
+  "to": "R2.1",
+  "path": [
+    [
+      50.8,
+      50.8
+    ],
+    [
+      50.8,
+      45.72
+    ],
+    [
+      76.2,
+      45.72
+    ],
+    [
+      76.2,
+      50.8
+    ]
+  ],
+  "segments": 3,
+  "corners": 2,
+  "length_mm": 35.56,
+  "cost": {
+    "total": 44,
+    "length": 28,
+    "turns": 12,
+    "crossings": 0,
+    "text": 0,
+    "proximity": 4
+  },
+  "crossings": [],
+  "adjusted": [],
+  "added": {
+    "wires": [
+      "<id-1>",
+      "<id-2>",
+      "<id-3>"
+    ],
+    "junctions": []
+  },
+  "labels": null,
+  "blocked_by": [],
+  "reason": null,
+  "alternatives_considered": 0
+}

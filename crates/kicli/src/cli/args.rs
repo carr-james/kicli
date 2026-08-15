@@ -11,6 +11,7 @@
 
 use crate::edit::field::{Horizontal, Vertical};
 use crate::edit::label::PortShape;
+use crate::edit::wire::End;
 use crate::geometry::{Angle, Iu, Point, Size};
 use crate::model::{LabelKind, Mirror, Refdes};
 use clap::{Args, Parser, Subcommand, ValueEnum};
@@ -134,6 +135,129 @@ pub enum Command {
         #[command(subcommand)]
         verb: NetVerb,
     },
+    /// Draw and remove the wires that join pins.
+    Wire {
+        /// What to do with one.
+        #[command(subcommand)]
+        verb: WireVerb,
+    },
+}
+
+/// The verbs of the `wire` noun.
+#[derive(Clone, Debug, Subcommand)]
+pub enum WireVerb {
+    /// Draw a wire through the corners you give.
+    ///
+    /// kicli does no searching here. It checks that the corners are drawable
+    /// and refuses rather than drawing something illegal.
+    Draw(DrawArgs),
+
+    /// Take one wire segment off a sheet.
+    Delete {
+        /// The identifier of the segment.
+        target: String,
+    },
+}
+
+/// The two ends of a drawn wire, and the corners between them.
+///
+/// Each end is addressed the way that kind of end is addressed elsewhere on
+/// this surface: a pin by `REF.PIN`, a port by its name, a bare point by its
+/// position. They are three flags rather than one, on the precedent
+/// `junction add --at|--pin` set, because one flag would have to guess which
+/// kind a word is and a port name can look like anything.
+#[derive(Args, Clone, Debug)]
+#[command(group = clap::ArgGroup::new("start")
+    .required(true)
+    .args(["from_pin", "from_port", "from_at"]))]
+#[command(group = clap::ArgGroup::new("finish")
+    .required(true)
+    .args(["to_pin", "to_port", "to_at"]))]
+pub struct DrawArgs {
+    /// The pin the wire starts at.
+    #[arg(long, value_name = "REF.PIN")]
+    pub from_pin: Option<PinArg>,
+
+    /// The child sheet's port the wire starts at.
+    #[arg(long, value_name = "NAME")]
+    pub from_port: Option<String>,
+
+    /// The point the wire starts at, in millimetres.
+    #[arg(long, value_name = "X,Y")]
+    pub from_at: Option<PointArg>,
+
+    /// The pin the wire finishes at.
+    #[arg(long, value_name = "REF.PIN")]
+    pub to_pin: Option<PinArg>,
+
+    /// The child sheet's port the wire finishes at.
+    #[arg(long, value_name = "NAME")]
+    pub to_port: Option<String>,
+
+    /// The point the wire finishes at, in millimetres.
+    #[arg(long, value_name = "X,Y")]
+    pub to_at: Option<PointArg>,
+
+    /// One corner between the two ends, in millimetres.
+    ///
+    /// Give the flag once per corner, in the order the wire meets them.
+    #[arg(long, value_name = "X,Y")]
+    pub via: Vec<PointArg>,
+}
+
+impl DrawArgs {
+    /// The end the `--from-*` flags name.
+    ///
+    /// # Errors
+    ///
+    /// Returns the message the argument parser would print when no form of the
+    /// end was given. The argument group requires one, so this cannot happen
+    /// through the command line.
+    pub fn start(&self) -> Result<End, String> {
+        end_of(
+            self.from_pin.as_ref(),
+            self.from_port.as_deref(),
+            self.from_at,
+            "from",
+        )
+    }
+
+    /// The end the `--to-*` flags name.
+    ///
+    /// # Errors
+    ///
+    /// The same error as [`DrawArgs::start`].
+    pub fn finish(&self) -> Result<End, String> {
+        end_of(
+            self.to_pin.as_ref(),
+            self.to_port.as_deref(),
+            self.to_at,
+            "to",
+        )
+    }
+
+    /// The corners, as the drawing verb takes them.
+    #[must_use]
+    pub fn corners(&self) -> Vec<Point> {
+        self.via.iter().map(|corner| corner.point()).collect()
+    }
+}
+
+/// Which of the three forms of one end was given.
+fn end_of(
+    pin: Option<&PinArg>,
+    port: Option<&str>,
+    at: Option<PointArg>,
+    which: &str,
+) -> Result<End, String> {
+    match (pin, port, at) {
+        (Some(pin), _, _) => Ok(End::Pin(pin.address())),
+        (_, Some(port), _) => Ok(End::Port(port.to_owned())),
+        (_, _, Some(at)) => Ok(End::At(at.point())),
+        (None, None, None) => Err(format!(
+            "a wire needs --{which}-pin, --{which}-port or --{which}-at."
+        )),
+    }
 }
 
 /// The verbs of the `sch` noun.
