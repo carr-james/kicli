@@ -12,9 +12,10 @@ CLI tool giving LLM agents eyes and hands in KiCad 10 projects. Rust.
   for every task — run them before marking any task complete.
 - When two governing documents conflict, do not resolve by precedence — mark
   the item BLOCKED with both readings and ask.
-- Large builds start fresh sessions. Sessions end at task boundaries; stopping
-  early to hand over a clean state beats pushing through — the task file is
-  the handoff, and it is updated before the session ends, not after.
+- Large builds start fresh sessions. Work is dispatched, merged and recorded at
+  task grain; the session itself runs under /goal to a checkpoint stop. An
+  interrupted session is wound down per the orchestrator definition's procedure
+  — the task file is the handoff, updated before the stop, not after.
 
 ## Parallel work
 
@@ -29,9 +30,13 @@ CLI tool giving LLM agents eyes and hands in KiCad 10 projects. Rust.
   the milestone is complete only when the check passes on the merged result in
   the main checkout. The merged check is the orchestrator's job and is never
   skipped.
-- Corpus-gated and environment-gated checks do not run in lane worktrees; the
-  orchestrator runs the full check, corpus included, at every lane merge — not
-  only at milestone end.
+- Corpus-gated and environment-gated checks in a lane worktree never count
+  toward done — only the orchestrator's merged run does. A lane may still run
+  them to MAKE a measurement its task owes. The orchestrator runs the full
+  check, corpus included, at every lane merge — not only at milestone end.
+- A parked lane's uncommitted draft is reference, not resumption: a fresh
+  implementer starts from the entry, and any line adopted from a draft passes
+  the falsification discipline as if newly written.
 - The BLOCKED rule applies inside lanes: a subagent that hits a governing-
   document conflict parks it and reports to the orchestrator; the orchestrator
   parks it for James.
