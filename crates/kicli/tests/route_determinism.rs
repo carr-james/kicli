@@ -490,12 +490,23 @@ fn baselines() -> &'static [Baseline] {
             .map(|drawing| {
                 let hierarchy = loaded(drawing.name, "baseline", &drawing.text);
                 let terminals = terminals(&hierarchy);
+                let answers = every_answer(&hierarchy, &terminals);
+                // The control the shuffled arm rests on. Two answers that say
+                // nothing agree perfectly, so every baseline is required to
+                // hold a route the shapes drew, a route A* drew, and a refusal.
+                let refusals = answers.matches("\nbest none\n").count();
+                let by_shapes = answers.matches("\nbest ").count() - refusals;
+                let by_search = answers.matches("\nroute [").count();
+                let refused = answers.matches("\nroute none\n").count();
+                assert!(by_shapes > 0, "{} routes something by shape", drawing.name);
+                assert!(by_search > 0, "{} routes something by A*", drawing.name);
+                assert!(refused > 0, "{} refuses something", drawing.name);
                 Baseline {
                     names: terminals
                         .iter()
                         .map(|terminal| terminal.name.clone())
                         .collect(),
-                    answers: every_answer(&hierarchy, &terminals),
+                    answers,
                 }
             })
             .collect()
@@ -523,8 +534,12 @@ proptest! {
         let moved = reordered(&drawing.text, &order);
 
         // The controls, before anything is concluded. The shuffle must keep
-        // every token of the file, and it must actually move something
-        // whenever the permutation is not the file's own order.
+        // every token of the file, and it must actually move something whenever
+        // the permutation is not the file's own order. The second control
+        // compares against the file put through the same writer unshuffled,
+        // rather than against the drawing's own text: the writer lays a file out
+        // its own way, so comparing with the text would pass on the layout alone
+        // and a shuffle that shuffled nothing would go unnoticed.
         let tokens = |text: &str| Doc::parse(text).expect("the drawing parses").token_count();
         prop_assert_eq!(
             tokens(&moved),
@@ -532,8 +547,9 @@ proptest! {
             "the shuffle kept every token"
         );
         let identity: Vec<usize> = (0..order.len()).collect();
+        let unmoved = reordered(&drawing.text, &identity);
         if order != identity {
-            prop_assert_ne!(&moved, &drawing.text, "the shuffle moved an item");
+            prop_assert_ne!(&moved, &unmoved, "the shuffle moved an item");
         }
 
         let shuffled = loaded(drawing.name, "shuffled", &moved);
