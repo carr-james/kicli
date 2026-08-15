@@ -1,9 +1,9 @@
 # M4 Phase 2 — consolidated session report
 
-**STATUS: CHECKPOINT 1 ALL BUT COMPLETE — four of five tasks ticked, A\* (T10)
-merged and green with its tick review the only outstanding item.** Usage limit
-approached; this report is the handoff and every touched entry is at its true
-state. The first session
+**STATUS: CHECKPOINT 1 COMPLETE.** All five tasks merged and ticked with
+recorded reviewer verdicts; six gates green on `main`; the netlist oracle at
+35/35 with zero tests skipped, measured at every merge. This report is the
+handoff and every touched entry is at its true state. The first session
 stopped on its token limit; this one reopened under the advisor's rulings on
 that stop. Its record is preserved below under "Session 1", unaltered, because a
 report that rewrites its own history is not a record. Session 2 begins at
@@ -142,7 +142,7 @@ than the review demanded. Connectivity is the only instrument in play, so what
 three arms measure is where KiCad *joins* the port, not where it *draws* the
 graphic. The distinction was the implementer's, not the reviewer's and not mine.
 
-### A* over turn-aware states (T10), Lane A — merged and green, tick review RUNNING at the checkpoint
+### A* over turn-aware states (T10), Lane A — merged and TICKED
 
 Merged as `13e3ee0`-era merge commit from `worktree-agent-ab3fce95dc0125eb4`
 (lane commit `00402c7`). Merged check green: six gates, corpus,
@@ -151,17 +151,26 @@ recorded. `Heading::EVERY` moved to `route::terminal` with one order for the
 search, the U-shaped candidates and the derived comparison that settles queue
 ties — which also settles the shapes task's first PROPOSED item.
 
-**The tick review is the one outstanding item of checkpoint 1**, and it was
-dispatched with a specific instruction, because the implementer reported
+**Its tick review was dispatched with a specific instruction, because the implementer reported
 unprompted that its own first falsification sweep was contaminated:
 `git checkout --` cannot restore a not-yet-committed new file, and with multiple
 pathspecs it restores **nothing** when one fails, so an early sweep ran every
 break on top of the previous ones. A stacked sweep's readings are worthless — a
 check failing with five breaks applied says nothing about which break it detects.
 The implementer says it caught this. **The reviewer was told not to settle that
-by reading the entry's assurance**, but to reproduce at least three rows in
-isolation including one claiming a NARROW failure, since that is precisely the
-row a stacked sweep records wrongly. Its verdict is not in at the checkpoint.
+by reading the entry's assurance.**
+
+**Verdict: APPROVE, and the contamination question is answered by measurement.**
+Twelve of eighteen rows re-measured in isolation from a checksum-verified scratch
+tree. The proof is the *shape* of the results, not any assurance: six rows
+claiming nothing happens produce a fully green workspace, and four rows claiming
+a narrow failure fail exactly one test in the entire workspace. **A stacked sweep
+can produce neither.** The twin check was verified from both homes, and the
+reviewer could tell that apart from a decorative check precisely because six
+other breaks in the same sweep produced nothing. Two table citations named the
+wrong assertion inside the right check and are corrected; both are under-claims,
+and **nothing over-claims anywhere**, which is itself evidence against
+contamination.
 
 ## Per-tick summary at checkpoint 1
 
@@ -171,7 +180,7 @@ row a stacked sweep records wrongly. Its verdict is not in at the checkpoint.
 | the candidate shapes (T9) | `a0a4e03` | ✅ APPROVE | 0 |
 | `wire draw` (T14) | `686aa72` + `ed14794` | ✅ APPROVE | 1 — the claim outran the measurement |
 | `wire delete` (T15) | `5753e4b` | ✅ APPROVE | 0 |
-| A\* (T10) | merged, green | **review running** | — |
+| A\* (T10) | `af5c184` | ✅ APPROVE | 0 |
 
 Every merge ran the full check with corpus and the environment-gated run: six
 gates, zero ignored, netlist oracle **35/35**, at every one.
