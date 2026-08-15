@@ -12,15 +12,26 @@
 //! at the other end of each port. `kicad-cli sch export netlist` then says
 //! which stubs reached their port.
 //!
-//! **One variable separates the two arms: the angle.** Every port is written at
-//! the same place in both, and every wire is drawn in the same place in both.
-//! In the agreeing arm each angle names the edge the port is written on; in the
-//! disagreeing arm each angle names the opposite edge. If the angle named
-//! nothing that KiCad acts on, both arms would connect and this file would
-//! measure nothing — which is exactly why the disagreeing arm is here.
+//! **The angle is the only variable across the first two arms.** Every port is
+//! written at the same place in both, and every wire is drawn in the same place
+//! in both. In the agreeing arm each angle names the edge the port is written
+//! on; in the disagreeing arm each angle names the opposite edge. If the angle
+//! named nothing that KiCad acts on, both arms would connect and this file
+//! would measure nothing — which is exactly why the disagreeing arm is here.
+//!
+//! **Two arms are not enough to say what KiCad does with the angle**, and that
+//! is why there is a third. Two readings predict the disagreeing arm's netlist
+//! equally well: KiCad *moves* the port onto the edge the angle names, or KiCad
+//! leaves the port where the file wrote it and merely accepts an approach along
+//! the angle. Both leave the stub at the written position meeting nothing. The
+//! third arm separates them — the same reflected angles, the same written port
+//! positions, and each stub moved to where relocation says the port went:
+//! opposite edge, along-edge coordinate kept. Relocation predicts all four
+//! rejoin; the other reading predicts all four stay broken, because a port that
+//! never moved is nowhere near the new stub.
 //!
 //! **The control is a symbol-pin net in the same drawing**, two resistor pins
-//! joined by a plain wire, which must read as one net in both arms. A broken
+//! joined by a plain wire, which must read as one net in every arm. A broken
 //! port net beside a broken control is a broken instrument and not a finding.
 
 use kicli::geometry::{GRID, Point};
@@ -52,6 +63,13 @@ struct Edge {
     stub: (&'static str, &'static str),
     /// The resistor anchor that puts pin 1 on the end of the stub.
     anchor: (&'static str, &'static str),
+    /// Where relocation says the port goes when it is given `opposite`: the
+    /// far edge, with the along-edge coordinate kept.
+    relocated: (&'static str, &'static str),
+    /// Where a stub leaving the relocated port outwards ends.
+    relocated_stub: (&'static str, &'static str),
+    /// The resistor anchor for that stub, its pin 1 on the stub's end.
+    relocated_anchor: (&'static str, &'static str),
     /// What the resistor on the parent side is called.
     parent: &'static str,
     /// What the resistor on the child side is called.
@@ -73,6 +91,9 @@ const EDGES: [Edge; 4] = [
         at: ("127", "71.12"),
         stub: ("137.16", "71.12"),
         anchor: ("137.16", "74.93"),
+        relocated: ("101.6", "71.12"),
+        relocated_stub: ("91.44", "71.12"),
+        relocated_anchor: ("91.44", "74.93"),
         parent: "R1",
         child: "RC1",
         escape: Heading::PlusX,
@@ -84,6 +105,9 @@ const EDGES: [Edge; 4] = [
         at: ("111.76", "63.5"),
         stub: ("111.76", "53.34"),
         anchor: ("111.76", "57.15"),
+        relocated: ("111.76", "88.9"),
+        relocated_stub: ("111.76", "99.06"),
+        relocated_anchor: ("111.76", "102.87"),
         parent: "R2",
         child: "RC2",
         escape: Heading::MinusY,
@@ -95,6 +119,9 @@ const EDGES: [Edge; 4] = [
         at: ("101.6", "78.74"),
         stub: ("91.44", "78.74"),
         anchor: ("91.44", "82.55"),
+        relocated: ("127", "78.74"),
+        relocated_stub: ("137.16", "78.74"),
+        relocated_anchor: ("137.16", "82.55"),
         parent: "R3",
         child: "RC3",
         escape: Heading::MinusX,
@@ -106,18 +133,36 @@ const EDGES: [Edge; 4] = [
         at: ("116.84", "88.9"),
         stub: ("116.84", "99.06"),
         anchor: ("116.84", "102.87"),
+        relocated: ("116.84", "63.5"),
+        relocated_stub: ("116.84", "53.34"),
+        relocated_anchor: ("116.84", "57.15"),
         parent: "R4",
         child: "RC4",
         escape: Heading::PlusY,
     },
 ];
 
-/// Build the drawing, with the ports angled as the caller asks.
+/// Which of the three drawings to build.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Arm {
+    /// Each angle names the edge its port is written on; stubs at the written
+    /// positions.
+    Agreeing,
+    /// Each angle names the opposite edge; stubs unmoved, still at the written
+    /// positions.
+    Reflected,
+    /// Each angle names the opposite edge, and each stub is drawn where
+    /// relocation says the port went.
+    Followed,
+}
+
+/// Build the drawing this arm asks for.
 ///
-/// `agreeing` writes each port's own edge angle; the other arm writes the angle
-/// of the opposite edge. Nothing else differs between the two drawings, which
-/// is what makes the comparison a measurement of the angle alone.
-fn drawing(name: &str, agreeing: bool) -> (Partition, PathBuf) {
+/// The port positions written into the file are the same in all three arms.
+/// The angle changes between the first and the other two, and the stubs move
+/// only in the third — so the first pair measures the angle and the second
+/// pair measures where the angle put the port.
+fn drawing(name: &str, arm: Arm) -> (Partition, PathBuf) {
     let mut probe = Probe::new(name, scratch());
     let mut child = Probe::child_of(&probe);
 
@@ -126,15 +171,26 @@ fn drawing(name: &str, agreeing: bool) -> (Partition, PathBuf) {
         .map(|edge| Port {
             name: edge.port,
             at: edge.at,
-            angle: if agreeing { edge.angle } else { edge.opposite },
+            angle: if arm == Arm::Agreeing {
+                edge.angle
+            } else {
+                edge.opposite
+            },
         })
         .collect();
     probe.sheet_of_size(CHILD, "child", ("101.6", "63.5"), ("25.4", "25.4"), &ports);
 
     for edge in &EDGES {
-        // The stub leaves the port outwards and ends on a resistor pin.
-        probe.wire(edge.at, edge.stub);
-        probe.place("R", edge.parent, edge.anchor, &["1", "2"]);
+        // The stub leaves the port outwards and ends on a resistor pin. In the
+        // followed arm it leaves the place relocation predicts instead, and
+        // touches the written position nowhere along its length.
+        let (from, to, anchor) = if arm == Arm::Followed {
+            (edge.relocated, edge.relocated_stub, edge.relocated_anchor)
+        } else {
+            (edge.at, edge.stub, edge.anchor)
+        };
+        probe.wire(from, to);
+        probe.place("R", edge.parent, anchor, &["1", "2"]);
     }
     // The control: two symbol pins joined by a wire, well away from the sheet.
     // Its behaviour is established, so it says whether the instrument works.
@@ -167,12 +223,13 @@ fn a_sheet_pin_leaves_the_edge_kicad_puts_it_on() {
         return;
     }
 
-    let (agreeing, path) = drawing("sheet-pin-edges", true);
-    let (disagreeing, _) = drawing("sheet-pin-edges-reflected", false);
+    let (agreeing, path) = drawing("sheet-pin-edges", Arm::Agreeing);
+    let (disagreeing, _) = drawing("sheet-pin-edges-reflected", Arm::Reflected);
+    let (followed, _) = drawing("sheet-pin-edges-followed", Arm::Followed);
 
-    // The control first. Everything below stands on the instrument working,
-    // and a port net that reads as broken beside a broken control is not a
-    // finding.
+    // The control first, in every arm. Everything below stands on the
+    // instrument working, and a port net that reads as broken beside a broken
+    // control is not a finding.
     let control = net(&["R5.1", "R6.1"]);
     assert!(
         agreeing.contains(&control),
@@ -181,6 +238,10 @@ fn a_sheet_pin_leaves_the_edge_kicad_puts_it_on() {
     assert!(
         disagreeing.contains(&control),
         "the control net is not joined in the reflected arm: {disagreeing:?}"
+    );
+    assert!(
+        followed.contains(&control),
+        "the control net is not joined in the followed arm: {followed:?}"
     );
 
     for edge in &EDGES {
@@ -194,12 +255,22 @@ fn a_sheet_pin_leaves_the_edge_kicad_puts_it_on() {
             edge.port
         );
         // The same port, the same position, the same wire, the opposite angle:
-        // KiCad moves the port onto the edge the angle names and the stub is
-        // left meeting nothing.
+        // the stub is left meeting nothing. On its own this says only that the
+        // angle is load-bearing, not what the angle did with the port.
         assert!(
             !disagreeing.contains(&joined),
             "the {} port connects whatever its angle says, so this drawing \
              measures nothing about the angle: {disagreeing:?}",
+            edge.port
+        );
+        // The same reflected angle again, the port still written where it was,
+        // and the stub moved to the far edge. It connects — so KiCad moved the
+        // port there. A port left where the file wrote it could not reach a
+        // wire drawn 25.4 mm away across the body.
+        assert!(
+            followed.contains(&joined),
+            "the {} port did not meet a stub drawn where its angle relocates \
+             it, so the angle is not moving the port: {followed:?}",
             edge.port
         );
     }
