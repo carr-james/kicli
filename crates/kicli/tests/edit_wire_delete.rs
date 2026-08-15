@@ -357,6 +357,10 @@ fn a_junction_still_joining_three_ends_is_not_reported() {
 #[test]
 fn a_segment_is_named_by_its_identifier_or_its_handle() {
     // A view prints the eight-character handle, so a caller can type one back.
+    // The rule is the command layer's own, in `cli::edit::address`: the whole
+    // identifier, or a prefix of at least eight characters, and an ambiguous
+    // one refused with the list.
+    //
     // The harness cannot write two handles apart, so this drawing's first wire
     // is given an identifier of its own after it is written — the one thing
     // here that is not the harness's own bytes, and only because no probe
@@ -390,6 +394,27 @@ fn a_segment_is_named_by_its_identifier_or_its_handle() {
     assert!(
         refusal.contains("00000000"),
         "the refusal names the handle it was given: {refusal}"
+    );
+    assert_eq!(
+        before,
+        std::fs::read_to_string(&path).expect("the drawing reads"),
+        "the file was written anyway"
+    );
+
+    // Seven characters are below the floor, so they name nothing rather than
+    // naming the one segment they happen to begin. A caller who types too
+    // little is told so instead of losing a wire.
+    let short = delete(
+        &mut hierarchy,
+        "deadbee",
+        &target(&path, project, &sheet),
+        "after",
+    )
+    .expect_err("a prefix below the floor names nothing")
+    .to_string();
+    assert!(
+        short.contains("deadbee"),
+        "the refusal names what it was given: {short}"
     );
     assert_eq!(
         before,

@@ -103,6 +103,12 @@ pub struct DrawnWire {
 /// junction against, read from the other side.
 pub const JOINING: usize = 3;
 
+/// How much of an identifier a caller must type to name a segment.
+///
+/// The same floor the command layer addresses every other object by. Eight
+/// characters are what the views print.
+const HANDLE: usize = 8;
+
 /// A junction a delete left joining fewer than [`JOINING`] wire ends.
 ///
 /// It is still in the file. This is the report that lets a caller decide.
@@ -232,8 +238,9 @@ pub enum WireError {
 
     /// No wire of this sheet carries the identifier given.
     #[error(
-        "no wire of this sheet carries the identifier {identifier}. \
-         A layout view prints the identifier of every segment."
+        "this sheet has no wire called {identifier}. \
+         Name at least {HANDLE} characters of an identifier. \
+         Run sch view --uuids to list them."
     )]
     NoSuchWire {
         /// The identifier the caller gave.
@@ -242,7 +249,7 @@ pub enum WireError {
 
     /// More than one segment answers to the identifier given.
     #[error(
-        "{identifier} names {} segments: {}. Give the whole identifier of the one you mean.",
+        "{identifier} names {} segments of this sheet: {}. Name more of the identifier.",
         .matched.len(),
         .matched.join(", ")
     )]
@@ -488,10 +495,13 @@ struct Named {
 
 /// Which segment an identifier names, or why none does.
 ///
-/// Two forms are accepted and no others: the whole identifier, and the handle
-/// a report prints, which is its first eight characters. A prefix of any other
-/// length is not a form kicli ever writes, and accepting one would let a typo
-/// address a segment the caller never saw named.
+/// The rule is the one the command layer already addresses every other object
+/// by, in [`crate::cli::edit::address`]: the whole identifier, or a prefix of
+/// at least [`HANDLE`] characters, which is what a view prints. It is stated
+/// again here rather than borrowed because that module answers in the command
+/// layer's own failure type, and nothing below the command layer may depend on
+/// it. Two statements of one rule is one too many, and the seam belongs to
+/// whoever wires the verb.
 ///
 /// Ambiguity is judged over the segments alone, because they are the objects
 /// this verb can act on: a handle shared with a symbol says nothing about
@@ -499,7 +509,7 @@ struct Named {
 fn segment_named(schematic: &Schematic, identifier: &str) -> Result<Named, WireError> {
     let matched: Vec<&Line> = schematic
         .lines()
-        .filter(|line| line.uuid.0 == identifier || line.uuid.short() == identifier)
+        .filter(|line| names(&line.uuid, identifier))
         .collect();
     let [line] = matched[..] else {
         if matched.is_empty() {
@@ -523,6 +533,14 @@ fn segment_named(schematic: &Schematic, identifier: &str) -> Result<Named, WireE
         from: line.from,
         to: line.to,
     })
+}
+
+/// Does this identifier name that object, whole or by a handle?
+///
+/// Eight characters are what a view prints, so eight is the floor. Fewer would
+/// let a typo address a segment the caller never saw named.
+fn names(uuid: &Uuid, identifier: &str) -> bool {
+    uuid.0 == identifier || (identifier.len() >= HANDLE && uuid.0.starts_with(identifier))
 }
 
 /// The junctions on a removed segment that are left joining too few ends.
