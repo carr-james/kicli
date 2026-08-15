@@ -91,11 +91,14 @@ impl Probe {
     }
 
     /// A fresh uuid. The counter makes every probe file reproducible.
+    ///
+    /// The leading eight hex digits vary per object and are stable across runs,
+    /// so `Uuid::short` can distinguish any two objects in a probe drawing.
     fn uuid(&mut self) -> String {
         self.next_uuid += 1;
         format!(
-            "00000000-0000-4000-800{}-{:012}",
-            self.series, self.next_uuid
+            "{:08x}-0000-4000-800{}-{:012x}",
+            self.next_uuid, self.series, self.next_uuid
         )
     }
 

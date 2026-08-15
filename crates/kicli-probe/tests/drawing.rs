@@ -48,3 +48,52 @@ fn two_runs_write_one_drawing() {
     let second = with_wire_end("repeatable", "76.2").text();
     assert_eq!(first, second);
 }
+
+#[test]
+fn a_probe_drawing_yields_distinct_handles_for_each_object() {
+    // A probe drawing with multiple objects should have distinct eight-character
+    // handles, so that `Uuid::short` can distinguish them in commands addressed
+    // by handle. This control asserts that the count of distinct handles equals
+    // the count of objects, so a generator that varied nothing cannot pass.
+    let mut probe = Probe::new("multi-object", scratch());
+    probe.place("R", "R1", ("50.8", "29.21"), &["1", "2"]);
+    probe.place("R", "R2", ("76.2", "29.21"), &["1", "2"]);
+    probe.place("R", "R3", ("50.8", "50.8"), &["1", "2"]);
+    probe.wire(("50.8", "25.4"), ("76.2", "25.4"));
+    probe.junction(("50.8", "25.4"));
+
+    let text = probe.text();
+    // Extract all UUIDs from the drawing
+    let mut handles = Vec::new();
+    for line in text.lines() {
+        if let Some(start) = line.find("(uuid \"") {
+            let uuid_start = start + 7;
+            if let Some(end) = line[uuid_start..].find('"') {
+                let uuid = &line[uuid_start..uuid_start + end];
+                let handle = uuid.chars().take(8).collect::<String>();
+                handles.push(handle);
+            }
+        }
+    }
+
+    // We must have at least some objects with UUIDs
+    let object_count = handles.len();
+    assert!(
+        object_count > 0,
+        "expected at least one UUID in the drawing"
+    );
+
+    // All handles must be distinct. The control that fails if the generator
+    // produces no variation: count of distinct handles equals count of objects.
+    let unique_count = {
+        use std::collections::HashSet;
+        let set: HashSet<_> = handles.iter().cloned().collect();
+        set.len()
+    };
+    assert_eq!(
+        unique_count, object_count,
+        "not all handles are distinct: {object_count} objects, {unique_count} unique handles. \
+         Handles: {:?}",
+        handles
+    );
+}
