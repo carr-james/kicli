@@ -198,7 +198,7 @@ mod tests {
     fn the_threshold_is_the_length_a_wire_may_still_be() {
         let weights = Config::default().routing;
         let threshold = weights.label_threshold;
-        assert_eq!(threshold, Iu(30 * GRID.0), "the configured default");
+        assert_eq!(threshold, Iu(300 * GRID.0), "the configured default");
 
         // Exactly at the boundary is drawn, one unit over it is proposed. The
         // boundary itself is the case a comparison written the other way round
@@ -228,12 +228,16 @@ mod tests {
     #[test]
     fn a_proposal_names_both_numbers_the_decision_rests_on() {
         let weights = Config::default().routing;
-        let source = terminal(at(4, 40), Some(Heading::MinusY), "U1.1");
-        let target = terminal(at(120, 40), Some(Heading::PlusY), "U2.2");
+        // The two ends sit at opposite corners of an A4 page: 215 grid steps
+        // apart across and 152 down, which is 367 steps walked and 466.09 mm.
+        // The default draws anything up to 381.00 mm, so this is a length the
+        // default itself refuses -- not one a lowered knob refuses for it.
+        let source = terminal(at(10, 160), Some(Heading::MinusY), "U1.1");
+        let target = terminal(at(225, 8), Some(Heading::PlusY), "U2.2");
         let proposal = Proposal::of(
             &source,
             &target,
-            Some(Iu(116 * GRID.0)),
+            Some(Iu(367 * GRID.0)),
             "SPI_SCK",
             &weights,
             GRID,
@@ -241,8 +245,8 @@ mod tests {
         .expect("a route that long is proposed as labels");
 
         let reason = proposal.trigger.reason(&target.name);
-        assert!(reason.contains("147.32mm"), "the length: {reason}");
-        assert!(reason.contains("38.10mm"), "and the threshold: {reason}");
+        assert!(reason.contains("466.09mm"), "the length: {reason}");
+        assert!(reason.contains("381.00mm"), "and the threshold: {reason}");
 
         let report = proposal.report(&source, &target);
         assert_eq!(report.status.token(), "labels");
@@ -251,7 +255,7 @@ mod tests {
         assert_eq!(report.added, crate::route::report::Added::default());
         let pair = report.labels.as_ref().expect("the pair is proposed");
         assert_eq!(pair.name, "SPI_SCK");
-        assert_eq!(pair.at, [at(4, 38), at(120, 42)]);
+        assert_eq!(pair.at, [at(10, 158), at(225, 10)]);
     }
 
     #[test]

@@ -195,7 +195,7 @@ penalises; the router offsets by 1 G instead and reports that it did.
 ### 5.5 Label fallback
 
 When the best route's path length exceeds `routing.label_threshold` (default
-30 G ≈ 381 mm, shared with `KI-LBL-001`) or A* reports blocked, the router
+300 G = 381 mm, shared with `KI-LBL-001`) or A* reports blocked, the router
 proposes paired labels instead:
 
 ```
