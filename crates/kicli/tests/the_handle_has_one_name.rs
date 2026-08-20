@@ -31,7 +31,9 @@
 //! # What it still cannot see
 //!
 //! It reads text. A cut written as `&uuid[..LEN]` behind a `const LEN = 8`
-//! would pass, as would one assembled at runtime. That is the same ceiling
+//! would pass, as would one assembled at runtime. The *spellings* it knows are
+//! not guessed, though: they are read off the standard library's own
+//! prefix-yielding API, by the grep recorded on `CUTS`. That is the same ceiling
 //! `the_router_holds_no_floating_point` and `the_four_way_rule_has_one_home`
 //! work under, and it is recorded rather than papered over: the claim is that
 //! no cut **in these spellings** exists unaccounted for.
@@ -46,21 +48,46 @@ const DEFINER: &str = "crates/kicli/src/model/items.rs";
 
 /// How Rust spells "the first eight of these".
 ///
+/// **Not chosen by hand.** A hand-chosen list is the name list's mistake in a
+/// second costume, and it was made once here: an eleven-spelling list written
+/// from memory was blind to `split_off(8)`, `drain(8..)` and
+/// `split_at_mut(8)`, all three of which cut a string to eight characters and
+/// all three of which passed as plants. The list below is instead read off the
+/// standard library's own prefix-yielding API, which is re-derivable:
+///
+/// ```text
+/// SRC=~/.rustup/toolchains/<toolchain>/lib/rustlib/src/rust/library
+/// grep -hE '^\s+pub (const )?fn (truncate|split_at|split_at_checked|split_at_mut\
+/// |get|split_off|floor_char_boundary|ceil_char_boundary|drain|chars|char_indices\
+/// |bytes)\b' "$SRC"/core/src/str/mod.rs "$SRC"/alloc/src/string.rs
+/// ```
+///
+/// Each method that can yield a prefix appears here at the width eight, plus
+/// the iterator adaptors those methods feed (`take`, `nth`) and the two
+/// `Index` forms. When the standard library grows another, this comment says
+/// where to look rather than asking the next reader to guess.
+///
 /// Whitespace is stripped from a line before matching, so `get(.. 8)` and
 /// `get(..8)` are the same cut. Byte and character forms are both here: which
 /// one a site uses is part of what the reader below has to justify.
 const CUTS: &[&str] = &[
     "take(8)",
+    "nth(8)",
     "truncate(8)",
+    "split_at(8)",
+    "split_at_mut(8)",
+    "split_at_checked(8)",
+    "split_off(8)",
+    "drain(8..)",
+    "drain(..8)",
     "get(..8)",
     "get(0..8)",
     "get(..=7)",
     "get(0..=7)",
     "..8]",
     "..=7]",
-    "nth(8)",
-    "split_at(8)",
-    "split_at_checked(8)",
+    "floor_char_boundary(8)",
+    "ceil_char_boundary(8)",
 ];
 
 /// One cut that is allowed to exist, and the reason it does.
