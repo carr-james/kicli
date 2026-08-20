@@ -101,7 +101,24 @@ Filed as **C8** in `tasks/M4.md`, with an owner and a time in the chore table.
 
 ## Per-lane record
 
-*(appended per tick)*
+Dispatch under ruling 2's manual worktree flow: every worktree below was created
+by the orchestrator with `git worktree add <path> -b <branch> <base>`, and the
+base named in each brief is the base the worktree was actually at.
+
+| Lane | Path | Base | What |
+|---|---|---|---|
+| `lane-threshold` | `.claude/worktrees/lane-threshold` | `a04dd6d` | ruling 1 — the 300 G default and every gloss, one commit |
+| `lane-c1` | `.claude/worktrees/lane-c1` | `aa96263` | C1 — one name for the eight-character handle |
+| `lane-c3` | `.claude/worktrees/lane-c3` | `aa96263` | C3 — `label_of_kind` takes a typed shape |
+| `lane-t20` | `.claude/worktrees/lane-t20` | `aa96263` | the calibration gate (T20) |
+
+Sequencing: the join (T18, T19) waits on `lane-threshold`, because the new
+default changes which routes propose labels and which are drawn, and a check
+written against the old boundary would be written twice. C7, D4, D5 and D6 all
+hold `AGENT.md` and wait on the same merge. C8 holds `edit/wire.rs` and waits on
+the join.
+
+*(per-tick entries appended below)*
 
 ---
 
