@@ -120,6 +120,85 @@ the join.
 
 *(per-tick entries appended below)*
 
+### The threshold ruling (ruling 1) — merged `b3a53d1`
+
+Lane `lane-threshold`, base `a04dd6d`, one commit `c89c29e`, merged no-ff.
+
+**Scope verification (standing step, ruling 2):** seven files —
+`crates/kicli/src/model/config.rs`, `crates/kicli/src/route/propose.rs`,
+`crates/kicli/tests/route_labels.rs`, `spec/SPEC.md`,
+`research/wire-routing.md`, `research/style-rules.md`, `AGENT.md`. All seven
+inside the declared scope. Main checkout clean before the merge. **No reversal
+trigger.**
+
+**Merged-result gates:** six gates green — fmt, clippy, test, doc, deny, clean.
+
+**What landed.** The default is `Iu(300 * GRID.0)`. Every gloss now reads
+"300 G = 381 mm", with `=` rather than `≈` because it is exact.
+
+**The assertion became a pair, and that is the substance of the fix.** The old
+`config.rs:593` asserted `Iu(381_000)` against a comment reading "30 grid
+steps" — and a comment cannot be wrong out loud, which is exactly how the two
+numbers drifted for a milestone. The new form asserts the two *forms* against
+each other: the grid-step arithmetic and `381 mm` parsed as a length. Falsified
+independently — break B below moves `GRID` to `Iu(12_701)`, which leaves "300
+grid steps" green (it is computed from `GRID`) and fails the millimetre arm on
+`left: Iu(3810300) right: Iu(3810000)`. That is the drift the pair exists to
+catch, and it is the precise class of error that produced the item.
+
+**A fourth piece of evidence for the ruling, found by the lane and not by the
+argument.** `crates/kicli/tests/wire_contract_labels.golden`,
+`wire_output_contract.rs:206`, `route/report.rs:274` and
+`research/wire-routing.md:203` were **already** printing
+`447.04mm is over the threshold 381.00mm`. They are constructed strings, not
+defaults, so they never failed — but the frozen output contract and its golden
+had been speaking the ruled number the whole time. Nobody had looked there.
+
+**The freeze was not touched, and the coincidence was confirmed rather than
+assumed.** `route/report.rs:259-262`'s `Iu(381_000)` is the worked example's own
+route length: the fixture is `steps: 30`, so `30 × GRID` = 38.10 mm. Nothing to
+do with the threshold. Read, not guessed.
+
+**Which checks straddled, and the judgement made about each.** James's ruling
+predicted the label proposal's own checks were "insulated by construction". That
+held for exactly one of them — `the_threshold_is_the_configured_one`, which sets
+its threshold via `kicli.toml`. The three `far_apart` checks read the documented
+default through the real binary and did straddle. The lane **lengthened the
+drawing** rather than insulating them, and its reason is the right one: insulating
+them would have left no check anywhere that the default is a number a real
+drawing can exceed, which is the property the old default lacked in spirit.
+`far_apart` now places `U1` and `U2` at opposite corners of the A4 page the probe
+draws; the best route is 462.28 mm and it routes.
+
+**Falsification, six breaks including one environment-class run.** The two worth
+recording here:
+
+- **Break D** reverted the drawing to its old 123.19 mm span with the new
+  assertions in place. All three checks failed, and *the manner of failure is the
+  evidence*: two failed on the **exit code**, `left: Some(1) right: Some(0)`,
+  with stderr naming a diagonal segment — because at 381 mm the old drawing is
+  not proposed at all, so the command falls through to drawing and refuses. The
+  drawing genuinely straddles the new boundary.
+- **Break A′ left `a_named_net_keeps_its_name` green, and the lane investigated
+  rather than recording "did not apply".** Diagnosed case 1 (no-op break) with
+  the reason: at 462.28 mm the route is over 38.10 mm *and* over 381.00 mm, so
+  lowering the threshold cannot change its outcome, and that check asserts the
+  naming rule and the anchor coordinates without ever reading the threshold. Its
+  real break is D, which fails it. This is the skill's case-1/case-2 distinction
+  applied correctly and unprompted.
+
+**Oracle:** `kicad-cli` present; `the_written_pair_joins_the_pins_kicad_reads`
+green against the moved drawing, both arms, kicli's partition matching KiCad's
+exactly. Recorded as a lane measurement — the orchestrator's merged run is the
+authority.
+
+**One disclosed divergence from "verbatim".** The rebuilt `AGENT.md` worked
+example is real binary output with one line deliberately omitted: `the file was
+laid out again, as KiCad's next save would`. The probe writes non-canonical
+files so kicli re-lays them out; a user's KiCad-written file would not produce
+that line. Disclosed by the lane rather than found later, which is the behaviour
+the discipline wants.
+
 ---
 
 ## Findings
@@ -130,7 +209,53 @@ the join.
 
 ## PROPOSED items
 
-*(in entry order)*
+**1. Nothing in the repo checks a prose gloss against the value the code holds.**
+Raised by the threshold lane, and it is the finding that explains why this defect
+survived an entire milestone of green gates.
+`the_label_threshold_has_one_name.rs` sweeps for the key's *name*; `agent_doc.rs`
+checks the key is *present*. **Neither would have caught "30 G ≈ 381 mm."** The
+new `config.rs` assertion pair guards the code side only — it holds the constant
+and the millimetre form together, but nothing holds `spec/SPEC.md`,
+`research/*.md` and `AGENT.md` to either of them.
+
+A sweep asserting that the documents state the default as the value the code
+holds would close it. **The lane did not build it, and was right not to** — the
+ruling did not call for it and it would have widened a one-commit diff. Recorded
+here instead.
+
+*Recommendation: accept, as a chore carried into M5.* The class is wider than
+this one key — every documented default has the same exposure — so the honest
+form is a general sweep rather than a special case for `label_threshold`, and
+that is enough work to deserve an entry rather than a patch.
+
+**2. The lane-implementer's evidence rule and a ruling-lane's brief can
+contradict each other.** Raised verbatim by the threshold lane; quoted in full in
+the retrospective below.
+
+The `lane-implementer` definition says "Record evidence in the entry AS YOU
+WORK — your context dies with you; the entry is what survives". This session's
+ruling-lane brief said `OUT: tasks/**`, because the orchestrator writes the
+record for a ruling. **The lane followed the brief and put all its evidence in
+its final message — so a lane that died mid-task under that brief would have
+left nothing behind.** That is a real hole and the orchestrator opened it, not
+the lane.
+
+*Recommendation: accept, in the form "the brief carves out an evidence section
+the lane may write" rather than "the standing rule gains an exception".* A rule
+with an exception for briefs is a rule any brief can switch off. **Not applied:**
+agent definitions are version-controlled working practice, changed only by
+ruling (CLAUDE.md, the agentic layer), and the orchestrator is not exempt from
+that.
+
+**3. `falsification-control` and a one-commit brief are compatible only via
+`--amend`, which neither document mentions.** Also raised by the threshold lane.
+The skill requires the good state committed *before* any deliberate break; the
+ruling required the constant, its assertion and every gloss in **one** commit.
+Both were satisfiable, but only by amending, and a lane that did not think of
+that would have had to choose which rule to break.
+
+*Recommendation: accept — one line in the skill.* **Not applied**, same reason as
+2: skills are changed by ruling.
 
 ---
 
@@ -144,3 +269,31 @@ the join.
 
 *(WORKFLOW NOTEs quoted verbatim, attributed, corrections recorded beside the
 quote rather than folded into it)*
+
+### The threshold ruling lane
+
+> **WORKFLOW NOTE:** The brief's Scope says `OUT: tasks/**` (the orchestrator
+> writes the record), but the standing rules in the lane-implementer definition
+> say "Record evidence in the entry AS YOU WORK — your context dies with you;
+> the entry is what survives." Those are in direct tension for a ruling-lane, and
+> I resolved it by following the brief and putting all evidence in this message;
+> a lane that dies mid-task under this brief leaves nothing behind. Either the
+> ruling-lane brief should carve out an evidence section the lane may write, or
+> the standing rule should say "except where the brief assigns the record to the
+> orchestrator". Separately, `falsification-control` says commit the good state
+> before breaking anything, while the brief says ONE commit — compatible only via
+> `--amend`, which neither document mentions; worth one line in the skill.
+
+**Orchestrator, beside the quote rather than folded into it:** both halves are
+correct and the first one is the orchestrator's defect, not an ambiguity in the
+documents. The brief created the tension by writing `OUT: tasks/**` without
+carving out an evidence section, and the lane resolved it the safe way and said
+so. Filed as PROPOSED 2 and PROPOSED 3 above; neither applied, because agent
+definitions and skills change by ruling.
+
+The lane also chose to widen its diff twice against the brief's stated default —
+`spec/SPEC.md` §15's forms trio and `AGENT.md:711` — and gave a measured reason
+for each rather than a preference. **Accepted.** The §15 reasoning is worth
+keeping: `"381mm"` and `"15000mil"` are the same length, `"30G"` was the only
+member of that parenthesis that was not, and putting `"30G"` and `"381mm"` in one
+parenthesis is precisely the juxtaposition that produced this defect.
