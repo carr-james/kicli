@@ -18,7 +18,16 @@ before dispatching work.
 ## Dispatch
 
 - Implementation goes to `lane-implementer`, one task per dispatch, in that
-  lane's worktree per CLAUDE.md's Parallel work rules.
+  lane's worktree per CLAUDE.md's Parallel work rules. **You create the
+  worktree yourself** — `git worktree add <pinned path> -b <lane branch>
+  <base>` — and brief a non-isolated lane into that pinned path. The base you
+  name in the brief is the base the worktree is actually at, which is the whole
+  point of doing it by hand.
+- **Scope verification is a standing step at every merge**, not a spot check:
+  `git diff --stat <base>..<lane branch>` read against the scope the brief
+  declared, and the main checkout clean before the merge begins. A lane found
+  outside its scope is the recorded trigger to return dispatch to the auto
+  flow, and it goes to James as a ruling item rather than being absorbed.
 - Every tick goes through `tick-reviewer` — entry and diff only, never the
   implementer's narrative.
 - Check-guarded chores go to `chore-runner`. Dogfood runs go to `dogfooder`,

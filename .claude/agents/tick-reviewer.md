@@ -48,12 +48,19 @@ These are mechanics, and each one has cost a review an hour or a verdict.
   **at both ends**, and say in your verdict what you pinned and that it still
   held at the finish. Provenance: the four-way (T12) review, where a lane landed
   mid-review; the next review met the same thing and re-pinned by habit.
-- **Do not run the full `cargo xtask check` in the live checkout while other
-  lanes are active.** Its `clean` gate compares the working tree before and
-  after, and the orchestrator writes the consolidated report *per tick* — so a
-  full run in the shared checkout can show a phantom `clean` failure caused by a
-  file you never touched. Targeted `cargo test --test <name>` runs in your
-  verified scratch copy give the same evidence without the race.
+- **You never run the full gate suite in the live checkout.** Not "while other
+  lanes are active" — never. Promoted from a conditional rule to an
+  unconditional one by advisor ruling, checkpoint-2 review, because the
+  condition was one the reviewer could not reliably evaluate: `cargo xtask
+  check`'s `clean` gate compares the working tree before and after, and the
+  orchestrator writes the consolidated report *per tick*, so the checkout is
+  live whenever anyone else is working and the reviewer is the last to know.
+  A phantom `clean` failure caused by a file you never touched is indis-
+  tinguishable, from inside the review, from a real one.
+  **Targeted `cargo test --test <name>` runs in your verified scratch copy are
+  what carry the evidence.** They give the same answer to question 2 with no
+  race, and a verdict resting on them is stronger, not weaker, than one resting
+  on a gate run you cannot attribute.
 - **A disturbed evidence trail is re-established by re-measurement, never by the
   entry's assurance.** If a mishap is disclosed to you, if the workspace is
   shared, or if you have any doubt that what you are reading is what was

@@ -80,6 +80,54 @@ reversing leg anyway — and recommended keeping both rules while measuring them
 in `route::shapes::tests` where they can be seen. That is case 1 diagnosed as
 case 1, with the work shown.
 
+## Environment variation is a break class
+
+**Promoted from PROPOSED 9 by advisor ruling, checkpoint-2 review.** The
+procedure above breaks the **source**. A check can be falsifiable against every
+source break and still be asserting a property of the machine it ran on, because
+nothing in steps 1–4 ever varies the machine.
+
+So: **path, clock, locale and run order are break classes**, and they apply to
+any check that consumes a **generated value** — an identifier, a timestamp, a
+hash, a temporary directory, a sort over anything unordered.
+
+The concrete rule, and it is cheap: **such a test runs once from a second
+directory before it is reported green.** Rename the scratch directory, or run
+the copy from a different absolute path, and run it again. One extra run.
+
+The tell that you need this: the check's expected value was *produced by running
+the code* rather than *derived from the contract*. A golden is the common case.
+
+### Worked example — the T16 golden defect
+
+Two `routed` goldens passed every gate in the lane worktree and failed the
+moment the orchestrator ran them after merge. The identifiers in them are a
+SHA-256 of a seed built from the drawing's **absolute path**, so the goldens
+asserted a property of the worktree they were written in.
+
+The falsification table for that task had **fifteen rows**, and rows 2, 3, 4, 5
+and 14 all broke the renderer and all failed these same two goldens. The goldens
+*were* shown capable of failing. That is necessary and not sufficient:
+
+> a check can be falsifiable and environment-dependent at the same time, and the
+> procedure as written only tests the first. **Every break was made in the
+> source; none was made in the environment.**
+
+The reproduction is the whole rule in one line: changing **only** the probe's
+scratch directory name made the pre-fix commit fail those two tests and no
+others. Under the changed path the written identifiers were `fa9bd366…`,
+`6ebfadf1…`, `9b63e57e…`; under the original, `ebb43fde…`, `d42bd368…`,
+`85a91ae2…`.
+
+**And note which failure mode this is.** The values were *stable* per checkout
+and *wrong* everywhere but one — worse than random, because random fails loudly
+on the second run, and this failed only on somebody else's machine.
+
+The fix was not to freeze the identifiers: `matches_golden` normalises each
+**distinct** identifier-shaped string to `<id-1>`, `<id-2>` … in first-appearance
+order, so count and ordering are still asserted, and the real values keep their
+own check on shape and distinctness so the normalisation hides nothing.
+
 ## Commit the good state before you break anything
 
 **Git can only restore committed state.** Step 4 assumes the source can be put

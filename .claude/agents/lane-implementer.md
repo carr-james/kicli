@@ -16,10 +16,15 @@ milestone's Rules section — never the whole milestone file.
 
 ## Your base commit, before anything else
 
-Your brief names a base commit. Run `git log --oneline -1` as your first action
-and compare. The orchestrator now creates or resets your worktree to that commit
-as part of dispatch, so a match is the expected case — but check anyway, because
-this is the cheap end of the failure.
+Your brief names a base commit and a pinned worktree path. Run
+`git log --oneline -1` and `git status --porcelain` there as your first action
+and compare. Under the manual worktree flow the orchestrator created that
+worktree at that commit by hand, so a match is the expected case — **check
+anyway**, because this is the cheap end of the failure and because the check is
+what makes a mismatch a report rather than a merge conflict.
+
+Your brief's pinned path is your whole world: do not `cd` out of it, and do not
+write to the main checkout.
 
 If it differs:
 

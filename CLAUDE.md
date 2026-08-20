@@ -47,14 +47,31 @@ CLI tool giving LLM agents eyes and hands in KiCad 10 projects. Rust.
   Three saves in three dispatches, which is why it is load-bearing rather than
   defensive: work built on a stale base is discovered at merge, the most
   expensive possible moment.
-- *Rescinded, and recorded rather than deleted: "a lane worktree is created at,
-  or reset to, the base as part of dispatch."* **It was never executable.** The
-  dispatch mechanism creates the worktree itself, at a commit the orchestrator
-  does not choose and cannot set, at the moment the agent starts — there is no
-  point between creation and the lane's first action where the orchestrator can
-  intervene. The rule was drafted against an assumed mechanism rather than the
-  real one, which is the reason it is kept here: a rule that cannot be performed
-  reads like a rule that is being ignored.
+- **The manual worktree flow is the default dispatch mechanism.** Ruling:
+  James, checkpoint-2 review, on the experiment's evidence. The orchestrator
+  runs `git worktree add <pinned path> -b <lane branch> <base>` itself and
+  briefs a **non-isolated** lane into that pinned path. Isolation is not
+  requested from the dispatch mechanism; the worktree already exists, at a
+  commit the orchestrator chose. Standing with it, all three parts:
+  - the lane's first-action base verification is **retained** — the mechanism
+    now agrees with the rule, which is the case where a redundant check is
+    cheapest and its absence hardest to notice;
+  - **scope verification is a standing step at every merge**, not a spot check:
+    `git diff --stat` of the lane branch against its declared scope, and the
+    main checkout clean before the merge begins;
+  - **the reversal trigger is recorded**: a lane found to have written outside
+    its declared scope returns dispatch to the auto flow, pending a ruling.
+    The manual flow trades enforcement for control, and that trade is only
+    sound while lanes stay inside their briefs.
+- *Superseded, and recorded rather than deleted: "a lane worktree is created at,
+  or reset to, the base as part of dispatch" was rescinded as **never
+  executable** — the auto dispatch mechanism created the worktree itself, at a
+  commit the orchestrator did not choose and could not set, at the moment the
+  agent started.* That diagnosis was correct **about that mechanism**, and the
+  answer was to change the mechanism rather than the rule. Kept because the pair
+  is the lesson: a rule that cannot be performed reads like a rule that is being
+  ignored, and the fix is sometimes a different mechanism rather than a weaker
+  rule.
 - The BLOCKED rule applies inside lanes: a subagent that hits a governing-
   document conflict parks it and reports to the orchestrator; the orchestrator
   parks it for James.
