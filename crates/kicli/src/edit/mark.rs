@@ -439,10 +439,10 @@ fn joins_of(
     for item in &hierarchy.files[file].schematic.items {
         match item {
             Item::Line(line) if line.from == at || line.to == at => {
-                joined.push(format!("{} {}", token_of(line.kind), short(&line.uuid.0)));
+                joined.push(format!("{} {}", token_of(line.kind), line.uuid.short()));
             }
             Item::Junction(junction) if junction.at == at => {
-                joined.push(format!("junction {}", short(&junction.uuid.0)));
+                joined.push(format!("junction {}", junction.uuid.short()));
             }
             // A netclass flag carries a netclass name, not a net name, so it
             // joins nothing and says nothing about a connection.
@@ -503,7 +503,7 @@ pub(crate) fn wire_ends_at(schematic: &Schematic, at: Point) -> Vec<WireEnd> {
 
 fn end_of(line: &Line, far: Point) -> WireEnd {
     WireEnd {
-        handle: short(&line.uuid.0),
+        handle: line.uuid.short().to_owned(),
         far,
     }
 }
@@ -561,12 +561,6 @@ fn file_of(hierarchy: &Hierarchy, path: &Path) -> Result<usize, MarkError> {
         })
 }
 
-/// The first eight characters of an identifier, which is the handle a delta
-/// prints.
-fn short(uuid: &str) -> String {
-    uuid.chars().take(8).collect()
-}
-
 /// A comma-separated list, for an error message.
 fn listed<T: fmt::Display>(items: &[T]) -> String {
     items
@@ -578,13 +572,7 @@ fn listed<T: fmt::Display>(items: &[T]) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{listed, short};
-
-    #[test]
-    fn a_handle_is_the_first_eight_characters() {
-        assert_eq!(short("0123456789abcdef"), "01234567");
-        assert_eq!(short("short"), "short");
-    }
+    use super::listed;
 
     #[test]
     fn a_list_reads_as_prose() {
