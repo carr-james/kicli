@@ -29,6 +29,7 @@ use kicli::route::{
     Candidate, Cost, Obstacles, Route, Routed, Search, Shapes, SheetObjects, Tally, Terminal,
     Window,
 };
+use kicli_probe::drawing::LabelKind;
 use kicli_probe::{Probe, pin, rectangle, symbol};
 use kicli_sexpr::{Doc, NodeId};
 use proptest::prelude::*;
@@ -132,7 +133,7 @@ fn drawings() -> Vec<Drawing> {
     crowded.no_connect(("81.28", "82.55"));
     // Text and a label, which cost a step rather than blocking one.
     crowded.free_text("keep clear", ("85.09", "82.55"));
-    crowded.label_of_kind("label", "input", "SENSE", ("85.09", "95.25"));
+    crowded.label_of_kind(LabelKind::Local, "SENSE", ("85.09", "95.25"));
 
     vec![
         Drawing {

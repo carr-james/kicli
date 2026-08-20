@@ -20,6 +20,7 @@ use kicli::route::{
     Candidate, Cost, Heading, Obstacles, Report, Routed, Shape, Shapes, SheetObjects, Status,
     Tally, Terminal, Uncostable, Window,
 };
+use kicli_probe::drawing::{LabelKind, LabelShape};
 use kicli_probe::{Kicad, Probe, pin, rectangle, symbol};
 
 /// Where this binary writes the drawings it builds.
@@ -639,14 +640,13 @@ fn kicad_reads_the_route_to_a_sheet_pin_as_the_connection_it_claims() {
     let build = |name: &str, wires: &[(Point, Point)]| -> PathBuf {
         let mut probe = Probe::new(name, scratch());
         let mut child = Probe::child_of(&probe);
-        // The shape goes in as written, and KiCad reads `(shape input)` rather
-        // than a bare `input` — `tests/fixtures/sch/nets/nets_channel.kicad_sch`
-        // line 384, which KiCad wrote. A bare token leaves the label in the
-        // file and out of KiCad's netlist, which is how this probe first
-        // measured its own defect rather than KiCad's answer.
+        // The shape is named rather than written: the builder puts it in the
+        // `(shape input)` list KiCad reads, and a bare `input` — which leaves
+        // the label in the file and out of KiCad's netlist — is a form no
+        // caller here can spell. This probe measured its own defect that way
+        // once, before the shape had a type.
         child.strand_of_kind(
-            "hierarchical_label",
-            "(shape input)",
+            LabelKind::Hierarchical(LabelShape::Input),
             "R1",
             "25.4",
             "29.21",

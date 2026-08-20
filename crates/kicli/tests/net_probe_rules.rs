@@ -11,6 +11,7 @@
 //! is caught rather than trusted.
 
 use kicli::connectivity::extract;
+use kicli_probe::drawing::{LabelKind, LabelShape};
 use kicli_probe::oracle::{Kicad, kicli_partition, net};
 use kicli_probe::{Placed, Probe, hidden_pin, millimetres, pin, power, symbol};
 use std::path::{Path, PathBuf};
@@ -115,14 +116,13 @@ fn a_bundle_carries_its_members_to_every_sheet_it_reaches() {
     // The bundle leaves the root sheet through the port of the child.
     probe.sheet("AN[0..7]", ("101.6", "50.8"));
     probe.bus(("101.6", "50.8"), ("152.4", "50.8"));
-    probe.label_of_kind("label", "", "AN[0..7]", ("152.4", "50.8"));
+    probe.label_of_kind(LabelKind::Local, "AN[0..7]", ("152.4", "50.8"));
     // A member of it, and a name the bundle does not carry.
     probe.named_strand("R1", "25.4", "29.21", "AN0");
     probe.named_strand("R5", "88.9", "92.71", "ZZ9");
 
     child.label_of_kind(
-        "hierarchical_label",
-        "(shape input)",
+        LabelKind::Hierarchical(LabelShape::Input),
         "AN[0..7]",
         ("101.6", "50.8"),
     );
@@ -145,8 +145,7 @@ fn a_bundle_carries_its_members_to_every_sheet_it_reaches() {
 fn bundled_members(probe: &mut Probe, bundle: &str, members: &[(&str, &str)]) {
     bundled_members_named(
         probe,
-        "hierarchical_label",
-        "(shape input)",
+        LabelKind::Hierarchical(LabelShape::Input),
         bundle,
         members,
     );
@@ -155,19 +154,18 @@ fn bundled_members(probe: &mut Probe, bundle: &str, members: &[(&str, &str)]) {
 /// The same, with the bundle named by a label of the kind asked for.
 fn bundled_members_named(
     probe: &mut Probe,
-    head: &str,
-    shape: &str,
+    kind: LabelKind,
     bundle: &str,
     members: &[(&str, &str)],
 ) {
     probe.bus(("127", "20.32"), ("127", "101.6"));
-    probe.label_of_kind(head, shape, bundle, ("127", "20.32"));
+    probe.label_of_kind(kind, bundle, ("127", "20.32"));
     for (index, (reference, member)) in members.iter().enumerate() {
         let wire_y = millimetres(38.1 + 12.7 * index as f64);
         let anchor_y = millimetres(41.91 + 12.7 * index as f64);
         probe.bus_entry(("124.46", &wire_y), ("2.54", "2.54"));
         probe.wire(("99.06", &wire_y), ("124.46", &wire_y));
-        probe.label_of_kind("label", "", member, ("101.6", &wire_y));
+        probe.label_of_kind(LabelKind::Local, member, ("101.6", &wire_y));
         probe.place("R", reference, ("99.06", &anchor_y), &["1", "2"]);
     }
 }
@@ -328,10 +326,10 @@ fn two_bundles_in_one_scope_share_the_members_they_both_name() {
     // bus is local, so the root sheet is the scope of both.
     probe.sheet_named(first, "child1", "DQ[0..2]", ("101.6", "50.8"), "0");
     probe.bus(("101.6", "50.8"), ("152.4", "50.8"));
-    probe.label_of_kind("label", "", "DQ[0..2]", ("152.4", "50.8"));
+    probe.label_of_kind(LabelKind::Local, "DQ[0..2]", ("152.4", "50.8"));
     probe.sheet_named(second, "child2", "DQ[0..1]", ("101.6", "152.4"), "0");
     probe.bus(("101.6", "152.4"), ("152.4", "152.4"));
-    probe.label_of_kind("label", "", "DQ[0..1]", ("152.4", "152.4"));
+    probe.label_of_kind(LabelKind::Local, "DQ[0..1]", ("152.4", "152.4"));
 
     bundled_members(
         &mut left,
@@ -365,15 +363,13 @@ fn two_bundles_in_different_scopes_keep_their_members_apart() {
 
     bundled_members_named(
         &mut left,
-        "label",
-        "",
+        LabelKind::Local,
         "DQ[0..1]",
         &[("R1", "DQ0"), ("R2", "DQ1")],
     );
     bundled_members_named(
         &mut right,
-        "label",
-        "",
+        LabelKind::Local,
         "DQ[0..1]",
         &[("R3", "DQ0"), ("R4", "DQ1")],
     );
@@ -398,20 +394,20 @@ fn a_wide_bundle_splits_into_sub_ranges_that_rename_at_each_port() {
     // whose own port bundle is named differently and starts its range at zero.
     probe.sheet_named(first, "child1", "BB[0..1]", ("101.6", "50.8"), "0");
     probe.bus(("101.6", "50.8"), ("177.8", "50.8"));
-    probe.label_of_kind("label", "", "AA[0..1]", ("177.8", "50.8"));
+    probe.label_of_kind(LabelKind::Local, "AA[0..1]", ("177.8", "50.8"));
     probe.sheet_named(second, "child2", "BB[0..1]", ("101.6", "152.4"), "0");
     probe.bus(("101.6", "152.4"), ("177.8", "152.4"));
-    probe.label_of_kind("label", "", "AA[2..3]", ("177.8", "152.4"));
+    probe.label_of_kind(LabelKind::Local, "AA[2..3]", ("177.8", "152.4"));
 
     // The wide bundle carries the root's own member nets.
     probe.bus(("228.6", "20.32"), ("228.6", "152.4"));
-    probe.label_of_kind("label", "", "AA[0..3]", ("228.6", "20.32"));
+    probe.label_of_kind(LabelKind::Local, "AA[0..3]", ("228.6", "20.32"));
     for (index, member) in ["AA0", "AA1", "AA2", "AA3"].iter().enumerate() {
         let wire_y = millimetres(38.1 + 12.7 * index as f64);
         let anchor_y = millimetres(41.91 + 12.7 * index as f64);
         probe.bus_entry(("226.06", &wire_y), ("2.54", "2.54"));
         probe.wire(("200.66", &wire_y), ("226.06", &wire_y));
-        probe.label_of_kind("label", "", member, ("203.2", &wire_y));
+        probe.label_of_kind(LabelKind::Local, member, ("203.2", &wire_y));
         let reference = format!("R{}", index + 1);
         probe.place("R", &reference, ("200.66", &anchor_y), &["1", "2"]);
     }
@@ -440,19 +436,19 @@ fn one_child_placed_twice_carries_each_sub_range_to_its_own_placement() {
 
     probe.sheet_named(first, "child", "BB[0..1]", ("101.6", "50.8"), "0");
     probe.bus(("101.6", "50.8"), ("177.8", "50.8"));
-    probe.label_of_kind("label", "", "AA[0..1]", ("177.8", "50.8"));
+    probe.label_of_kind(LabelKind::Local, "AA[0..1]", ("177.8", "50.8"));
     probe.sheet_named(second, "child", "BB[0..1]", ("101.6", "152.4"), "0");
     probe.bus(("101.6", "152.4"), ("177.8", "152.4"));
-    probe.label_of_kind("label", "", "AA[2..3]", ("177.8", "152.4"));
+    probe.label_of_kind(LabelKind::Local, "AA[2..3]", ("177.8", "152.4"));
 
     probe.bus(("228.6", "20.32"), ("228.6", "152.4"));
-    probe.label_of_kind("label", "", "AA[0..3]", ("228.6", "20.32"));
+    probe.label_of_kind(LabelKind::Local, "AA[0..3]", ("228.6", "20.32"));
     for (index, member) in ["AA0", "AA1", "AA2", "AA3"].iter().enumerate() {
         let wire_y = millimetres(38.1 + 12.7 * index as f64);
         let anchor_y = millimetres(41.91 + 12.7 * index as f64);
         probe.bus_entry(("226.06", &wire_y), ("2.54", "2.54"));
         probe.wire(("200.66", &wire_y), ("226.06", &wire_y));
-        probe.label_of_kind("label", "", member, ("203.2", &wire_y));
+        probe.label_of_kind(LabelKind::Local, member, ("203.2", &wire_y));
         let reference = format!("R{}", index + 1);
         probe.place("R", &reference, ("200.66", &anchor_y), &["1", "2"]);
     }
@@ -474,13 +470,13 @@ fn two_bus_entries_that_meet_do_not_join() {
 
     // Two entries whose bus ends land on one point of a bundle.
     probe.bus(("127", "25.4"), ("127", "76.2"));
-    probe.label_of_kind("label", "", "AN[0..7]", ("127", "25.4"));
+    probe.label_of_kind(LabelKind::Local, "AN[0..7]", ("127", "25.4"));
     probe.bus_entry(("124.46", "48.26"), ("2.54", "2.54"));
     probe.bus_entry(("124.46", "53.34"), ("2.54", "-2.54"));
     probe.wire(("99.06", "48.26"), ("124.46", "48.26"));
     probe.wire(("99.06", "53.34"), ("124.46", "53.34"));
-    probe.label_of_kind("label", "", "AN0", ("101.6", "48.26"));
-    probe.label_of_kind("label", "", "AN2", ("101.6", "53.34"));
+    probe.label_of_kind(LabelKind::Local, "AN0", ("101.6", "48.26"));
+    probe.label_of_kind(LabelKind::Local, "AN2", ("101.6", "53.34"));
     probe.place("R", "R1", ("99.06", "52.07"), &["1", "2"]);
     probe.place("R", "R2", ("99.06", "57.15"), &["1", "2"]);
 
@@ -489,8 +485,8 @@ fn two_bus_entries_that_meet_do_not_join() {
     probe.bus_entry(("124.46", "116.84"), ("2.54", "-2.54"));
     probe.wire(("99.06", "111.76"), ("124.46", "111.76"));
     probe.wire(("99.06", "116.84"), ("124.46", "116.84"));
-    probe.label_of_kind("label", "", "BB0", ("101.6", "111.76"));
-    probe.label_of_kind("label", "", "BB2", ("101.6", "116.84"));
+    probe.label_of_kind(LabelKind::Local, "BB0", ("101.6", "111.76"));
+    probe.label_of_kind(LabelKind::Local, "BB2", ("101.6", "116.84"));
     probe.place("R", "R3", ("99.06", "115.57"), &["1", "2"]);
     probe.place("R", "R4", ("99.06", "120.65"), &["1", "2"]);
 
@@ -532,7 +528,7 @@ fn the_instance_record_says_which_unit_a_symbol_draws() {
     disagreeing.instance_unit = Some(2);
     probe.place_symbol(&disagreeing);
     probe.wire(("50.8", "46.99"), ("76.2", "46.99"));
-    probe.label_of_kind("label", "", "TOPNET", ("76.2", "46.99"));
+    probe.label_of_kind(LabelKind::Local, "TOPNET", ("76.2", "46.99"));
     probe.place("R", "R1", ("76.2", "50.8"), &["1", "2"]);
 
     // The control: the two agree on unit 2.
@@ -540,7 +536,7 @@ fn the_instance_record_says_which_unit_a_symbol_draws() {
     agreeing.unit = 2;
     probe.place_symbol(&agreeing);
     probe.wire(("50.8", "85.09"), ("76.2", "85.09"));
-    probe.label_of_kind("label", "", "CTRLNET", ("76.2", "85.09"));
+    probe.label_of_kind(LabelKind::Local, "CTRLNET", ("76.2", "85.09"));
     probe.place("R", "R2", ("76.2", "88.9"), &["1", "2"]);
 
     let found = probe.partition();
@@ -570,7 +566,7 @@ fn a_symbol_off_the_board_is_in_no_net_list() {
         probe.place_symbol(&placed);
         probe.place("R", right, ("76.2", anchor_y), &["1", "2"]);
         probe.wire(("50.8", wire_y), ("76.2", wire_y));
-        probe.label_of_kind("label", "", name, ("63.5", wire_y));
+        probe.label_of_kind(LabelKind::Local, name, ("63.5", wire_y));
     }
 
     let found = probe.partition();
@@ -595,8 +591,7 @@ fn one_sheet_is_one_namespace() {
     // A local label against a hierarchical label of the same text.
     probe.named_strand("R1", "25.4", "29.21", "LOC");
     probe.strand_of_kind(
-        "hierarchical_label",
-        "(shape input)",
+        LabelKind::Hierarchical(LabelShape::Input),
         "R2",
         "38.1",
         "41.91",
@@ -605,8 +600,7 @@ fn one_sheet_is_one_namespace() {
     // A local label against a global label of the same text.
     probe.named_strand("R3", "50.8", "54.61", "GLB");
     probe.strand_of_kind(
-        "global_label",
-        "(shape input)",
+        LabelKind::Global(LabelShape::Input),
         "R4",
         "63.5",
         "67.31",
@@ -619,16 +613,14 @@ fn one_sheet_is_one_namespace() {
     probe.place_unit("PWRX", "#PWR01", ("76.2", "88.9"), 1, "PWRX", &["1"]);
     // A hierarchical label against a global label of the same text.
     probe.strand_of_kind(
-        "hierarchical_label",
-        "(shape input)",
+        LabelKind::Hierarchical(LabelShape::Input),
         "R7",
         "101.6",
         "105.41",
         "HGL",
     );
     probe.strand_of_kind(
-        "global_label",
-        "(shape input)",
+        LabelKind::Global(LabelShape::Input),
         "R8",
         "114.3",
         "118.11",
