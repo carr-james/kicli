@@ -117,6 +117,12 @@ fn is_declaration(trimmed: &str) -> bool {
 /// three-line helpers directly above their use, and attributing a cut to the
 /// nearest declaration above it is enough to read the parameter list that says
 /// what is being cut.
+///
+/// A method takes its subject from `self`, so its parameter list names
+/// nothing: `Uuid::short` itself reads as `(&self)`. For a method — and only
+/// for a method, or `fn uuid_from(seed: &str)` would inherit whatever `impl`
+/// happens to sit above it — the enclosing `impl` line is prepended, so the
+/// type a method belongs to is part of what the classification reads.
 fn enclosing_signature(lines: &[&str], at: usize) -> String {
     let mut start = at;
     loop {
@@ -136,7 +142,22 @@ fn enclosing_signature(lines: &[&str], at: usize) -> String {
             break;
         }
     }
+    if parameters(&signature).contains("self") {
+        if let Some(block) = enclosing_impl(lines, start) {
+            signature.insert_str(0, &block);
+        }
+    }
     signature
+}
+
+/// The `impl` block a method sits in, when it sits in one.
+fn enclosing_impl(lines: &[&str], at: usize) -> Option<String> {
+    (0..at).rev().find_map(|index| {
+        let trimmed = lines[index].trim_start();
+        trimmed
+            .starts_with("impl ")
+            .then(|| format!("{} ", trimmed.trim_end_matches('{').trim()))
+    })
 }
 
 /// The parameter list of a signature, which is what says an argument is an
@@ -147,6 +168,23 @@ fn parameters(signature: &str) -> &str {
     };
     let rest = &signature[open + 1..];
     rest.find(')').map_or(rest, |close| &rest[..close])
+}
+
+/// What a declaration says it is cutting: its parameters, and the type it is
+/// a method of.
+///
+/// The function's own **name** is deliberately left out. `fn uuid_from(seed:
+/// &str)` builds an identifier out of a hash and slices the hex to lay out the
+/// dashes; it is named for what it returns, not for what it cuts, and reading
+/// names would make this sweep fail on it forever.
+fn declared_subject(signature: &str) -> String {
+    let before_fn = signature.split(" fn ").next().unwrap_or("");
+    let block = if before_fn == signature {
+        ""
+    } else {
+        before_fn
+    };
+    format!("{block} {}", parameters(signature))
 }
 
 fn names_an_identifier(text: &str) -> bool {
@@ -218,8 +256,7 @@ fn no_second_function_shortens_an_identifier() {
             continue;
         }
         for cut in cuts(named, text) {
-            let arguments = parameters(&cut.signature);
-            let declared = names_an_identifier(arguments);
+            let declared = names_an_identifier(&declared_subject(&cut.signature));
             // The shipped code is held to the stricter arm: an identifier is
             // not cut inline there either.
             let inline = named.contains("/src/") && names_an_identifier(subject(&cut));
@@ -273,8 +310,8 @@ fn the_one_rule_is_where_it_is_claimed_to_be() {
     assert!(
         cuts(DEFINER, definer)
             .iter()
-            .any(|cut| names_an_identifier(&cut.signature) || cut.signature.contains("fn short")),
-        "the one shortener cuts to eight characters"
+            .any(|cut| names_an_identifier(&declared_subject(&cut.signature))),
+        "the one shortener cuts to eight characters, and reads as an identifier's"
     );
 
     // The second half of the control: the four call sites that gave up their
