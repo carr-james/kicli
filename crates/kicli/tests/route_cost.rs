@@ -9,6 +9,7 @@
 use kicli::geometry::{GRID, Iu, Point};
 use kicli::model::{Config, Hierarchy};
 use kicli::route::{Cost, Obstacles, Routed, SheetObjects, Tally, Uncostable, Window};
+use kicli_probe::drawing::LabelKind;
 use kicli_probe::{Probe, pin, rectangle, symbol};
 use std::path::{Path, PathBuf};
 
@@ -85,7 +86,7 @@ fn drawing(name: &str) -> Hierarchy {
     let mut probe = Probe::new(name, scratch());
     probe.define(quad());
     probe.wire(("92.71", "87.63"), ("92.71", "95.25"));
-    probe.label_of_kind("label", "", "NN", ("90.17", "91.44"));
+    probe.label_of_kind(LabelKind::Local, "NN", ("90.17", "91.44"));
     probe.place("QUAD", "U1", ("101.6", "91.44"), &["1", "2", "3", "4"]);
     Hierarchy::load(&probe.write()).expect("the probe loads")
 }

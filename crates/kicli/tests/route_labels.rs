@@ -100,7 +100,11 @@ fn far_apart(name: &str) -> Probe {
 /// measured on no drawing at all.
 fn far_apart_and_named(name: &str, net: &str) -> Probe {
     let mut probe = far_apart(name);
-    probe.label_of_kind("label", "", net, ("12.7", "199.39"));
+    probe.label_of_kind(
+        kicli_probe::drawing::LabelKind::Local,
+        net,
+        ("12.7", "199.39"),
+    );
     probe
 }
 

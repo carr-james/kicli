@@ -37,6 +37,7 @@
 use kicli::geometry::{GRID, Point};
 use kicli::model::Hierarchy;
 use kicli::route::terminal::{Heading, Terminal};
+use kicli_probe::drawing::{LabelKind, LabelShape};
 use kicli_probe::oracle::{Kicad, Partition, net, skipped};
 use kicli_probe::{Port, Probe, millimetres};
 use std::path::{Path, PathBuf};
@@ -202,8 +203,7 @@ fn drawing(name: &str, arm: Arm) -> (Partition, PathBuf) {
         let wire_y = millimetres(25.4 + 12.7 * index as f64);
         let anchor_y = millimetres(29.21 + 12.7 * index as f64);
         child.strand_of_kind(
-            "hierarchical_label",
-            "(shape bidirectional)",
+            LabelKind::Hierarchical(LabelShape::Bidirectional),
             edge.child,
             &wire_y,
             &anchor_y,

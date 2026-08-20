@@ -16,6 +16,7 @@ use kicli::model::{Config, Hierarchy, Uuid};
 use kicli::route::{
     Cell, Feature, Heading, Obstacles, Routed, SheetObjects, Treatment, Window, page_area,
 };
+use kicli_probe::drawing::LabelKind;
 use kicli_probe::{Probe, pin, rectangle, symbol};
 
 /// Where this binary writes the drawings it builds.
@@ -325,7 +326,7 @@ fn every_obstacle_kind_is_classified() {
 
     // A label, which costs a route that runs through what it says.
     let labels = drawing("label", |probe| {
-        probe.label_of_kind("label", "", "NET_A", ("101.6", "101.6"));
+        probe.label_of_kind(LabelKind::Local, "NET_A", ("101.6", "101.6"));
     });
     let labels = objects(&labels, &Routed::default());
     let text = labels.geometry().texts[0].handle.clone();
@@ -497,7 +498,7 @@ fn a_sheet_becomes_the_lists_the_search_reads() {
         probe.wire(("101.6", "105.41"), ("114.3", "105.41"));
         probe.junction(("114.3", "105.41"));
         probe.no_connect(("101.6", "97.79"));
-        probe.label_of_kind("label", "", "NET_A", ("107.95", "105.41"));
+        probe.label_of_kind(LabelKind::Local, "NET_A", ("107.95", "105.41"));
         probe.free_text("a note", ("101.6", "116.84"));
     });
     let wire = hierarchy
