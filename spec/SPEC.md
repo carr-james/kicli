@@ -634,11 +634,20 @@ the pin's own direction at both ends — a hard constraint, not a cost.
 interior emits a junction; terminating at an existing endpoint does not.
 
 **Label fallback (C14):** when the best path exceeds
-`routing.label_threshold` (default **30 G ≈ 381 mm**) or A* reports blocked, the
+`routing.label_threshold` (default **300 G = 381 mm** — one length written two
+ways, and `=` rather than `≈` because it is exact) or A* reports blocked, the
 router **proposes** paired labels and does not act; `--auto-labels` performs it
 and says so. This is **one knob shared with the linter's `KI-LBL-001`**
 (`wire-routing.md` ⚠1) — a router that emits at 250 mm while the linter
 penalises above 381 mm would argue with itself.
+
+**Nothing reads this number alone.** `KI-LBL-001` (M5) scores against this
+value, so whoever moves it moves what the linter reports, not only what the
+router draws. The default was **30 G** until James's ruling of the 2026-08-15
+checkpoint-2 review: 30 G is 38.10 mm, and the "≈ 381 mm" gloss beside it came
+from reading the internal-unit constant `Iu(381_000)` as millimetres. Every
+rationale in this specification and in `research/wire-routing.md` argues for
+381 mm, so the length stood and the grid-step count moved.
 
 `status` ∈ `routed | labels | blocked | invalid`. `blocked` reports the blocking
 objects' handles, never a bare failure.
@@ -1059,7 +1068,7 @@ warning — agents typo silently.
 [formats]     max_schematic_version = 20260306   # §5.1 ceiling; override knob
 [view]        max_bytes = 32768        # whole-project vs index+summaries (Q11)
 [libraries]   shared_path = "../shared"; shared_nick = "Eurorack Common"; …
-[routing]     label_threshold = "30G"  # shared with rules.KI-LBL-001 (C14)
+[routing]     label_threshold = "300G" # shared with rules.KI-LBL-001 (C14)
               w_len = 1; w_turn = 6; w_cross = 20; w_text = 12; w_near = 2
               margin = "8G"; u_max = "6G"    # window inflation; U-shape reach
 [rules]       default_tier2_enabled = true; gate_on_tier1 = true; consume_erc = true
@@ -1076,11 +1085,12 @@ knob (C14); duplicating it is a bug, and a test over the sources holds that.
 Every routing weight is a **whole number, never negative**, because the router's
 cost is `i64` and a negative term would make a longer route cheaper than a
 shorter one. The three distances — `label_threshold`, `margin`, `u_max` — are
-lengths in the usual forms (`"30G"`, `"381mm"`, `"15000mil"`) and are never
+lengths in the usual forms (`"300G"`, `"381mm"`, `"15000mil"` — three spellings
+of one length, and that length is `label_threshold`'s default) and are never
 negative either. Both are refused when the file is read, not when the router
-finally runs. The routing weights beside it are judged by
-the calibration gate in §9 and again by the score calibration in §11.6, so they
-are changed by a decision about both and never by one alone.
+finally runs. The routing weights beside it are judged by the calibration gate
+in §9 and again by the score calibration in §11.6, so they are changed by a
+decision about both and never by one alone.
 
 ## 16. Agent documentation (deliverable)
 
