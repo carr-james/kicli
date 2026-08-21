@@ -1,6 +1,18 @@
 # M4 Phase 3 and the milestone close — consolidated session report
 
-**STATUS: INTERRUPTED, 2026-08-21 — a session limit, with three lanes live.**
+**STATUS: RESUMED, 2026-08-21.** The session hit a usage limit with three lanes
+live, was wound down per the orchestrator's interrupted-session procedure, and
+then resumed when capacity returned. **The wind-down is kept below rather than
+deleted** — it is the record of what the stop looked like, and a report that
+erases its own interruption is a report that cannot be trusted about the next
+one.
+
+What the interruption cost, stated plainly: nothing was lost. Two merges were
+already on `main` and verified; the three parked lanes' worktrees survived intact
+and were resumed with their contexts, each brought forward onto the new base by
+its own first action. The one thing it changed is that this session's lanes have
+now had their base move underneath them once, which is exactly the case the
+worktree-currency rule exists for.
 
 Two lanes merged and verified on `main`; three parked. The milestone close — the
 `cargo-mutants` run, its four counts, the mutation-run skill, and the doc-diet
@@ -497,6 +509,10 @@ parenthesis is precisely the juxtaposition that produced this defect.
 
 ---
 
+## The stop, and the resumption
+
+*Written at the stop and kept as written. The resumption follows it.*
+
 ## The stop — what holds, what is parked
 
 ### Merged and verified on `main`
@@ -558,3 +574,57 @@ the author's head**, and its falsification must include at least one case the
 author did not choose. The C1 review brief's "plant an evasion in your scratch
 copy" directive is what surfaced (2), and is a candidate standing line for every
 review of a classifying check.
+
+
+---
+
+## The resumption, 2026-08-21
+
+All three parked lanes were **resumed rather than re-dispatched**, and the
+distinction matters enough to record.
+
+CLAUDE.md's rule is that *a parked lane's uncommitted draft is reference, not
+resumption* — a fresh implementer starts from the entry, and any adopted line
+passes falsification as if newly written. That rule is about a **dead** lane's
+draft being picked up by someone who never wrote it: the danger is an
+unfalsified narrative reviewing itself, from a context that is gone.
+
+Here the contexts were **not** gone. The lanes were killed by a usage limit with
+their transcripts intact, so each was resumed with its own memory of what it had
+built and — the part that matters — of what it had **not yet falsified**. That is
+a continuation, not a resumption from a dead draft, and the rule's reason does not
+reach it. Recorded as an orchestrator judgement rather than assumed: if the
+advisor reads the rule as covering this case too, the cost of the other reading is
+three re-dispatches, not any code.
+
+Each resume brief carried the same three things, because all three lanes had the
+same problem:
+
+1. **The base had moved**, and each was given the exact command sequence to bring
+   its worktree forward — `git stash push -u`, verify the old base, `git merge
+   --ff-only main`, verify the new one, `git stash pop` — with an explicit
+   instruction not to `git checkout --` anything, which would have taken the draft
+   with it. The calibration gate's lane fast-forwarded to `491c254` cleanly.
+2. **What landed underneath them and why it touches their work.** The typed label
+   shape changed `Probe::label_of_kind` at 34 call sites, so any new probe drawing
+   uses `LabelKind`; the 300 G threshold means a route over 381 mm is proposed as
+   labels rather than drawn, which the calibration procedure must account for or
+   explain, and which would otherwise look to the join like its own verb failing.
+3. **The session's recurring finding**, given to each lane as a working caution
+   rather than as a rule: an instrument built from its author's vocabulary tests
+   itself, and a green check after a deliberate break is a finding about the
+   instrument.
+
+A fourth lane was dispatched at the resumption, holding `AGENT.md`: **C7 plus the
+D4 and D6 documentation defects**, as three commits in one lane. `AGENT.md` is a
+merge hotspot, CLAUDE.md permits exactly one designated lane to hold one, and
+three separate dispatches would have meant two avoidable conflicts. Recorded as a
+deliberate designation rather than a scope slip.
+
+**One standing answer was added to that brief that the earlier ones lacked.** Two
+lanes today hit briefs whose scope list came from a stale enumeration, making the
+brief's own goal state unreachable inside its own scope. The doc lane's brief says
+outright: if that happens, **the named check wins over the file list**, and the
+lane reports the excess in its first paragraph. That is PROPOSED 5 being applied
+in practice while it waits for a ruling — cheap to reverse, and it removes a
+choice no lane should have to make twice.
