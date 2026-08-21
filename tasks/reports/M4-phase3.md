@@ -586,6 +586,48 @@ genuinely cold each time is **refuted**, and the cold-cache "over two minutes"
 figure **remains inherited, not observed**, so the standing sentence was left
 byte-identical.
 
+### The handle chore (C1) — merged `2220e5d`, TICKED on the fourth review
+
+Four review passes, three REJECTs, one APPROVE. **Scope:** the disclosed
+`cli/edit/wire.rs` fifth copy and nothing further; `tasks/M4.md` pure addition,
+0 lines removed. Six gates green on the merged result.
+
+**The fold — the chore's actual deliverable — was never what was wrong.** Five
+private copies became one; `short_key` stays separate and named because a key
+that is not an identifier keeps a shortener that says so. Three separate
+reviewers confirmed it against the diff.
+
+**The final reviewer measured the things that mattered rather than reading
+them:** `CUTS` untouched (diff exit 0, matching `md5` at both ends, only the
+rustdoc changed); every `CUTS` entry a decimal-8 spelling, so the claim is not
+wider than the instrument; the boundary stated as an open class in both the entry
+and the rustdoc; and the discriminating pair reproduced by hand — `take(0x8)` and
+`take(8)` side by side in one file, the hex invisible and the decimal caught.
+
+### The index fallback (C2) — merged, TICKED
+
+**The null result recorded as a result**, which is exactly what the entry
+demanded: *a chore that measured nothing must not read as a chore that found
+nothing.* At five named budgets where the fallback fires, the index is 407 bytes
+against a 1184-byte full view, and it is **budget-independent** — so there is no
+budget at which it exceeds, and the delta view's skip does not transfer. `scope.rs`
+unchanged.
+
+**It was sent back once, by the orchestrator rather than by a reviewer, and the
+reason is worth recording.** The first pass compared the index against the whole
+view as a ratio — a question whose answer was never in doubt, since a summary of a
+document is smaller than the document — and falsified it by **inverting its own
+assertion**:
+
+> The test was deliberately broken by changing `assert!(index <= full)` to
+> `assert!(index > full)`, which correctly failed on the actual data.
+
+An inverted assertion fails whatever the check measures, **including when it
+measures the wrong thing — which here it did.** That is the degenerate case of
+falsification and it is worth naming, because it looks like the procedure being
+followed. The second pass pads the index generator to 1462 bytes and watches the
+check go red at budget 100: a break in the code the check watches.
+
 ---
 
 ## Reviewer rejections and their resolutions
