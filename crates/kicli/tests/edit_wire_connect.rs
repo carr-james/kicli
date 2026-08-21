@@ -750,6 +750,25 @@ fn connecting_to_a_net_takes_the_nearest_terminal() {
         "the answer does not name the net and the point it joined: {}",
         reached(&run)
     );
+
+    // **The point it joined is a grid point of the net's wire, not one of the
+    // net's pins**, which is what makes the target set the whole net rather
+    // than a list of its pins. Two things say so and they say it two ways: the
+    // name carries a position rather than a pin, and a junction was written —
+    // and a junction is written only where an existing wire holds the route's
+    // own end in its interior.
+    assert!(
+        reached(&run).contains(','),
+        "the answer names a pin of the net rather than a point of its wire: {}",
+        reached(&run)
+    );
+    assert_eq!(
+        run.junctions().len(),
+        1,
+        "the route ended somewhere no junction was needed, so it did not join \
+         the interior of the net's wire: {}",
+        run.object()
+    );
     assert_ne!(
         reached(&run),
         reached(&far),
@@ -940,6 +959,35 @@ fn the_search_reaches_the_cheapest_terminal_of_the_net() {
         "the search did not reach the cheapest terminal: {}",
         run.object()
     );
+
+    // **The route to a net is no dearer than a route to any single point of
+    // it.** That is the whole claim of searching from every terminal at once,
+    // and it is measured here against the points themselves rather than
+    // against a number written down: each control asks for one grid point of
+    // the strand over the lid by name, on a drawing of its own.
+    //
+    // The comparison is conservative. A run that names a point does not know
+    // the net's pins are terminals, so it may pay a proximity cost the
+    // net-addressed run does not — which can only make a control dearer.
+    for (index, at) in ["74.93,43.18", "76.2,43.18", "77.47,43.18", "78.74,43.18"]
+        .into_iter()
+        .enumerate()
+    {
+        let alone = a_net_on_both_sides_of_a_pocket(
+            &format!("connect-net-pocket-point-{index}"),
+            true,
+            false,
+        );
+        let one = connect(&alone, &["--from-pin", "R1.1", "--to-at", at]);
+        assert_eq!(one.wire()["status"], "routed", "{at}: {}", one.object());
+        assert!(
+            cost_of(&over) <= cost_of(&one),
+            "the route to the net costs {} and a route to the single point {at} \
+             costs {}, so the search is not answering for the whole net",
+            cost_of(&over),
+            cost_of(&one)
+        );
+    }
     assert_eq!(
         reached(&run),
         reached(&past),
