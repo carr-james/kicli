@@ -50,11 +50,31 @@ project healthy
   root       healthy.kicad_sch
   kicad-cli  10.0.5
   alias      ADDR = A0 A1
+  nets       0
 
 sheets 2
   page 1  symbols 0  power 0  file healthy.kicad_sch  path /0000...0000
   page 2  symbols 0  power 0  name stage  file stage.kicad_sch  path /0000...0000/0000...0001
 ```
+
+**`nets` counts every net in the whole project.** Every one: across all sheets,
+power nets included, and including the single-pin nets that are one pin joined to
+nothing. `sch view` counts a smaller number on purpose, and the two are
+reconciled under the connectivity view below. If the two disagree by more than
+that reconciliation, you are looking at different scopes, not at a bug.
+
+**This command runs `kicad-cli`, and so does `project check`.** Before either of
+them does, it prints a note on **standard error**:
+
+```
+kicli: asking /usr/bin/kicad-cli its version. The first KiCad run on a machine builds the font cache. It can take over 120 seconds.
+```
+
+It is a warning, not a report. kicli says what it is about to do before it
+blocks, because an agent that sees nothing for two minutes decides kicli has
+hung. **The note appears whenever `kicad-cli` is found; it does not mean the
+cache was cold this time.** It never appears on standard output, so it cannot
+corrupt a parse, and `--quiet` silences it.
 
 ### `kicli project check`
 
@@ -74,9 +94,10 @@ findings 3
 The command also names the checks it does **not** yet make, rather than passing
 silently: library resolution is not covered in this build.
 
-`project check` warms KiCad's font cache when `kicad-cli` is present and says so
-first. The first run on a machine can take over two minutes; later runs take
-under a second.
+`project check` runs `kicad-cli` when one is present, and prints the same
+standard-error note before it does as `project info` does — see there for what
+the note is and how to silence it. The first run on a machine can take over two
+minutes; later runs take under a second.
 
 ### `kicli sch view`
 
@@ -130,6 +151,24 @@ Reading a net record:
 - `N channel_a/IN` — a name that two nets would otherwise share is qualified by
   the sheet it comes from. A hierarchical label is local to its placement, so a
   sheet placed twice gives two different nets with the same drawn name.
+
+**`nets=` here and `nets` in `project info` count different things, and they
+reconcile.** `nets=` is how many `N` records follow — nets with at least one pin
+this view is showing. Two kinds are left out of it:
+
+- A net that is one pin joined to nothing is not listed at all. It is tallied
+  instead, as `# 18 pin(s) join nothing`, because listing eighteen nets of one
+  pin each would cost a fifth of the view to say nothing.
+- A net with no pin this view is showing is silently absent — a net of only
+  power pins when you did not pass `--include-power`, or a net drawn entirely on
+  another sheet when you passed `--sheet`.
+
+So for a **whole-project** view with nothing hidden, `nets=` plus the
+`join nothing` tally is `project info`'s `nets`. The example above is a real
+project: `14 + 18 = 32`, and `project info` on it prints `nets 32`. A
+**per-sheet** view does not add up to the project figure and is not meant to —
+that same project's root sheet gives `10 + 18 = 28` against a project total of
+32, because the pins on the other two sheets are not the root sheet's to count.
 
 #### The layout digest
 
