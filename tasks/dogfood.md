@@ -237,6 +237,91 @@ endpoints read in the line record's order rather than the request's order — is
 `10 + 18 = 28` unaided, which is the good outcome; the bad one is that it had to.
 **Chore**: document what each figure counts, at both places.
 
+#### D4 — Done, 2026-08-21
+
+**Measured first, written second.** Both numbers were read out of the code and
+then out of a running view, before any prose was written.
+
+- **`project info`'s `nets N`** is `nets.nets().len()`
+  (`crates/kicli/src/cli/project.rs`, `write_nets`), the whole partition from
+  `connectivity::extract`: **every net of the whole project**, all sheets, power
+  nets included, single-pin unconnected nets included. Nothing is filtered.
+- **`sch view --view connectivity`'s `nets=N`** is not a count of nets at all —
+  it is the number of `N` records the view emitted, counted back out of its own
+  text (`crates/kicli/src/view/connectivity.rs:96`). A net is left out of it two
+  ways: one with exactly one visible pin whose KiCad name starts `unconnected-`
+  is **tallied** as `# N pin(s) join nothing` instead of listed
+  (`connectivity.rs:271-277`), and one with **no** visible pin at all — every pin
+  a power pin without `--include-power`, or every pin on another sheet under
+  `--sheet` — is dropped in silence (`connectivity.rs:270`).
+
+**So the dogfood agent's `10 + 18 = 28` is right, and is not a general law.** The
+exact statement is `listed + tallied + hidden = total`, and it is the third term
+that the agent's arithmetic did not have to reckon with. Measured on the `nets`
+fixture, whole project: `14 + 18 + 0 = 32`, and `project info` on it reports
+`nets 32`. Measured on the **root sheet** of that same fixture: `10 + 18 = 28`
+against a project total of 32 — the per-sheet view does not reconcile with the
+project figure and must not be documented as if it did. **This is why the chore
+said to measure before writing: the obvious signpost, "they add up", is false
+under `--sheet`, and `--sheet` is exactly what an agent reaches for on a large
+project.**
+
+**Where the signpost went.** Beside both numbers, in the document the end user
+reads:
+
+- `AGENT.md`, `### \`kicli project info\`` — and the sample output there was
+  **missing the `nets` line entirely**, which is its own small part of why there
+  was no signpost to find. Added, from the golden
+  (`crates/kicli/tests/project_info_healthy.golden:6`), plus a paragraph saying
+  the count is whole-project and pointing at the reconciliation.
+- `AGENT.md`, `#### The connectivity view` — the reconciliation itself, both
+  omission rules, the worked numbers above, and the per-sheet warning.
+- `crates/kicli/src/cli/project.rs`, rustdoc on `write_nets`, for the next person
+  who changes the number rather than reads it.
+
+The view's own printer is in `crates/kicli/src/view/connectivity.rs`, which
+another lane held open at the time; its rustdoc was left alone deliberately
+rather than risk the conflict, and the omission rules are commented there
+already.
+
+**Check:** `crates/kicli/tests/net_counts_reconcile.rs`, two tests.
+`the_whole_project_view_accounts_for_every_net` walks every `.kicad_sch` under
+`tests/fixtures`, renders the default whole-project view, reads `listed` and
+`tallied` back out of the view's **own text** rather than recomputing them, and
+asserts `listed + tallied + hidden == total`. Reading the text matters: a
+recomputation would be a second implementation of kicli agreeing with the first.
+`a_per_sheet_view_does_not_account_for_the_project` pins the other half — if a
+per-sheet view ever did add up, the document's warning would be wrong and this
+is what would notice.
+
+**Falsification.** Six breaks against the checkpointed good state; `shasum -a
+256` after each restore returned `net_counts_reconcile.rs` to `f6f1f431…` every
+time.
+
+| # | The break | Result |
+|---|---|---|
+| A | The `tallied` term dropped from the identity | **FAILED** on `geometry/asymmetric.kicad_sch`: lists 0, tallies 32 |
+| B | The `listed` term dropped | **FAILED** on `sch/item_zoo.kicad_sch`: lists 1, tallies 1, total 2 |
+| C | The tally reader made blind — always returns 0 | **FAILED**, and it is the reader being wrong rather than the tool |
+| D | The fixture root pointed at a directory that does not exist | **FAILED**: "only 0 fixture projects have nets, which is too few to have checked anything" |
+| E | The per-sheet claim inverted, `<` to `>=` | **FAILED**: "the root sheet accounts for 28 of 32 nets" |
+| F | The `hidden` term dropped | **ok** — see below |
+
+**Break F is a no-op break, not a blind check, and the difference was
+established rather than assumed.** `hidden` is **0 on every fixture**, measured
+across all seven projects that have nets, so removing the term changes no
+arithmetic anywhere and the identity is arithmetically identical with and
+without it. The term is read from the code (`connectivity.rs:270`), not from a
+fixture. **PROPOSED: no fixture exercises a net with no visible pin** — a net of
+only power pins under the default view, or a whole net off-sheet under
+`--sheet`. Recommendation: leave it. The term is correct, cheap, and self-
+documenting, and manufacturing a fixture to exercise it belongs to whoever owns
+`tests/fixtures/` rather than to a documentation chore. Recorded so that a later
+reader does not mistake break F for evidence the term is tested.
+
+**`cargo xtask check`: all six gates pass.** `cargo test` green throughout;
+nothing kicli prints was changed, so no golden moved.
+
 **D5 — `sym delete` reports a two-way fork without saying which way it went.**
 `AGENT.md` specifically calls out that the embedded definition "stays if another
 placement still uses it, and goes if none does", and the report says neither.
