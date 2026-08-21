@@ -21,13 +21,13 @@ fn fixtures() -> Fixtures {
 
 /// The global label of the fixture, which owns an `Intersheetrefs` field and
 /// carries the autoplace flag.
-const GLOBAL_LABEL: &str = "00000000-0000-4000-8000-00000000001b";
+const GLOBAL_LABEL: &str = "1000000d-0000-4000-8000-00000000001b";
 
 /// The field the global label owns.
 const INTERSHEET: &str = "Intersheetrefs";
 
 /// The sheet path of the fixture, which is a root sheet.
-const ROOT: &str = "/00000000-0000-4000-8000-000000000002";
+const ROOT: &str = "/10000001-0000-4000-8000-000000000002";
 
 /// Copy the fixture into a scratch directory and hand back the copy.
 fn scratch_copy(name: &str) -> PathBuf {

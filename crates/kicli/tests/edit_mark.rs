@@ -17,7 +17,7 @@ fn fixtures() -> Fixtures {
 }
 
 /// The root sheet of the connectivity fixture.
-const NETS_ROOT: &str = "00000000-0000-4000-8000-030000000000";
+const NETS_ROOT: &str = "13000001-0000-4000-8000-030000000000";
 
 /// The mid-span pin cluster: a wire from `(25.4,88.9)` to `(50.8,88.9)` with
 /// R11 pin 1 at its middle, and no junction to join them.

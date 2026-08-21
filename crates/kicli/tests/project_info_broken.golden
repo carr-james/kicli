@@ -6,9 +6,9 @@ project broken
   nets       0
 
 sheets 3
-  page 1  symbols 0  power 0  file broken.kicad_sch  path /00000000-0000-4000-8000-070000000000
-  page 3  symbols 0  power 0  name future  file future.kicad_sch  path /00000000-0000-4000-8000-070000000000/00000000-0000-4000-8000-07b000000001
-  page 4  symbols 0  power 0  name commented  file commented.kicad_sch  path /00000000-0000-4000-8000-070000000000/00000000-0000-4000-8000-07c000000001
+  page 1  symbols 0  power 0  file broken.kicad_sch  path /17000001-0000-4000-8000-070000000000
+  page 3  symbols 0  power 0  name future  file future.kicad_sch  path /17000001-0000-4000-8000-070000000000/17000003-0000-4000-8000-07b000000001
+  page 4  symbols 0  power 0  name commented  file commented.kicad_sch  path /17000001-0000-4000-8000-070000000000/17000004-0000-4000-8000-07c000000001
 
 files 3
   broken.kicad_sch  stamp 20260306  layout normal  canonical yes

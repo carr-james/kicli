@@ -196,6 +196,265 @@ golden change is part of the change. Note the agent correctly diagnosed it as a
 fixture artifact rather than a tool bug, which is the diagnosis C5 already
 recorded.
 
+#### D1 — Done, 2026-08-21
+
+Lane `lane-d1`, base `42d5201`.
+
+**The measurement, taken before anything was changed** (worktree at `42d5201`,
+clean). Counted with
+`grep -rhoE 'uuid "[^"]*"' crates/kicli/tests/fixtures/sch/` and, for the
+identifier-shaped strings that are not `uuid` atoms — sheet instance `path`
+fields, netlist `tstamps`, ERC JSON — with
+`grep -rhoE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'`.
+
+| scope | `uuid` atoms | distinct 8-char handles |
+|---|---|---|
+| `tests/fixtures/sch/` **before** | 354 | 204 |
+| `tests/fixtures/sch/` **after** | 354 | 354 |
+| `tests/fixtures/` (whole tree, all identifier-shaped strings) **before** | 1307 | 203 |
+| `tests/fixtures/` (whole tree, all identifier-shaped strings) **after** | 1307 | 1307 |
+
+**C5's "151 atoms, 1 prefix" was verified rather than inherited, and it has
+moved.** The tree has gained fixtures since C5 was written. Of the 354 `uuid`
+atoms now under `sch/`, **203 are in `sch/routing/calibration.kicad_sch` and
+already carry distinct handles** — that file was written by the probe crate
+*after* C5's fix, so it is C5's fix visible in a committed artefact. The
+remaining **151 atoms across the other nine `sch/` files all shared the handle
+`00000000`**, which is C5's number exactly.
+
+**Files affected — the blast radius as a fact.** 1105 of the 1307 distinct
+identifier-shaped strings in the fixture tree carried the colliding `00000000`
+prefix. They live in these files:
+
+| fixture group | identifiers remapped | files |
+|---|---|---|
+| misc `sch/` | 41 | `sch/future_version.kicad_sch`, `sch/item_zoo.kicad_sch`, `sch/lib_name_redirect.kicad_sch`, `sch/multi_instance/channel.kicad_sch`, `sch/multi_instance/multi_instance.kicad_sch`, `sch/unreadable_coordinate.kicad_sch`, `sch/v9_legacy.kicad_sch` |
+| `geometry/orientations` | 25 | `.kicad_sch`, `.expected`, `.erc.json` |
+| `geometry/asymmetric` | 41 | `.kicad_sch`, `.expected`, `.erc.json` |
+| `sch/nets` | 110 | `nets.kicad_sch`, `nets_channel.kicad_sch`, `nets.kicad_pro`, `nets.netlist` |
+| `project/healthy` | 4 | `healthy.kicad_sch`, `stage.kicad_sch` |
+| `project/broken` | 6 | `broken.kicad_sch`, `future.kicad_sch`, `commented.kicad_sch` |
+| `project/cycle` | 4 | `cycle.kicad_sch`, `inner.kicad_sch` |
+| `text/calibration` | 873 | `calibration.kicad_sch` |
+| `sch/routing/calibration` | 1 | `calibration.kicad_sch` — its **root sheet** only |
+
+**The last row is the one worth reading.** `sch/routing/calibration.kicad_sch`
+was probe-written and its 202 object identifiers are already distinct, but its
+**root sheet uuid is not**: the probe crate hard-codes
+`const ROOT: &str = "00000000-0000-4000-8000-999999999999"` and
+`const CHILD: &str = "00000000-0000-4000-8000-cccccccccccc"`
+(`crates/kicli-probe/src/drawing.rs:15,18`), and C5's `{series:02x}{n:06x}`
+change did not reach them. **Carried, not fixed here:** the probe crate is out
+of this lane's scope, and a probe drawing *with a child sheet* gives its root
+and its child sheet symbol the two distinct-but-both-`00000000`-prefixed
+handles `00000000` — a collision **inside a single drawing**, which is exactly
+what C5 set out to remove. Recorded as of `42d5201`; see the PROPOSED item at
+the end of this entry.
+
+**The rule the fixtures now follow, stated so a later fixture can follow it.**
+Each identifier **keeps its old body** and gains a new leading field
+`{series:02x}{n:06x}` — the format C5 gave the probe crate
+(`crates/kicli-probe/src/drawing.rs`), so the fixtures and the instrument now
+number handles the same way. `series` is the fixture group's existing series
+byte **raised by 0x10**, which reserves `0x00`–`0x0f` for probe drawings (the
+probe numbers its series from 1), and `n` counts that group's identifiers in
+ascending order of the identifier they already had. `13000001-0000-4000-8000-030000000000`
+is the nets fixture's root: handle `13000001`, body unchanged. Keeping the body
+is what makes the diff readable — every changed line differs in its first eight
+characters and nowhere else.
+
+**Applied as one deterministic substitution over 1104 identifiers**, to the
+fixture tree, the goldens and the test sources together — not by regenerating
+fixtures and refreshing goldens from output. That ordering is the evidence: the
+suite was green afterwards **without a single further edit**, which says the
+only thing that changed anywhere was identifiers. A golden refreshed from output
+could not have shown that.
+
+##### The goldens that moved, and why
+
+Four of the eleven. Each line of each diff is a leading-field substitution and
+nothing else.
+
+| golden | why it moved |
+|---|---|
+| `view_connectivity.golden` | prints the sheet path of each of the three sheets of `sch/nets`; three paths, five identifier occurrences |
+| `view_layout.golden` | the same three sheet paths, as its `page` headers |
+| `project_info_healthy.golden` | prints the sheet paths of `project/healthy`; two paths, three occurrences |
+| `project_info_broken.golden` | prints the sheet paths of `project/broken`; three paths, five occurrences |
+
+**Seven goldens did not move, and one group of them was checked rather than
+assumed.** `project_check_healthy.golden` and `project_check_broken.golden`
+print no identifier at all. All five `wire_contract_*.golden` are normalised by
+`without_generated_identifiers` — the fix for the M4 T16 defect, where goldens
+asserted identifiers derived from a seed containing the checkout's absolute
+path. **The brief flagged a move in those as unexpected. They did not move**,
+which is that normalisation doing its job over a change of exactly the kind it
+was built for.
+
+##### The one fixture left alone, which is a finding
+
+`sch/routing/calibration.kicad_sch` was remapped and then **put back**. Its 202
+object identifiers were already distinct — it is C5's fix visible in a committed
+artefact — but its **root sheet uuid** is `00000000-0000-4000-8000-999999999999`,
+which is the probe crate's `ROOT` constant, and
+`route_calibration.rs::the_calibration_fixture_is_what_the_recipe_builds`
+**byte-compares the committed fixture against what the probe recipe builds**.
+Remapping the root broke that test — measured, not predicted:
+
+```
+test the_calibration_fixture_is_what_the_recipe_builds ... FAILED
+route_calibration.rs:1584: the committed calibration fixture is not what the recipe builds
+```
+
+Changing the root therefore requires changing `crates/kicli-probe/src/drawing.rs`,
+which this lane is scoped out of. **Reverting costs nothing here**: with every
+other fixture remapped, `00000000` is now carried by exactly one object in the
+whole tree, so it is distinct and the goal state holds. The residual is real but
+it is the probe crate's, and it is filed below rather than reached for.
+
+##### PROPOSED — the probe crate's two constants are C5's remaining half
+
+`crates/kicli-probe/src/drawing.rs:15,18` hold
+`const ROOT: &str = "00000000-0000-4000-8000-999999999999"` and
+`const CHILD: &str = "00000000-0000-4000-8000-cccccccccccc"`. C5's
+`{series:02x}{n:06x}` change reached `Probe::uuid` and not these. Consequence,
+stated as the measurement it is: **a probe drawing with a child sheet gives two
+objects the same handle `00000000`** — its root sheet and its child sheet
+symbol — which is a collision *inside a single drawing*, the exact defect C5
+exists to remove. No test addresses either by handle today, so nothing is
+silently passing, which is also exactly what C5 said about the state it found.
+**Recommendation: accept as a chore** — give the two constants leading fields in
+the probe's own reserved range (`0x00`–`0x0f`), regenerate
+`sch/routing/calibration.kicad_sch` through the recipe, and let
+`the_calibration_fixture_is_what_the_recipe_builds` be the check. Not done here
+because `crates/kicli-probe/**` is out of this lane's scope and reaching into it
+is how a chore becomes a merge conflict. Recorded as of `42d5201`.
+
+##### Scope: this went wider than the brief's IN list, and here is the reason
+
+The brief scoped IN `crates/kicli/tests/fixtures/sch/**`. The work covered
+**`crates/kicli/tests/fixtures/**`** — `geometry/`, `project/` and `text/` as
+well. Two reasons, and the second is not an argument:
+
+1. the named check is stated over "the committed fixture tree", and
+   `geometry/orientations.kicad_sch`, `project/healthy/healthy.kicad_sch` and
+   `text/calibration.kicad_sch` are committed schematic fixtures whose objects
+   all answered to `00000000` too;
+2. **the brief's own list of goldens expected to move includes
+   `project_info_*`, which is driven by `fixtures/project/**` and by nothing
+   under `sch/`.** The scope list and the golden list disagreed with each other;
+   the brief's rule is that the check wins.
+
+Also outside the letter of the brief: **twenty-three occurrences across nine test
+sources** under `crates/kicli/tests/` name a fixture identifier in a `const` or a
+literal (`edit_field_placement.rs`, `edit_field_reference.rs`,
+`edit_field_visibility.rs`, `edit_mark.rs`, `edit_text.rs`, `invariants.rs`,
+`item_model.rs`, `project_commands.rs`, `snapshot_hashes.rs`). They took the same
+substitution; leaving them would have been leaving the suite broken.
+
+**Not touched, and named rather than implied:** `crates/kicli/src/**`,
+`crates/kicli-probe/**`, and `crates/kicli-sexpr/tests/fixtures/**`. The last is
+a deliberate exclusion, not an oversight — those are byte-fidelity fixtures for
+the s-expression parser, they belong to another crate's root and another
+crate's `MANIFEST`, and a handle means nothing to a layer that does not know
+what a schematic is.
+
+##### The checks
+
+New file `crates/kicli/tests/fixture_handles.rs`, three tests.
+
+- **`every_committed_fixture_object_answers_to_a_handle_of_its_own`** — the
+  arithmetic. Over the whole committed fixture tree: the number of distinct
+  handles equals the number of `uuid` atoms (1307 = 1307), and, as a wider
+  second assertion, equals the number of distinct identifier-shaped strings
+  *anywhere* in the tree — a sheet instance `path`, a netlist `tstamps` and an
+  ERC report's JSON all name objects, and a handle that collides there collides
+  just as badly. Every handle comes from `Uuid::short`, never from a private
+  cut, so `the_handle_has_one_name` gains no new accounted-for site.
+- **`a_fixture_object_is_addressed_by_its_handle_and_found`** — the capability.
+  For **every** identifier-carrying object of `sch/nets/nets.kicad_sch` and
+  `sch/item_zoo.kicad_sch`, the handle a view would print is handed to
+  `cli::edit::address::item` and must return that same object. Two fixtures
+  because C5's own first pass passed a single-sheet control and failed a
+  multi-sheet one.
+- **`a_handle_no_fixture_object_carries_is_refused`** — the other half of the
+  capability, so addressing succeeds because the object is there rather than
+  because the resolver accepts anything.
+
+##### Falsification
+
+Good state committed at `6ae0c21` before any break. Evidence anchored to
+`shasum` rather than to commits: the restored good state is
+`4313c4f5998142379e7917b18ac45318ac8ebaea  crates/kicli/tests/fixture_handles.rs`
+and `0d1191bcb4171ee7e336aa9506b0194dcadb1cc4  crates/kicli/tests/fixtures/sch/nets/nets.kicad_sch`,
+verified after each restore.
+
+| # | what was broken | result |
+|---|---|---|
+| 1 | Two fixture objects made to share a handle: in `nets.kicad_sch`, symbol `13000006-…-030000000004`'s leading field set to `13000005`, colliding with the pin `13000005-…-030000000005`. | **caught** by the atom assertion of `every_committed_fixture_object_…`: "1307 atoms share 1306 handles", naming both sharers. Capability test **green** — see below. |
+| 2 | Two **top-level** objects made to share a handle: wire `13000009-…-030000000008` → `13000008`, colliding with wire `13000008-…-030000000007`. | **caught by both**. The capability test reports kicli's own refusal: `13000008 names 2 objects of this sheet`. |
+| 3a | The sweep made blind — `walk` returns before reading any entry — **and every presence control removed** (the `files.len() >= 20` assertion, the `NAMED` loop, and both anti-vacuity floors). | **PASSED, green, on zero files.** This is the blind check, demonstrated rather than asserted. |
+| 3b | The identical blind `walk`, controls **restored**. | **caught**: "the fixture tree was read: 0 files under …/tests/fixtures". The contrast between 3a and 3b is what shows the control is load-bearing and not decoration. |
+| 4 | The sweep pointed at the **wrong root** — `tests/` instead of `tests/fixtures`, so the `files.len() >= 20` floor still clears. | **caught** by the `NAMED` control: `sch/nets/nets.kicad_sch was read and holds the identifiers D1 measured`. A file-count floor alone would have waved this through. |
+| 5 | **The defect itself.** The pre-D1 fixture tree (`git show 42d5201:…`) restored under the new tests, in a second directory. | **both checks caught it**: "1307 atoms share 203 handles", and the capability test carrying kicli's own words — `00000000 names 51 objects of this sheet: …`. That message is the dogfood defect verbatim. |
+
+**Break 1 left the capability test green, and that was investigated rather than
+recorded as a pass.** It is falsification-control case 1, not case 2: the two
+identifiers made to collide were a **symbol** and a **symbol pin**, and
+`address::item` searches `schematic.items` — the top-level objects — so no
+ambiguity existed in the set that check addresses. Break 2 is the control that
+tells the two cases apart: the same break made between two **top-level** wires
+turns the capability test red immediately. Case 2 was ruled out by measurement,
+not by reasoning about it.
+
+##### Environment variation — the break class the source breaks cannot reach
+
+Per the skill's own worked example (the T16 golden defect, where identifiers
+were a hash of a seed containing the checkout's absolute path), the whole suite
+was **run once from a second absolute path**: the tracked tree was extracted
+with `git archive` into
+`…/scratchpad/second-directory` and run there with `KICLI_TEST_KICAD_CLI=1`.
+
+- **599 tests pass**, the same set as in the lane worktree.
+- The fixture tree's digest is **byte-identical** in both directories, before
+  and after the run: `e363e3c5b1a5dd4675cdf522c017c644f44ddc24`.
+- Distinct handles: **1307 in both**.
+
+A committed fixture cannot depend on where the checkout is, and now that is
+measured rather than assumed.
+
+##### The oracle check
+
+Connectivity-touching, so it is owed. Identifiers are what a sheet instance path
+and a netlist `tstamps` are made of, so **KiCad was asked about the rewritten
+files rather than told about them**. With `KICLI_TEST_KICAD_CLI=1`, the whole
+workspace suite passes — including the tests that regenerate an oracle with
+`kicad-cli` and compare it to the committed bytes:
+
+- `oracles_are_current` — the geometry ERC reports, regenerated by KiCad;
+- `netlist_oracle_is_current` and `netlist_partition_matches_kicad` — `sch/nets`;
+- `the_calibration_oracle_is_current` and
+  `the_calibration_fixture_partitions_as_kicad_says` — `sch/routing`;
+- `the_calibration_fixture_is_what_the_recipe_builds`;
+- `a_canonical_file_writes_without_reformatting` and
+  `prettify_reproduces_kicad_layout` — so `canonical yes` in the `MANIFEST`
+  still holds for every record that claims it.
+
+**This is why the `MANIFEST`'s `kicad-cli` provenance still stands after a hand
+substitution**, and the `MANIFEST` now says so in a comment rather than leaving
+a reader to wonder: KiCad re-derives these bytes and agrees with them.
+
+##### Check evidence
+
+- `cargo test --test fixture_handles`: **3 passed**.
+- `cargo test --workspace`: **pass**, no test edited beyond the identifier
+  substitution.
+- `KICLI_TEST_KICAD_CLI=1 cargo test --workspace`: **pass**, 599 ok. Environment-
+  gated, so it counts as the measurement this entry owes and **not** toward done
+  — the orchestrator's merged run is what counts.
+- `cargo xtask check`: **all six gates pass** (fmt, clippy, test, doc, deny,
+  clean), in the lane worktree.
+
 **D2 — nothing read-only will tell an agent where a pin is.** The agent had to
 infer a pin offset from a label kicli itself had placed, and learned its guess
 was wrong only from a **write command's** output. Defect 6 is the same wound: a

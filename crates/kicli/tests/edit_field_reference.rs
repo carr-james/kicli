@@ -20,15 +20,15 @@ fn fixtures() -> Fixtures {
 
 /// The resistor of the child sheet, which the sheet's two placements name
 /// `R100` and `R200`.
-const RESISTOR: &str = "00000000-0000-4000-8000-03000000005c";
+const RESISTOR: &str = "1300005d-0000-4000-8000-03000000005c";
 
 /// The first placement of the child sheet.
 const CHANNEL_A: &str =
-    "/00000000-0000-4000-8000-030000000000/00000000-0000-4000-8000-03a000000001";
+    "/13000001-0000-4000-8000-030000000000/1300006c-0000-4000-8000-03a000000001";
 
 /// The second placement of the same child sheet.
 const CHANNEL_B: &str =
-    "/00000000-0000-4000-8000-030000000000/00000000-0000-4000-8000-03b000000001";
+    "/13000001-0000-4000-8000-030000000000/1300006d-0000-4000-8000-03b000000001";
 
 /// Copy the fixture project into a scratch directory and hand back the copy.
 fn scratch_copy(name: &str) -> PathBuf {
@@ -131,7 +131,7 @@ fn setting_a_reference_needs_a_path_the_symbol_is_placed_on() {
     let project = scratch_copy("edit_field_reference_unplaced");
     let file = project.join("nets_channel.kicad_sch");
     let before = std::fs::read_to_string(&file).expect("the file reads");
-    let path = SheetPath("/00000000-0000-4000-8000-030000000000/nowhere".to_owned());
+    let path = SheetPath("/13000001-0000-4000-8000-030000000000/nowhere".to_owned());
     let mut doc = read(&file);
 
     let refused = set_value(
