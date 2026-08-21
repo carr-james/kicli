@@ -13,16 +13,116 @@ fn agent_doc() -> String {
     std::fs::read_to_string(path).expect("AGENT.md sits at the root of the repository")
 }
 
+/// A heading, its level, and everything under it until the next heading of the
+/// same or a shallower level.
+struct Section<'a> {
+    level: usize,
+    title: &'a str,
+    body: String,
+}
+
+/// Split the document into sections, ignoring anything inside a fenced block.
+///
+/// The fence skipping is not decoration. `AGENT.md` prints view output inside
+/// fences, and those lines start with `#` because that is how kicli comments a
+/// view (`# scope project  sheets=3 ...`). Read naively, a view sample becomes
+/// a top-level heading and truncates the section it sits in.
+fn sections(doc: &str) -> Vec<Section<'_>> {
+    let mut found: Vec<Section<'_>> = Vec::new();
+    let mut fenced = false;
+    for line in doc.lines() {
+        if line.trim_start().starts_with("```") {
+            fenced = !fenced;
+        }
+        let heading = if fenced || !line.starts_with('#') {
+            None
+        } else {
+            let level = line.chars().take_while(|c| *c == '#').count();
+            (level <= 6 && line[level..].starts_with(' ')).then_some(level)
+        };
+        match heading {
+            Some(level) => found.push(Section {
+                level,
+                title: line[level..].trim(),
+                body: String::new(),
+            }),
+            None => {
+                // The line belongs to the open section and to every ancestor of
+                // it, so prose under a `####` subheading still counts towards
+                // the `###` command section that contains it.
+                let mut open = usize::MAX;
+                for section in found.iter_mut().rev() {
+                    if section.level >= open {
+                        continue;
+                    }
+                    section.body.push_str(line);
+                    section.body.push('\n');
+                    open = section.level;
+                    if open == 1 {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    found
+}
+
+/// The backtick-delimited spans of a heading, which is how `AGENT.md` names a
+/// command. Delimiting matters: without it a heading for `kicli wire draw-arc`
+/// would answer for `kicli wire draw`.
+fn code_spans(title: &str) -> Vec<&str> {
+    title.split('`').skip(1).step_by(2).collect()
+}
+
+/// A command is documented when a heading names it and that heading has
+/// something under it.
+///
+/// **A mention is not documentation.** This check used to assert that the
+/// command's name appeared anywhere in the file, and the whole `kicli wire
+/// draw` section could be deleted without it noticing, because `[routing]`
+/// prose elsewhere named the verb (C7).
+///
+/// "Documented" here means what `AGENT.md` already does for every command it
+/// covers: the name appears as its own backticked span in a heading, and the
+/// section that heading opens says something. A heading may name several
+/// commands — `kicli field move`, `kicli field rotate` and `kicli field
+/// justify` share one, and share a body — so the rule is one heading *per
+/// command name*, not one section per command.
 #[test]
 fn agent_doc_covers_every_command() {
     let doc = agent_doc();
+    let sections = sections(&doc);
     let command = Cli::command();
+
+    // A heading with nothing under it documents nothing. Measured on the
+    // document as it stands, the smallest real command section is `kicli sym
+    // delete` at 135 characters of body; a heading with a single sentence under
+    // it lands near 50. The floor sits between the two, so it catches a stub
+    // without demanding a word count of a genuinely terse command.
+    const SUBSTANCE: usize = 80;
 
     let mut checked = 0;
     for noun in command.get_subcommands() {
         for verb in noun.get_subcommands() {
             let name = format!("kicli {} {}", noun.get_name(), verb.get_name());
-            assert!(doc.contains(&name), "AGENT.md does not document `{name}`");
+            let heading = sections
+                .iter()
+                .find(|section| code_spans(section.title).contains(&name.as_str()));
+            let Some(section) = heading else {
+                panic!(
+                    "AGENT.md has no heading naming `{name}`. A mention in \
+                     prose is not documentation, and the name has to be its own \
+                     backticked span: give the command a heading of its own, or \
+                     add it to the backticked list of a heading it shares."
+                );
+            };
+            let substance = section.body.split_whitespace().map(str::len).sum::<usize>();
+            assert!(
+                substance >= SUBSTANCE,
+                "AGENT.md's heading for `{name}` has only {substance} characters \
+                 under it, which documents nothing"
+            );
             checked += 1;
         }
     }
@@ -174,5 +274,45 @@ fn agent_doc_states_what_the_spec_requires_it_to_state() {
     assert!(
         doc.contains("kicad-tools"),
         "the recommendation for Python users"
+    );
+}
+
+/// The `kicad-cli` wait is documented in both places it can happen.
+///
+/// `project info` and `project check` both call `cli::tools::probe`, which
+/// prints the font-cache note and then blocks on `kicad-cli --version`.
+/// `AGENT.md` described the wait under `project check` alone, so a reader who
+/// ran `project info` met a pause of up to two minutes that the document had
+/// told them nothing about (dogfood D6). One section carries the explanation
+/// and the other points at it; both have to name the tool they run.
+#[test]
+fn agent_doc_warns_about_the_kicad_cli_wait_in_both_places() {
+    let doc = agent_doc();
+    let sections = sections(&doc);
+    let body = |name: &str| {
+        sections
+            .iter()
+            .find(|section| code_spans(section.title).contains(&name))
+            .unwrap_or_else(|| panic!("AGENT.md has a section for `{name}`"))
+            .body
+            .clone()
+    };
+
+    let info = body("kicli project info");
+    assert!(
+        info.contains("kicad-cli") && info.contains("font cache"),
+        "`project info` runs kicad-cli and blocks on it exactly as \
+         `project check` does, so its section has to say so"
+    );
+
+    let check = body("kicli project check");
+    assert!(
+        check.contains("kicad-cli"),
+        "`project check` runs kicad-cli, and its section has to name it"
+    );
+    assert!(
+        check.contains("project info"),
+        "`project check`'s section defers to `project info`'s for what the note \
+         is, so it has to say where to look"
     );
 }
