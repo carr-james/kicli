@@ -1,6 +1,20 @@
 # M4 Phase 3 and the milestone close — consolidated session report
 
-**STATUS: IN PROGRESS.**
+**STATUS: INTERRUPTED, 2026-08-21 — a session limit, with three lanes live.**
+
+Two lanes merged and verified on `main`; three parked. The milestone close — the
+`cargo-mutants` run, its four counts, the mutation-run skill, and the doc-diet
+check — **was not reached and nothing about it ran**, which is correct: the exit
+criteria say it runs only after every M4 task is ticked and the gates are green.
+
+`main` is green and shippable at `a2d27b4`: six gates, corpus, and the KiCad
+oracle at **35/35 with zero tests skipped**, measured at each of the two merges
+rather than deferred.
+
+**What James and the advisor are asked for, in priority order:** a ruling on
+PROPOSED 4 (ruling 2's reversal trigger fired on its first opportunity and the
+orchestrator proceeded rather than reversing), then the five other PROPOSED
+items, then the resumption of the three parked lanes from their entries.
 
 Opened 2026-08-20. Phase 2 closed with all seventeen of its tasks merged and
 ticked; its report is `tasks/reports/M4-phase2.md` and is preserved unaltered —
@@ -480,3 +494,67 @@ for each rather than a preference. **Accepted.** The §15 reasoning is worth
 keeping: `"381mm"` and `"15000mil"` are the same length, `"30G"` was the only
 member of that parenthesis that was not, and putting `"30G"` and `"381mm"` in one
 parenthesis is precisely the juxtaposition that produced this defect.
+
+---
+
+## The stop — what holds, what is parked
+
+### Merged and verified on `main`
+
+| | |
+|---|---|
+| `b3a53d1` | the threshold ruling — 300 G = 381 mm, every gloss, one commit |
+| `a2d27b4` | the typed label shape (C3), and the reader question measured |
+| Six gates on the merged result | pass at both merges — fmt, clippy, test, doc, deny, clean |
+| `cargo test --features corpus` | pass |
+| `KICLI_TEST_KICAD_CLI=1 cargo test --features corpus` | pass, **zero tests ignored anywhere in the run** |
+| netlist oracle | **35/35**, quoted from the run |
+
+One merge conflict, resolved by the orchestrator and recorded rather than
+silently fixed: `route_labels.rs`'s `far_apart_and_named` helper. The threshold
+lane had moved the drawing to opposite corners of an A4 page and moved the label
+with it; C3 had changed the same call's API while keeping the old coordinates.
+The resolution takes **both** — C3's `LabelKind::Local` and the threshold lane's
+`("12.7", "199.39")` — because the label must sit on the source pin's own anchor
+and that anchor moved. Verified by running `route_labels` (5 passed) before the
+merge was committed, then the six gates on the result.
+
+### Parked, with state in their entries
+
+| Lane | Branch state | Where it stopped |
+|---|---|---|
+| the handle chore (C1) | 5 commits, **not merged**, REJECTed once and mid-rework | correcting the cut-list, which had the same name-blindness one level down |
+| the join (T18) | **nothing committed**, uncommitted draft | "Now the test file" — the checks do not exist |
+| the calibration gate (T20) | **nothing committed**, uncommitted draft | "Now let me generate the fixture" — the sheet was not made |
+
+Each entry in `tasks/M4.md` now carries its own parked state, the direction it
+was given, and the fact that **its base has moved** since dispatch. Per CLAUDE.md
+a parked draft is reference, not resumption: a fresh implementer starts from the
+entry, and any line adopted passes falsification as if newly written.
+
+### Not started
+
+T19, T21, T22; chores C2, C4, C7, C8; the D-series; the mutation run and the
+skill it creates; the doc-diet check; the milestone's four counts.
+
+### The finding this session produced that outlives it
+
+**The same defect appeared three times in one session, at three levels, and it is
+one shape: an instrument built from its author's vocabulary tests itself.**
+
+1. The threshold gloss survived a whole milestone of green gates because nothing
+   checks a prose number against the constant it describes — the checks swept for
+   the key's *name*.
+2. The handle sweep classified by *name* against a closed three-word list, so the
+   very defect it existed to prevent passed under a synonym. Its own falsification
+   table could not catch this, because every break in it was spelled `uuid`.
+3. The rework then hand-listed the *slice spellings* and three `std` forms passed
+   silently — the same failure one level down. The correction in flight was to
+   derive the list from `std`'s API rather than from memory.
+
+The general rule, offered for ruling rather than adopted: **a check that
+classifies rather than compares must derive its vocabulary from a source outside
+the author's head**, and its falsification must include at least one case the
+author did not choose. The C1 review brief's "plant an evasion in your scratch
+copy" directive is what surfaced (2), and is a candidate standing line for every
+review of a classifying check.
