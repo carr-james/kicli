@@ -416,6 +416,24 @@ to widen its own sanction and disclose it. *Recommendation: accept* — "any
 `agent_doc` failure naming an undocumented `kicli wire` verb or flag". A condition
 written as a test name goes stale the moment the test suite grows.
 
+**18. `crates/kicli/tests/mutation_loop.rs`'s P1/P2 assertions are blind in the
+way T21's were.** Found by T21 while fixing its own. The three P1/P2 lines there
+compare `is_canonical()` against `emit()`, both routed through one `prettify`, so
+a break in the prettifier moves claim and control together and the check cannot
+see it. T21 recorded it rather than fixing it, being another file.
+
+*Recommendation: accept as a chore, and give it the control T21 built* — compare
+against `kicad-cli sch upgrade --force` re-saving the same file in the same run.
+This is not hypothetical: T21 demonstrated a genuine P1 violation that its own
+uncorrected check passed.
+
+**19. The gate-bypass sanction needs an exit procedure for the case where its
+ending condition is met mid-lane.** Raised by T21: T22 merged into `main` while
+T21 was still running, so its last commit went through the real hook while
+earlier ones had bypassed it. The lane recorded the transition; nothing told it
+to. *Recommendation: accept* — "when the ending condition is met, say in your
+entry which commits fell either side of it."
+
 **16. C5's probe fix has a remaining half: `ROOT` and `CHILD` are constants.**
 Found by D1. C5 gave probe objects `{series:02x}{n:06x}` identifiers, but
 `crates/kicli-probe/src/drawing.rs:15,18` hold `ROOT` and `CHILD` as fixed
@@ -493,6 +511,14 @@ the check green. The lane established this as a no-op break rather than assuming
 it. *Recommendation: accept as a chore — a fixture with an all-power-pin net, or
 an all-off-sheet one under `--sheet`.* Until then the law is verified in two terms
 of three.
+
+**20. `blocked` is the least-exercised status and has no committed fixture.**
+Raised by T22's reviewer, which could not construct a live `blocked` refusal
+within budget because the router routes around small enclosures too readily. That
+difficulty is the router working as designed — but it leaves `blocked` verified by
+a unit test's mapping table rather than by a real refusal, and it is the status an
+agent most needs to trust, since it is the one that says "no route exists".
+*Recommendation: accept as a chore — a committed walled-in fixture.*
 
 **3. `falsification-control` and a one-commit brief are compatible only via
 `--amend`, which neither document mentions.** Also raised by the threshold lane.
@@ -670,6 +696,39 @@ falsification and it is worth naming, because it looks like the procedure being
 followed. The second pass pads the index generator to 1462 bytes and watches the
 check go red at budget 100: a break in the code the check watches.
 
+### The loop (T21)
+
+> **WORKFLOW NOTE:** The brief's gate-bypass sanction had no exit procedure for
+> the case where its ending condition is met *during* the lane — T22 merged into
+> `main` mid-run, so the last commit went through the real hook while earlier ones
+> had bypassed it; I recorded the transition in the entry, but a brief that says
+> "the deviation ends when X" should also say what to do when X happens before
+> hand-off. Second: the falsification-control skill's "commit the good state
+> first" rule protects source restores, but an *instrument fix made mid-
+> falsification* needs a commit before the next `git checkout --` too — the brief
+> said this explicitly and it was load-bearing, so it belongs in the skill rather
+> than in each brief.
+
+**Orchestrator, beside the quote:** the first is PROPOSED 19 and mine. The second
+is the **fifth** report this session on the same rule and the second to say it
+belongs in the skill rather than in briefs — which is now the strongest signal in
+the retrospective, since it arrived independently from five lanes.
+
+### The agent documentation's tick reviewer (T22)
+
+> **WORKFLOW NOTE:** Constructing a live `blocked` refusal for `wire connect` cost
+> significant effort with no success (the router routes around small symbol
+> enclosures too easily) — a fixture or documented recipe for a genuinely
+> walled-in point would make this claim class checkable without resorting to
+> source inspection as a fallback.
+
+**Orchestrator, beside the quote:** worth acting on, and the interesting part is
+*why* it was hard. The router being difficult to wall in is the router working —
+T12's four-way avoidance and T7's escape rule exist to make it resourceful. But it
+means `blocked` is the least-exercised of the four statuses, and the one an agent
+most needs to trust. **PROPOSED 20: a committed walled-in fixture**, so `blocked`
+can be measured rather than inferred from a unit test's mapping table.
+
 ### The fixture handles (D1)
 
 > WORKFLOW NOTE: The brief's IN list (`fixtures/sch/**`) contradicted its own list
@@ -801,6 +860,54 @@ presence controls removed **passes green on zero files**; the same blind sweep
 with the controls restored is caught, reporting *"the fixture tree was read: 0
 files"*. The contrast is the evidence — and it is the third time this session that
 a presence control has been the thing standing between a sweep and a false green.
+
+### Phase 3 merged — T18, T19, T22 (`880bfb0`), then T21 (`9de8196`)
+
+**Three tasks merged as one commit because they could not land apart.**
+`AGENT.md` is held by one lane at a time, and `agent_doc` fails the moment a wire
+verb exists undocumented — so the two implementing lanes could not make a single
+green commit until the documenting lane landed. They were **held unmerged rather
+than merged red**. The conflict itself is BLOCKED 1 above.
+
+**Merged-result gates, at both merges:**
+
+| Gate | Result |
+|---|---|
+| `cargo xtask check` | six green — fmt, clippy, test, doc, deny, clean. **No bypass**: T22's commits ran the pre-commit hook normally, and the deviation ended |
+| `cargo test --features corpus` | green, zero failures |
+| `KICLI_TEST_KICAD_CLI=1 cargo test --features corpus` | green |
+| netlist oracle | **`hierarchies matched: 35/35`**, zero ignored |
+
+**The loop (T21) is the task that justified its own billing.** It is the only M4
+check that proves the milestone rather than a task, and **no source change was
+needed** — the parts composed. Its two partitions agree exactly, both directions,
+at two levels, and the view's expectation is **derived from KiCad's own netlist**
+rather than from kicli, so it shares no ancestor with what it checks.
+
+It found two things every per-task test missed:
+
+1. **A connectivity write silences a fault that names no symbol.** Joining a
+   second pin to `SIG` makes KiCad stop reporting
+   `[isolated_pin_label] … Label 'SIG'`. The first form of the rule-check clause
+   recognised only `Symbol <ref>` items and **failed on the real run**. A check
+   watching only the pins it connected sees those go quiet and never learns the
+   *label* went quiet too.
+2. **P1's byte clause was blind — and this is the fourth blind instrument this
+   session and the third of one kind.** `doc.is_canonical()` is kicli's opinion
+   of KiCad's layout and `doc.emit()` produces that layout, **both through one
+   `prettify`**. Making kicli write every file space-indented genuinely violates
+   P1 — `round_trip.rs` fails two tests on it — and **the loop stayed green**,
+   because claim and control moved together. The control is now `kicad-cli sch
+   upgrade --force` re-saving the file in the same run, and the break fails.
+
+   Byte-identity against that re-save is **not achievable, and was measured
+   rather than assumed**: KiCad reorders every item and rewrites `(project
+   "probe")` as `(project "")`.
+
+   **`crates/kicli/tests/mutation_loop.rs` carries the same three P1/P2 lines
+   with the same blindness and no such control.** Recorded as PROPOSED 18 rather
+   than fixed, being another lane's file — which means a shipped check in this
+   repository is asserting a property it cannot see.
 
 ---
 
