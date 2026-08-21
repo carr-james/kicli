@@ -49,3 +49,5 @@ sch/item_zoo.kicad_sch 20260306 normal yes kicad-cli
 project/cycle/cycle.kicad_sch 20260306 normal no hand
 project/cycle/inner.kicad_sch 20260306 normal no hand
 text/calibration.textlength - oracle - kicad-cli
+sch/routing/calibration.kicad_sch 20260306 normal yes kicad-cli
+sch/routing/calibration.netlist - oracle - kicad-cli
