@@ -79,12 +79,19 @@ fn matches_golden(case: &str, report: &Report) {
 /// The identifiers a run generated, replaced by stable placeholders.
 ///
 /// **A golden cannot assert which identifiers a run produced.**
-/// `edit::wire::draw` derives each one by hashing a seed that starts with the
-/// file's own **absolute path**, so the values are stable inside one checkout
-/// and different in the next one. A golden that froze them would assert where
-/// the repository is rather than what the contract promises — and it would
-/// pass forever in the checkout that wrote it, which is the worst way for a
-/// check to be wrong.
+/// `edit::wire::draw` derives each one by hashing a seed built from the
+/// request and the document it lands in, so the values move whenever anything
+/// about either does. A golden that froze them would assert the derivation
+/// rather than what the contract promises, and would have to be regenerated
+/// every time a fixture gained an item.
+///
+/// The original reason was stronger and is recorded because it is how the
+/// normalisation came to exist: the seed used to start with the file's own
+/// **absolute path**, so a frozen value asserted where the repository sat and
+/// passed forever in the checkout that wrote it — the worst way for a check to
+/// be wrong. The identifier-seed chore (C8) took the absolute path out of the
+/// seed, so that particular defect can no longer happen; the normalisation
+/// stays for the reason above.
 ///
 /// What the contract promises about `added.wires` is a count, an order and a
 /// shape: one identifier per segment, in the order the segments were written.
