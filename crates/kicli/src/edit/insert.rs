@@ -157,14 +157,23 @@ mod tests {
             Path::new("/somewhere/entirely/else"),
         );
         assert_eq!(here, elsewhere, "the checkout does not reach the name");
+    }
 
+    #[test]
+    fn two_files_of_one_design_are_named_apart() {
+        // The other half of the seed's job. A name that varied by nothing would
+        // be checkout-independent too, and would derive one identifier for
+        // every sheet of a design.
         assert_ne!(
-            here,
+            document_name(
+                Path::new("/one/checkout/sheets/power.kicad_sch"),
+                Path::new("/one/checkout"),
+            ),
             document_name(
                 Path::new("/one/checkout/sheets/analog.kicad_sch"),
                 Path::new("/one/checkout"),
             ),
-            "but which file of the design still does"
+            "which file of the design still reaches the name"
         );
     }
 
