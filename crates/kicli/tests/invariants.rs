@@ -119,7 +119,7 @@ fn instance_data_for_a_placement_that_is_gone_is_caught() {
     std::fs::write(
         &child,
         text.replace(
-            "00000000-0000-4000-8000-03b000000001",
+            "1300006d-0000-4000-8000-03b000000001",
             "00000000-0000-4000-8000-0deadbeef001",
         ),
     )

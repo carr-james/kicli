@@ -11,7 +11,7 @@ use kicli_sexpr::Doc;
 use std::path::{Path, PathBuf};
 
 /// The symbol of the item fixture, and the fields it owns.
-const SYMBOL: &str = "00000000-0000-4000-8000-000000000020";
+const SYMBOL: &str = "10000010-0000-4000-8000-000000000020";
 
 /// A timestamp the test supplies, so no run reads the clock.
 const TAKEN: &str = "2026-01-02T03:04:05Z";

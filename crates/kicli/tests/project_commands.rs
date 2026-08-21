@@ -107,7 +107,7 @@ fn project_info_reports_the_tree() {
     for sheet in sheets {
         let path = sheet["path"].as_str().expect("a sheet path");
         assert!(stdout(&text).contains(path), "the text form carries {path}");
-        assert!(path.starts_with("/00000000-0000-4000-8000-050000000000"));
+        assert!(path.starts_with("/15000001-0000-4000-8000-050000000000"));
     }
     assert_eq!(sheets[0]["page"], "1");
     assert_eq!(sheets[1]["page"], "2");
