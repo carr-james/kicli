@@ -408,6 +408,24 @@ the tick under review had not merged. Small, and it cost a reviewer a
 reconciliation it should not have had to do. *Recommendation: accept, as a line in
 the review-brief pattern.*
 
+**13. `falsification-control` should carry the three-level rule the handle chore
+produced.** Its final form, assembled from the lane's own words across three
+rejections and one reviewer's extension:
+
+1. Derive the vocabulary from an enumeration nobody in the loop wrote — **and a
+   citation is not a derivation**; a grep whose pattern you authored is still your
+   vocabulary wearing a reference.
+2. **Choosing which enumerations to run is itself authorship.** A sweep must state
+   the taxonomy of mechanisms it covers and assert that the taxonomy is its
+   boundary, because an enumeration can be exhaustive within a category while the
+   category was chosen from memory.
+3. **A taxonomy of mechanisms is not enough if the matcher recognises spellings
+   rather than meanings** — which is where a textual instrument stops, and where a
+   semantic one has to start.
+
+*Recommendation: accept all three, as one section.* This is the session's densest
+finding and it was paid for three times. **Not applied** — skills change by ruling.
+
 **11. Falsification evidence should be anchored to content hashes, not commit
 SHAs.** Raised by the `AGENT.md` lane, and it resolves the third of three
 independent collisions between `falsification-control` and commit discipline
@@ -679,6 +697,54 @@ text.
 The reviewer also disclosed a methodological error of its own — its first attempt
 at row L used a rename, which still substring-matched, and it corrected the method
 rather than reporting the phantom.
+
+### The handle chore (C1) — REJECT, rejection 3. **The iteration is stopped.**
+
+**The gap:** `uuid.chars().take(0x8).collect()`. `0x8` is the literal 8 in hex —
+not behind a `const`, not runtime, not an indirect precision — and it uses
+`Iterator::take`, one of the four mechanisms the claim covers "exhaustively". The
+sweep passes with zero offenders, because `CUTS` matches the **decimal spelling**
+of each mechanism rather than the **value** 8.
+
+**The orchestrator has stopped the iteration on the instrument**, and the reason
+is not that the lane keeps missing cases:
+
+> **A textual matcher cannot decide a value.**
+
+After the radices come integer suffixes, then `take(4 + 4)`, then a `const` one
+line above the call. Three reviewers each found a genuine gap one level below the
+last, and each fix moved the boundary without changing its kind. **There is no
+fixed point**, and continuing would be iterating a test to green — the thing the
+mutation-testing rule explicitly forbids at a milestone close, for the same reason.
+
+**What the chore delivered stands.** The fold is done and all three reviewers
+confirmed it: five private copies became one, `short_key` remains separate and
+named, and the third reviewer verified each fold against the diff. The sweep is a
+**regression guard**, not the deliverable, and a guard that catches the decimal
+spelling of every std mechanism is worth having.
+
+**Final instruction to the lane: narrow the sentence, do not touch the matcher.**
+State that the check matches the decimal-spelled literal `8`; widen the disclosed
+"outside it" list by the class it has now been shown — *a width of eight not
+spelled as the decimal digit `8`* — as a class rather than three examples; and add
+`take(0x8)` to the falsification table as a **documented pass**, a negative
+control like the four already there. The lane's negative controls are what make
+its boundary statement honest, and the third reviewer verified two of them by
+hand.
+
+**The real instrument is carried into M5**: a lint over MIR, where `take(0x8)` and
+`take(8)` are the same node and a `const` is already folded. Recorded in
+`tasks/M5.md` with the three-level lesson, because M5 is a whole milestone of
+checks that classify.
+
+**The three-rejection sequence is the session's most valuable artefact and should
+be read as one thing, not three failures:**
+
+| # | Evasion | Blind to |
+|---|---|---|
+| 1 | parameter named `id`; method on a type named `Ident` | it classified by **name**, against a closed word list |
+| 2 | `format!("{:.8}", uuid)` | it enumerated **methods**; precision is not a method |
+| 3 | `chars().take(0x8)` | it matches a **spelling**, not a **value** |
 
 ---
 
