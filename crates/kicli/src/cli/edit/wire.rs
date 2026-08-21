@@ -22,19 +22,24 @@
 pub mod contract;
 
 use serde_json::json;
+use std::fmt::Write as _;
+use std::path::Path;
 
-use crate::cli::args::{DrawArgs, Global, WireVerb};
+use crate::cli::args::{ConnectArgs, DrawArgs, Global, WireVerb};
 use crate::cli::edit::{Editing, Note, code_for, code_for_snapshot, report};
 use crate::cli::exit::ExitCode;
 use crate::cli::output::{Failure, Report};
 use crate::connectivity::extract;
 use crate::edit::label::{LabelError, NewLabel, PortShape, add as add_label};
-use crate::edit::wire::{DeletedWire, DrawnWire, End, Polyline, Stranded, WireError, delete, draw};
+use crate::edit::wire::{
+    Connection, DeletedWire, DrawnWire, End, Plan, Planned, Polyline, Stranded, WireError, delete,
+    draw, draw_plan, plan,
+};
 use crate::geometry::pins::ResolvedPin;
 use crate::geometry::{Angle, Iu};
-use crate::model::LoadedFile;
 use crate::model::config::Routing;
 use crate::model::items::{LabelKind, SheetPath};
+use crate::model::{Hierarchy, LoadedFile};
 use crate::route::propose::{Proposal, label_name, walked};
 use crate::route::report::Added;
 use crate::route::{Terminal, pin_terminal};
@@ -51,6 +56,7 @@ use super::address;
 pub fn run(global: &Global, verb: &WireVerb) -> Result<Report, Failure> {
     match verb {
         WireVerb::Draw(args) => draw_wire(global, args),
+        WireVerb::Connect(args) => connect_wire(global, args),
         WireVerb::Delete { target } => delete_wire(global, target),
     }
 }
@@ -93,6 +99,189 @@ fn draw_wire(global: &Global, args: &DrawArgs) -> Result<Report, Failure> {
     let mut result = report(&mutation, Some(("wire", rendered.json)), &[]);
     result.text = format!("{}{}", rendered.text, result.text);
     Ok(result)
+}
+
+/// Route a connection between two ends, and draw it.
+///
+/// Three answers, and only one of them writes a wire. A route short enough to
+/// draw is drawn, with the junctions it needs. A route longer than
+/// `routing.label_threshold`, and a pair of ends nothing routes between, are
+/// **proposed** as a pair of labels — reported and not written, unless
+/// `--auto-labels` says to perform the proposal. A pair of ends that cannot be
+/// resolved is refused before anything is planned.
+///
+/// **The net is read back after the write, never predicted.** What the two ends
+/// are joined into is a property of the file kicli has just written, so it is
+/// taken from the written file rather than from the arithmetic that produced
+/// it.
+fn connect_wire(global: &Global, args: &ConnectArgs) -> Result<Report, Failure> {
+    let request = Connection {
+        from: args
+            .start()
+            .map_err(|why| Failure::new(ExitCode::Usage, why))?,
+        to: args
+            .finish()
+            .map_err(|why| Failure::new(ExitCode::Usage, why))?,
+    };
+
+    let mut editing = Editing::open(global)?;
+    let routing = editing.loaded.config.routing;
+    let grid = editing.place.grid();
+    let root = editing.root();
+
+    let planned = {
+        let (hierarchy, target, _) = editing.tree_parts();
+        plan(hierarchy, &request, &routing, &target).map_err(|error| refused(&error))?
+    };
+
+    if let Some(proposed) = proposed_for(&editing, &request, &planned, &routing, grid) {
+        if !args.auto_labels {
+            // A proposal is an answer rather than a failure, so it succeeds and
+            // writes nothing. The caller decides whether to perform it.
+            let mut route = proposed.proposal.report(&proposed.source, &proposed.target);
+            route.blocked_by.clone_from(&planned.blocked_by);
+            return Ok(unwritten(
+                &contract::render(&route, grid),
+                &[proposal_note()],
+            ));
+        }
+        // A proposal is performed on its two ends alone: the labels sit on
+        // stubs from the ends, and the path between them is exactly what the
+        // proposal declines to draw.
+        let ends = Polyline {
+            from: request.from.clone(),
+            to: request.to.clone(),
+            via: Vec::new(),
+        };
+        let performed = perform(&mut editing, &ends, &proposed, &routing, grid)?;
+        return Ok(joined(performed, &root, &request));
+    }
+
+    let drawn = {
+        let (hierarchy, target, taken) = editing.tree_parts();
+        draw_plan(hierarchy, &planned, &routing, &target, taken).map_err(|error| refused(&error))?
+    };
+    let rendered = contract::render(&drawn.report, grid);
+    let mut result = report(&drawn.mutation, Some(("wire", rendered.json)), &[]);
+    result.text = format!("{}{}", rendered.text, result.text);
+    Ok(joined(result, &root, &request))
+}
+
+/// Is this planned connection one kicli proposes as a pair of labels?
+///
+/// The length judged is the route the router found, and nothing when it found
+/// none — which `research/wire-routing.md` §5.5 makes the second trigger. The
+/// pair needs a name, so a connection between two ends that name no pin is
+/// never proposed: there is nothing to call it, and a connection kicli cannot
+/// name is one it draws or refuses rather than one it proposes badly.
+fn proposed_for(
+    editing: &Editing,
+    request: &Connection,
+    planned: &Plan,
+    routing: &Routing,
+    grid: Iu,
+) -> Option<Proposed> {
+    let file = &editing.loaded.hierarchy.files[editing.file];
+    let sheet = editing.place.sheet_path();
+    let source_pin = end_terminal(file, sheet, &request.from).and_then(|(_, pin)| pin);
+    let target_pin = end_terminal(file, sheet, &request.to).and_then(|(_, pin)| pin);
+    let name = name_for(editing, &request.from, source_pin.as_ref())
+        .or_else(|| name_for(editing, &request.to, target_pin.as_ref()))?;
+
+    Proposal::of(
+        &planned.source,
+        &planned.target,
+        planned.route.as_ref().map(Planned::length),
+        &name,
+        routing,
+        grid,
+    )
+    .map(|proposal| Proposed {
+        proposal,
+        source: planned.source.clone(),
+        target: planned.target.clone(),
+    })
+}
+
+/// What a caller must feel about a proposal kicli did not perform.
+fn proposal_note() -> Note {
+    Note::new(
+        "proposal",
+        "kicli drew nothing. Run the same command with --auto-labels to write \
+         the pair, or choose the path yourself with wire draw.",
+    )
+}
+
+/// The result of a command that answered without writing anything.
+///
+/// It carries the same keys a written answer does, minus the mutation's own:
+/// the noun's key, the notes, and the net — null, because nothing was joined.
+/// A caller parses one shape whichever answer it got.
+fn unwritten(rendered: &Report, notes: &[Note]) -> Report {
+    let mut text = rendered.text.clone();
+    for note in notes {
+        let _ = writeln!(text, "note: {}  {}", note.name, note.message);
+    }
+    Report {
+        text,
+        json: with_net(
+            json!({
+                "wire": rendered.json.clone(),
+                "notes": notes
+                    .iter()
+                    .map(|note| json!({ "name": note.name, "message": note.message }))
+                    .collect::<Vec<serde_json::Value>>(),
+            }),
+            None,
+        ),
+    }
+}
+
+/// The net the two ends are on now, added to a result that wrote something.
+///
+/// Read from the file on disk rather than from the tree in memory, because the
+/// claim is about what the drawing now says. A connection between two ends that
+/// name no pin has no net to report and says so with a null rather than by
+/// leaving the key out, so one parse covers both.
+fn joined(mut result: Report, root: &Path, request: &Connection) -> Report {
+    let net = joined_net(root, request);
+    if let Some(name) = &net {
+        result.text = format!("joined: net {name}\n{}", result.text);
+    }
+    result.json = with_net(result.json, net);
+    result
+}
+
+/// The net an end of the connection is on, read back from the written file.
+fn joined_net(root: &Path, request: &Connection) -> Option<String> {
+    let hierarchy = Hierarchy::load(root).ok()?;
+    let nets = extract(&hierarchy);
+    [&request.from, &request.to]
+        .into_iter()
+        .filter_map(|end| match end {
+            End::Pin(pin) => Some(pin),
+            _ => None,
+        })
+        .find_map(|pin| {
+            nets.net_of(&pin.reference.0, &pin.number)
+                .map(|net| net.name.clone())
+        })
+}
+
+/// One result, with the net it joined beside it.
+///
+/// The key is a sibling of the noun's own rather than a field inside the route
+/// contract: `crate::route::report` is frozen, and the shape
+/// [`contract`] renders is that contract. What net a connection produced is the
+/// command's answer, not the router's.
+fn with_net(mut json: serde_json::Value, net: Option<String>) -> serde_json::Value {
+    if let Some(fields) = json.as_object_mut() {
+        fields.insert(
+            "net".to_owned(),
+            net.map_or(serde_json::Value::Null, serde_json::Value::String),
+        );
+    }
+    json
 }
 
 /// A connection kicli proposes as a pair of labels, and the ends it joins.

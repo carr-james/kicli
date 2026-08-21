@@ -276,7 +276,11 @@ fn every_wire_verb_parses() {
         .filter(|(noun, _)| noun == "wire")
         .map(|(_, verb)| verb)
         .collect();
-    assert_eq!(verbs, ["draw", "delete"], "the wire noun's verbs");
+    assert_eq!(
+        verbs,
+        ["draw", "connect", "delete"],
+        "the wire noun's verbs"
+    );
 
     // Each end of a drawn wire is addressed the way that kind of end is
     // addressed everywhere else, and the parser has to build all three forms.
@@ -297,6 +301,25 @@ fn every_wire_verb_parses() {
     ] {
         assert!(help.contains(flag), "the help names {flag}: {help}");
     }
+
+    // The routed verb addresses its ends the same way and chooses the path
+    // itself, so it takes every form of an end and no `--via` at all.
+    let help = stdout(&kicli(&["wire", "connect", "--help"]));
+    for flag in [
+        "--from-pin",
+        "--from-port",
+        "--from-at",
+        "--to-pin",
+        "--to-port",
+        "--to-at",
+        "--auto-labels",
+    ] {
+        assert!(help.contains(flag), "the help names {flag}: {help}");
+    }
+    assert!(
+        !help.contains("--via"),
+        "the corners are the router's to choose: {help}"
+    );
 }
 
 /// A drawn wire needs both of its ends, and no form of one is a usage error.
