@@ -500,12 +500,14 @@ fn read_display_column(display: &str, key: &str) -> (String, Option<Detail>) {
 
 /// The name to print for an object read from a file.
 ///
-/// The file holds identifiers, so the handle is the short form of the
-/// identifier, and the field name when the key names one.
+/// The handle is the short form of the key, and the field name when the key
+/// names one. It is a key rather than an identifier because a snapshot file
+/// holds both: an object kicli cannot name is keyed by a hash of what it
+/// holds, and reading one back must not claim that hash is a KIID.
 fn handle_of_key(key: &str) -> String {
     match key.split_once('.') {
-        Some((owner, field)) => format!("{}.{field}", short(owner)),
-        None => short(key),
+        Some((owner, field)) => format!("{}.{field}", short_key(owner)),
+        None => short_key(key),
     }
 }
 
@@ -530,9 +532,16 @@ fn number_repeated_keys(objects: &mut [SnapshotObject]) {
     }
 }
 
-/// The first eight characters of an identifier.
-fn short(uuid: &str) -> String {
-    uuid.chars().take(8).collect()
+/// The first eight characters of a snapshot key.
+///
+/// Deliberately not [`Uuid::short`], and deliberately not named for one: a
+/// key is an identifier only when the object it names has one. An object
+/// kicli cannot name is keyed by a hash of what it holds, and a field is
+/// keyed by its owner and its name. Cutting those to eight characters is the
+/// same arithmetic on a different thing, and folding it into the identifier
+/// rule would make that rule's rustdoc a lie about what it governs.
+fn short_key(key: &str) -> String {
+    key.chars().take(8).collect()
 }
 
 /// Is a header value one word that names no path?
@@ -627,9 +636,10 @@ fn push_item(objects: &mut Vec<SnapshotObject>, doc: &Doc, item: &Item, path: &S
 
 /// Hash a placed symbol, then its fields.
 fn push_symbol(objects: &mut Vec<SnapshotObject>, symbol: &Symbol, path: &SheetPath) {
-    let handle = symbol
-        .reference_on(path)
-        .map_or_else(|| short(&symbol.uuid.0), |reference| reference.0.clone());
+    let handle = symbol.reference_on(path).map_or_else(
+        || symbol.uuid.short().to_owned(),
+        |reference| reference.0.clone(),
+    );
 
     let mut geometry = Encoding::new("symbol");
     geometry.point("at", symbol.at);
@@ -771,7 +781,7 @@ fn line_object(line: &Line) -> SnapshotObject {
 
     SnapshotObject {
         key: line.uuid.0.clone(),
-        handle: short(&line.uuid.0),
+        handle: line.uuid.short().to_owned(),
         geometry: geometry.finish(),
         data: Encoding::new(kind.token()).finish(),
         kind,
@@ -792,7 +802,7 @@ fn point_object(item: &PointItem, kind: &ObjectKind) -> SnapshotObject {
     SnapshotObject {
         key: item.uuid.0.clone(),
         kind: kind.clone(),
-        handle: short(&item.uuid.0),
+        handle: item.uuid.short().to_owned(),
         geometry: geometry.finish(),
         data: Encoding::new(kind.token()).finish(),
         owner: None,
@@ -821,7 +831,7 @@ fn push_label(objects: &mut Vec<SnapshotObject>, label: &Label) {
     data.text("text", &label.text);
     data.text("shape", label.shape.as_deref().unwrap_or(""));
 
-    let handle = short(&label.uuid.0);
+    let handle = label.uuid.short().to_owned();
     objects.push(SnapshotObject {
         key: label.uuid.0.clone(),
         kind,
@@ -860,7 +870,7 @@ fn text_object(text: &TextItem) -> SnapshotObject {
     SnapshotObject {
         key: text.uuid.0.clone(),
         kind,
-        handle: short(&text.uuid.0),
+        handle: text.uuid.short().to_owned(),
         geometry: geometry.finish(),
         data: data.finish(),
         owner: None,
@@ -893,7 +903,7 @@ fn push_sheet(objects: &mut Vec<SnapshotObject>, sheet: &SheetItem) {
 
     let handle = sheet
         .name()
-        .map_or_else(|| short(&sheet.uuid.0), str::to_owned);
+        .map_or_else(|| sheet.uuid.short().to_owned(), str::to_owned);
     objects.push(SnapshotObject {
         key: sheet.uuid.0.clone(),
         kind: ObjectKind::Sheet,
@@ -962,7 +972,7 @@ fn other_object(doc: &Doc, token: &str, uuid: Option<&Uuid>, node: NodeId) -> Sn
     SnapshotObject {
         key: key.clone(),
         kind: ObjectKind::Other(token.to_owned()),
-        handle: short(&key),
+        handle: short_key(&key),
         geometry: Encoding::new(token).finish(),
         data,
         owner: None,
@@ -1071,6 +1081,9 @@ mod tests {
     fn a_key_read_from_a_file_shortens_to_a_handle() {
         assert_eq!(handle_of_key("0123456789abcdef"), "01234567");
         assert_eq!(handle_of_key("0123456789abcdef.Value"), "01234567.Value");
+        // A key that is no identifier at all, which is why the shortener that
+        // cuts it is not the identifier rule.
+        assert_eq!(handle_of_key("bus_entry@f0e1d2c3"), "bus_entr");
     }
 
     #[test]

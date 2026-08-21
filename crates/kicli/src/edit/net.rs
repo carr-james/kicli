@@ -404,7 +404,7 @@ fn edits_for(hierarchy: &Hierarchy, net: &Net, from: &str) -> Vec<Edit> {
                 Item::Label(label)
                     if label.kind != LabelKind::NetclassFlag && label.text == from =>
                 {
-                    record(label.node, TEXT, What::Label, short(&label.uuid.0));
+                    record(label.node, TEXT, What::Label, label.uuid.short().to_owned());
                 }
                 Item::Sheet(sheet) => {
                     for pin in &sheet.pins {
@@ -435,7 +435,10 @@ fn reference_of(net: &Net, symbol: &Symbol) -> String {
     net.pins
         .iter()
         .find(|pin| pin.symbol == symbol.uuid)
-        .map_or_else(|| short(&symbol.uuid.0), |pin| pin.reference.0.clone())
+        .map_or_else(
+            || symbol.uuid.short().to_owned(),
+            |pin| pin.reference.0.clone(),
+        )
 }
 
 /// A sheet path one file is drawn on, for the state a change is compared to.
@@ -444,12 +447,6 @@ fn sheet_path_of(hierarchy: &Hierarchy, file: usize) -> SheetPath {
         .placements_of(file)
         .next()
         .map_or_else(|| SheetPath("/".to_owned()), |place| place.path.clone())
-}
-
-/// The first eight characters of an identifier, which is the handle a delta
-/// prints.
-fn short(uuid: &str) -> String {
-    uuid.chars().take(8).collect()
 }
 
 impl fmt::Display for Renamed {

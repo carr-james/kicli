@@ -9,7 +9,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 
 use crate::connectivity::Nets;
-use crate::model::items::{Item, LabelKind, LibId, SheetPath, Symbol};
+use crate::model::items::{Item, LabelKind, LibId, SheetPath, Symbol, Uuid};
 use crate::model::{Hierarchy, definition_of, read_library};
 
 /// What to put in a view, and what to leave out.
@@ -23,11 +23,6 @@ pub struct ViewOptions {
     pub uuids: bool,
     /// Restrict the view to one placement of one sheet.
     pub sheet: Option<SheetPath>,
-}
-
-/// The first eight characters of an identifier, which is how a view prints one.
-fn short(uuid: &str) -> &str {
-    uuid.get(..8).unwrap_or(uuid)
 }
 
 /// Sort key that orders `R2` before `R10`.
@@ -134,7 +129,7 @@ fn write_sheet(
         file.schematic.version,
     );
 
-    let mut rows: Vec<(String, String, String, String)> = Vec::new();
+    let mut rows: Vec<(String, String, String, Uuid)> = Vec::new();
     let mut power = 0;
     for symbol in file.schematic.symbols() {
         let Some(reference) = symbol.reference_on(&placement.path) else {
@@ -156,7 +151,7 @@ fn write_sheet(
                 || symbol.lib_id.symbol_name().to_owned(),
                 |found| LibId(found.name.clone()).symbol_name().to_owned(),
             ),
-            symbol.uuid.0.clone(),
+            symbol.uuid.clone(),
         ));
     }
     rows.sort_by_key(|row| natural_key(&row.0));
@@ -171,7 +166,7 @@ fn write_sheet(
     let listed = rows.len();
     for (reference, value, library_name, uuid) in rows {
         let tail = if options.uuids {
-            format!(" @{}", short(&uuid))
+            format!(" @{}", uuid.short())
         } else {
             String::new()
         };
@@ -198,7 +193,7 @@ fn write_ports(out: &mut String, hierarchy: &Hierarchy, index: usize, options: &
             .map(|pin| format!("{}({})", pin.name, port_letter(&pin.direction)))
             .collect();
         let tail = if options.uuids {
-            format!(" @{}", short(&sheet.uuid.0))
+            format!(" @{}", sheet.uuid.short())
         } else {
             String::new()
         };
@@ -216,7 +211,7 @@ fn write_ports(out: &mut String, hierarchy: &Hierarchy, index: usize, options: &
         }
         let direction = label.shape.as_deref().unwrap_or("input");
         let tail = if options.uuids {
-            format!(" @{}", short(&label.uuid.0))
+            format!(" @{}", label.uuid.short())
         } else {
             String::new()
         };
@@ -390,7 +385,7 @@ pub fn to_json(hierarchy: &Hierarchy, nets: &Nets, options: &ViewOptions) -> ser
 
 #[cfg(test)]
 mod tests {
-    use super::{natural_key, port_letter, short};
+    use super::{natural_key, port_letter};
 
     #[test]
     fn a_reference_sorts_by_its_number_and_not_its_text() {
@@ -406,11 +401,5 @@ mod tests {
         assert_eq!(port_letter("bidirectional"), 'b');
         assert_eq!(port_letter("tri_state"), 't');
         assert_eq!(port_letter("passive"), 'p');
-    }
-
-    #[test]
-    fn an_identifier_prints_as_its_first_eight_characters() {
-        assert_eq!(short("00000000-0000-4000-8000-030000000001"), "00000000");
-        assert_eq!(short("short"), "short");
     }
 }
