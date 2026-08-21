@@ -141,7 +141,7 @@ fn delete(global: &Global, target: &str) -> Result<Report, Failure> {
     Ok(report(
         &mutation,
         Some(("symbol", json!({ "uuid": edited.symbol.0 }))),
-        &[],
+        &notes_of(&edited.findings),
     ))
 }
 
