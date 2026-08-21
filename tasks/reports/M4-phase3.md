@@ -375,6 +375,39 @@ governing document* — "merge forward whenever `main` moves under you, and say 
 many times you did." Cheap, and it removes a judgement call from a lane that has
 no way to know what the orchestrator is committing.
 
+**9. The calibration gate cannot fail on a wrong weight, and the exit criteria's
+`calibration` row should say so.** Raised by the calibration gate (T20), measured
+rather than argued: both sides are costed with the same weights while the router
+optimises that objective, so **no perturbation of any weight moves either sheet
+outside ±15 %** — the fixture reads +0.0 % under every one of seven weights swept
+across four orders of magnitude.
+
+The gate is still worth having: it catches a router that disagrees with a person
+about *shape*, and it caught real defects in its own construction. But it measures
+**agreement between two costings**, not whether the weights are right, and the
+milestone's exit criteria present it as calibration.
+
+The lane also ran the sweep that **does** answer the question — router chooses
+under perturbed weights, both drawings scored under the defaults — and its result
+is the useful one: `w_near`, `w_turn`, `w_len` and `margin` are each doing work
+and the defaults sit at a local optimum, but **`w_turn = 6` is better than 0 and
+not better than 60**, and **`w_cross` and `w_text` are exercised by neither
+sheet**. The defaults are under-determined rather than wrong.
+
+*Recommendation: accept, in two parts.* Re-word the exit criteria's `calibration`
+row to say what the gate measures; and carry the perturbation sweep into M5 as the
+instrument that actually calibrates, since M5 owns the weights and inherits these
+numbers. **Not applied** — the exit criteria are the milestone's, and re-wording a
+gate at its own close is exactly the kind of thing that should be ruled rather than
+tidied.
+
+**10. A review brief must tell the reviewer to read the entry off the lane branch,
+not off `main`.** Raised by C1's second reviewer. My brief said the entry "now
+carries three sections", which is true on `lane-c1` and false on `main`, because
+the tick under review had not merged. Small, and it cost a reviewer a
+reconciliation it should not have had to do. *Recommendation: accept, as a line in
+the review-brief pattern.*
+
 **3. `falsification-control` and a one-commit brief are compatible only via
 `--amend`, which neither document mentions.** Also raised by the threshold lane.
 The skill requires the good state committed *before* any deliberate break; the
@@ -384,6 +417,70 @@ that would have had to choose which rule to break.
 
 *Recommendation: accept — one line in the skill.* **Not applied**, same reason as
 2: skills are changed by ruling.
+
+### The calibration gate (T20) — merged `1af87e5`
+
+Lane `lane-t20`, base `491c254` after its own fast-forward, three commits, merged
+no-ff. **Scope verification:** five files, no `crates/kicli/src/**` change at all,
+and the only hotspot touched is `crates/kicli/tests/fixtures/MANIFEST`, which this
+lane was explicitly granted. **No reversal trigger.** Six gates green on the
+merged result.
+
+**The headline.**
+
+| Sheet | Deviation | Inside 15 %? | Skipped pins |
+|---|---|---|---|
+| `calibration.kicad_sch` — the purpose-built fixture, 82 pins, 40 strands, 74 segments | **+0.0 %** | yes | 2 / 82 |
+| `ampli_ht` — the tidy hand-drawn demo sheet | **+1.1 %** | yes | 7 / 87 |
+
+**No weight moved**, per the milestone's Rules.
+
+**Both T7 rulings reported, as their entries require whatever the deviation.**
+Re-routed segments inside the border region: **0** on both — and the person's own
+wires as a control, also 0, which is what makes the zero informative. Re-routed
+segments within 1 G of a bus entry: **0**. `ampli_ht` has no bus entries at all,
+so the lane **built a bus and two entries into the fixture** to give the question
+something to ask rather than reporting a vacuous zero.
+
+**And now the finding, which is worth more than the gate.**
+
+> **This gate measures agreement, not calibration.**
+
+Both sides are costed with the same weights **while the router optimises exactly
+that objective**. So no perturbation of any weight moves either sheet outside
+±15 % — the lane swept `w_near` 0→20000, `w_turn` 0→10000, `w_cross` 1→100000,
+`w_len`, `w_text`, `margin`, `u_max`, and **the fixture reads +0.0 % under every
+one of them**. A gate that cannot fail on a wrong weight is not measuring the
+weights.
+
+The lane did not stop at the criticism. It ran **the sweep that does answer the
+question** — the router chooses under perturbed weights, then both drawings are
+scored under the defaults — and recorded its numbers: `w_near`, `w_turn`, `w_len`
+and `margin` are each shown to be doing work and the defaults sit at a local
+optimum; but **`w_turn = 6` is confirmed better than 0 and *not* better than 60**,
+and **`w_cross` and `w_text` are unexercised by either sheet**. That is real
+calibration information, and it says the current defaults are under-determined
+rather than wrong.
+
+This bears directly on the milestone exit criteria's `calibration` row, and on M5,
+which inherits these weights. Recorded as PROPOSED 9.
+
+**A claim withdrawn under its own control, before commit.** The lane's first
+run-order break reversed the pin list *after* `pins_of` had sorted it, the report
+rows re-ordered, and it wrote that up as a defect. It then reversed the **file's**
+object order — the variation that actually happens — and nothing changed. The
+break had been breaking the sort, not varying the environment. The comment
+claiming a defect was rewritten before the commit rather than left standing with a
+correction. Worth recording because the discipline usually catches a check that is
+too weak; this is it catching a finding that was too strong.
+
+**Falsification, including the one the brief most wanted.** The tolerance fails on
+both the +15 % and the −15 % side, on both sheets, from separate breaks — a
+two-sided tolerance tested one-sided is half a check. The costing-symmetry break —
+costing the original against the full sheet — **fails, but by the skip guard
+rather than by the tolerance**: the strands become uncostable rather than
+mis-priced, 82/82 and 67/87 skipped. So the tolerance alone would not have caught
+a broken symmetry, and a reader needs to know which assertion is load-bearing.
 
 ---
 
@@ -443,12 +540,127 @@ from the brief's explicit instruction to plant an evasion — a directive worth
 carrying into future review briefs for any check that classifies rather than
 compares.
 
+### The handle chore (C1) — REJECT, rejection 2 of 2. **ESCALATED.**
+
+**Per CLAUDE.md's tick-review rule, two rejections on one item escalate to a
+PROPOSED item in the session report.** This is that escalation. Work continues on
+the recommendation below; the escalation is a reporting obligation, not a stop.
+
+**The gap:** `format!("{:.8}", uuid)`. The reviewer planted
+`pub fn short(uuid: &str) -> String { format!("{:.8}", uuid) }` in a verified
+byte-identical scratch copy and ran the sweep: **both tests passed, zero offenders
+found.** It is a complete second copy of `Uuid::short`'s behaviour.
+
+**Why it is not covered by the entry's disclosed limitations.** Those name a
+`const`-hidden width, a runtime width, a counter loop, and "a macro that expands
+to a cut". `{:.8}` is none of them: the width is right there in the text, and it is
+`core::fmt` precision truncation — **as std-offered as `chars().take(8)`**, and an
+idiomatic way an engineer would really write a UUID shortener.
+
+**And this is the lane's own finding, one level further down again.** The lane
+established that "the derivation must bottom out in an enumeration nobody in the
+loop wrote". Its derivation *does* bottom out in std — but in **three method
+lists**, and choosing which three lists to enumerate was the lane's own judgement.
+**The vocabulary moved outside the author's head; the taxonomy did not.**
+
+That is now the fifth occurrence of this shape in one session, and the fourth
+distinct level:
+
+| # | Level | What was the author's |
+|---|---|---|
+| 1 | prose | nothing compared the gloss to the constant |
+| 2 | the word list | `["uuid", "kiid", "identifier"]` |
+| 3 | the grep pattern | a hand-written alternation, citing std |
+| 4 | the method lists | derived from std — but which lists, chosen by hand |
+| 5 | *(open)* | whatever bounds the taxonomy |
+
+*Recommendation, sent to the lane: fix the claim, not only the instrument.* Cover
+`core::fmt` precision, derived from the format-specifier grammar rather than from
+memory — **and restate the claim to name the taxonomy it covers and say that the
+taxonomy is the boundary.** "In any spelling the standard library offers" is wider
+than any grep can be, and the entry currently repeats the very defect the chore
+exists to correct. The lane was told explicitly that **a claim naming its own
+boundary honestly is a finished chore**, and that if it finds a fifth mechanism it
+cannot enumerate, it should say so and stop rather than earn a third rejection.
+
+**What the review confirmed and is not in question:** the derivation commands are
+mechanically re-runnable and match the methodology; the reason-length control
+genuinely bites; **row L is genuine** — deleting `short_key` and inlining its
+callers fails the sweep, so the fold the chore forbids is actually refused; all
+five source folds match the entry; the `tasks/M4.md` diff touches no other lane's
+text.
+
+The reviewer also disclosed a methodological error of its own — its first attempt
+at row L used a rename, which still substring-matched, and it corrected the method
+rather than reporting the phantom.
+
 ---
 
 ## BLOCKED items
 
-*(none open at the time of writing — PROPOSED 4 is a ruling request rather than a
-block: work continues on the recommendation and is cheap to reverse)*
+### BLOCKED 1 — the pre-commit gate and a lane that cannot be green until another lane lands
+
+**Raised by the join (T18), parked and reported rather than resolved, which is the
+rule working.**
+
+`ENGINEERING.md` requires that **`cargo xtask check` pass at every commit**, and
+CLAUDE.md records that the gates run as a git pre-commit hook. `AGENT.md` belongs
+to one designated lane at a time, and `agent_doc_covers_every_command` fails the
+moment `kicli wire connect` exists and is undocumented. So the lane that
+implements the verb **cannot make a single commit** until the lane that owns
+`AGENT.md` has documented a verb that does not yet exist.
+
+T18 committed with `-c core.hooksPath=/dev/null` and **disclosed it as a lane-wide
+deviation in its entry**, which is the honest handling of an impossible
+instruction. T19 inherits the same situation and was given the same sanction under
+four conditions: run the gates by hand before every commit and record the result;
+**the only permitted failure is `agent_doc_covers_every_command` naming a `kicli
+wire` verb**; do not weaken the check; state the bypass in the entry with the
+condition under which it ends.
+
+**Both readings, since CLAUDE.md forbids resolving a governing-document conflict by
+precedence:**
+
+- *The gate means every commit, including a lane branch's.* Then the only lawful
+  order is that documentation precedes implementation — `AGENT.md` describes a
+  verb the binary does not have, which `agent_doc`'s sibling checks are designed
+  to catch, so this reading forbids something else instead.
+- *The gate means every commit that reaches `main`.* Then a lane branch may be
+  transiently red, the merge must be green, and the bypass is legitimate but
+  should be **sanctioned in writing** rather than re-decided by each implementer.
+
+**Recommendation: the second reading, written down.** The session already works to
+it — nothing merges until it is green, and the merged-result gates are run at every
+merge, corpus included. What is missing is the sentence saying so, which is why two
+lanes have now had to invent the same deviation independently.
+
+**Nothing waits on this ruling.** The session avoids the conflict by sequencing:
+**T18 and T19 will not be merged until the documentation lands**, so `main` is
+never red. The cost of the other reading is a re-ordering of two dispatches.
+
+### BLOCKED 2 — the joined net has no unfrozen home
+
+Also raised by the join (T18). The verb must report **which net it joined** — the
+entry's own check requires that the report's claimed net be the extractor's net.
+The natural home for that field is the route contract, `crates/kicli/src/route/report.rs`,
+which is **on the frozen surface**.
+
+T18 kept that file's diff at exactly zero and reported the joined net as a
+top-level key **beside** the contract instead. T19 was told to follow the same
+shape, so that one awkward-but-consistent surface exists rather than two.
+
+**Recommendation: lift the freeze for exactly this field, with `spec/SPEC.md` §8
+amended in the same commit and the freeze restored in that commit.** That is not a
+novel procedure — it is precisely what was done once before, by advisor ruling, when
+the contract gained the structured `adjusted` field, and the precedent is recorded
+in `.claude/hooks/frozen-paths.txt` itself.
+
+The alternative — leaving the net as a sibling key permanently — is defensible, but
+it means the route contract does not describe the whole of a route's result, and
+M5's linter reads that contract.
+
+*(PROPOSED 4 is a ruling request rather than a block: work continues on the
+recommendation and is cheap to reverse.)*
 
 ---
 
@@ -540,6 +752,57 @@ one-shot command sequence, which silently assumes the base stops moving. With
 four lanes live and the orchestrator committing the record per tick, it does not.
 Filed as PROPOSED 8.
 
+### The join (T18)
+
+> **WORKFLOW NOTE:** The brief named the checks but not where `wire connect`
+> should report the net it joined — and the obvious home, the route contract, is
+> frozen, so the task cannot be completed as specified without either a freeze
+> ruling or an invented sibling key; a brief that owes a new output field should
+> say which surface it lands on. Second, a lane whose only expected gate failure is
+> `agent_doc` cannot commit at all under the pre-commit hook, so "commit the good
+> state before you break anything" and "the gates run as a git pre-commit hook" are
+> in direct conflict for this lane; the bypass should be sanctioned in the brief
+> rather than left for each implementer to decide and disclose.
+
+**Orchestrator, beside the quote:** both halves are correct, both are my defects,
+and both are now BLOCKED items above rather than absorbed. The first is the
+sharper one — I wrote a check requiring the report to name the joined net without
+noticing that the only sensible place to put it is frozen. The lane did the right
+thing twice over: it kept `route/report.rs` at a zero diff and reported the field
+beside the contract, then filed the question rather than deciding it.
+
+The second is worse in a quiet way. **Two lanes independently invented the same
+hook bypass and each disclosed it**, which means the process was relying on
+implementer conscience to cover a hole in its own rules. That it worked is not
+evidence that it was safe.
+
+### The calibration gate (T20)
+
+> **WORKFLOW NOTE:** The resume brief asserted state ("the sheet is still to
+> make") from a PARKED note written before the lane's last actions, and the
+> brief's `git stash push -u` / `merge --ff-only` / `stash pop` recipe was correct
+> and should be the standard opener for every resumed lane. Second: the
+> falsification list says "perturb a weight so the total lands outside ±15 %" — on
+> this gate no weight can, because the procedure scores both sides with the weights
+> the router optimises under, so a lane following that instruction literally will
+> either report failure or manufacture a break; the instruction needs an escape
+> hatch that says "if no weight can move it, that is the finding".
+
+**Orchestrator, beside the quote, and the correction belongs here rather than
+folded into it:** the stale PARKED note is mine. I wrote "the purpose-built sheet
+was not made" from the lane's last visible words at the interruption, and the lane
+had in fact already built the fixture, both checks, the oracle and the ruling
+reports. **A parked-state note written from an agent's last utterance is a guess
+about a context I could not see**, and I recorded it in the entry with the same
+confidence as a measurement. The correction is now in the entry beside it.
+
+The second half is the better lesson and it generalises past this gate: **an
+instruction to "break it until it fails" presumes the check can fail in that
+dimension.** When it cannot, a literal reading pushes a lane toward manufacturing
+a break — which would have destroyed exactly the finding that makes this task
+valuable. The escape hatch the note asks for is what turned an impossible
+instruction into PROPOSED 9.
+
 ### The handle chore's tick reviewer (C1)
 
 > **WORKFLOW NOTE:** Inputs were complete and the task's point (d) directive to
@@ -556,6 +819,22 @@ because a sweep that *classifies* is a different risk from a check that
 review this milestone whose decisive finding came from making the instrument
 fail rather than from reading the diff. Carried into the retrospective as a
 candidate standing line for review briefs.
+
+### The handle chore's second tick reviewer (C1)
+
+> **WORKFLOW NOTE:** Inputs were complete and accurate (entry heading located
+> correctly, diff reproducible via `git diff main...lane-c1`, merge-base equalled
+> `main`'s tip so `...` and `..` diffs agreed). One friction: the task said "the
+> entry now carries three sections," but `tasks/M4.md` on `main` only has two
+> (`Done` was superseded/removed by the PARKED-era merge and the third,
+> `Reworked`, section only exists on `lane-c1` itself, not yet merged to `main`)
+> — reviewers should be told explicitly to read the entry off the lane branch tip,
+> not off `main`, when the tick under review hasn't merged yet.
+
+**Orchestrator, beside the quote:** correct, mine, and filed as PROPOSED 10. I
+described the entry as it exists on the branch while pointing the reviewer at a
+path that resolves against the checkout. For an unmerged tick those are different
+documents, and the reviewer had to work out which one I meant.
 
 ### The threshold ruling lane, continued
 

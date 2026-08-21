@@ -258,6 +258,15 @@ fn as_text(
 ///
 /// A warning belongs beside the count it is about, not in a section of its own
 /// at the end where a reader who has the number already has stopped.
+///
+/// **This is every net of the whole project**, power nets and single-pin
+/// unconnected nets included. It is deliberately a larger number than the
+/// `nets=` the connectivity view prints, which counts only the nets it lists:
+/// that view tallies one-pin unconnected nets as `N pin(s) join nothing`
+/// instead of listing them, and omits any net with no pin it is showing.
+/// `tests/net_counts_reconcile.rs` holds the two to that relationship, and
+/// `AGENT.md` says the same thing beside both numbers, because a reader who has
+/// one of them is not reading the other.
 fn write_nets(text: &mut String, nets: &Nets) {
     let _ = writeln!(text, "  nets       {}", nets.nets().len());
     for warning in nets.warnings() {
