@@ -1600,3 +1600,74 @@ outright: if that happens, **the named check wins over the file list**, and the
 lane reports the excess in its first paragraph. That is PROPOSED 5 being applied
 in practice while it waits for a ruling — cheap to reverse, and it removes a
 choice no lane should have to make twice.
+
+
+---
+
+## The doc-diet check
+
+**The test applied**, from the goal: *any rule now executably enforced whose prose
+can shrink to a pointer.* Its authority is `ENGINEERING.md` §"Rules earn their
+place" — *"the binding set stays small enough to read in full at the start of
+every session, and that property outranks completeness."*
+
+### Result: almost nothing shrinks, and the reason is a good one
+
+Rules with workspace-reading twins today: `the_handle_has_one_name`,
+`the_label_threshold_has_one_name`, `the_four_way_rule_has_one_home`,
+`the_router_holds_no_floating_point`, `the_router_iterates_no_hash_map`,
+`probe_harness_has_one_home`, `probe_crate_is_dev_only`,
+`net_rules_are_written_down`, `fixtures_match_manifest`, `fixture_handles`,
+`net_counts_reconcile`, and the three `agent_doc` checks.
+
+**Every one of them is already referenced in pointer form**, not restated:
+
+- `spec/SPEC.md` §15 — *"duplicating it is a bug, and a test over the sources
+  holds that"* — one clause, naming the enforcement without repeating the rule.
+  This is the model form.
+- `CLAUDE.md` — *"The frozen surface is enforced by a PreToolUse hook over
+  `.claude/hooks/frozen-paths.txt`"* — two lines.
+- M4's exit-criteria table — fourteen rows, each a gate name and one assertion.
+- M4's Rules — *"Constitution §4: the router holds no floating point … The rule
+  has an executable twin in T8."*
+
+So the diet was already being kept. `ENGINEERING.md`'s rule has been enforced
+since it was written, which is why the check finds so little: **the discipline
+worked, and the honest report of a check that finds nothing is that it found
+nothing** — the same standard C2 was held to this session.
+
+### Three things it did find
+
+**1. One genuine duplication.** `CLAUDE.md`'s Tick review section restates the
+reviewer's three questions verbatim from `.claude/agents/tick-reviewer.md`, where
+the agentic-layer rule says role-scoped rules live. *Recommendation: shrink to the
+cross-agent half* — no task is ticked by its implementer; the reviewer gets the
+entry and the diff, never the narrative; two rejections escalate; the verdict is
+recorded beside the tick — **and point at the definition for the questions.**
+Saves four lines and removes a copy that can drift from its original.
+
+**2. The largest cross-agent rule has no executable twin at all.** Worktree
+currency and the manual-flow ruling now occupy **24 lines** of `CLAUDE.md`, and
+nothing mechanical enforces any of it. It is held up by lane discipline and
+orchestrator attention.
+
+`ENGINEERING.md` says a rule that matters *wants* an executable twin, and this is
+the rule that most matters — three saves in three dispatches when it was
+introduced, and this session every lane's base moved under it, one six times.
+**This is the opposite of a diet finding: it is prose doing a job prose is bad
+at.** *Recommendation: a check that a lane branch's merge-base is an ancestor of
+`main` before a merge is accepted, so the orchestrator's scope-verification step
+gains a twin.*
+
+**3. The set is growing, and `falsification-control` fastest.** It stands at
+**198 lines**, and this session's PROPOSED items would add four more sections
+(7, 11, 13, 15, 17, 22). `CLAUDE.md` gained 25 lines today.
+
+That growth is *earned* — each addition is a paid-for incident — but
+`ENGINEERING.md`'s constraint is explicit that the binding set's readability
+outranks its completeness, and a skill nobody finishes reading enforces nothing.
+*Recommendation for the advisor's triage: take the four new
+`falsification-control` items as one restructuring rather than four appends.*
+They are one idea at four levels — **an instrument is blind in the dimension its
+author was not thinking in** — and stating it once with four worked examples is
+shorter than four rules, and truer.
