@@ -349,6 +349,89 @@ placement still uses it, and goes if none does", and the report says neither.
 **Chore**: say which. The doc raising the question is what makes the silence a
 defect.
 
+#### D5 — Done, 2026-08-21
+
+**The mechanism the codebase already had.** `delete_symbol` returned
+`Edited { symbol, findings }` with `findings: Vec::new()`, and every other
+`sym` verb renders its findings through `notes_of` into `note: <name>  <text>`
+and the JSON `notes` array. The fork now returns exactly one of two new
+`Finding` variants — `DefinitionKept` and `DefinitionRemoved` — and
+`cli/edit/symbol.rs`'s `delete` passes `&notes_of(&edited.findings)` where it
+passed `&[]`. No parallel channel was invented, and no new output key exists:
+`notes` is the key `AGENT.md:659` already documents. One short line, per
+Constitution §6; both output forms, per §8.
+
+**Deliberate: the degenerate third case reports `DefinitionRemoved`, not a
+third variant.** A sheet that embeds no definition under the key takes the
+`!still_drawn` branch and removes nothing. The finding states the outcome — no
+definition for that key remains on the sheet — which is true whether one was
+removed or none was there. A third variant would be untested surface, since a
+fixture for it would have to be built and `tests/fixtures/` was held by another
+lane this session. Recorded in `delete_symbol`'s doc comment.
+
+**The checks, derived from the defect rather than from the entry.**
+`crates/kicli/tests/edit_symbol_delete_definition.rs`, three checks, all through
+the compiled binary. `sch/nets/nets.kicad_sch` draws `Test:GND` through exactly
+two placements, `#PWR01` and `#PWR02`, so deleting them in order gives the kept
+arm and then the gone arm off one committed fixture. Each arm asserts the file
+as well as the sentence — `embeds_definition()` greps the written sheet — so the
+note is a report of what happened and not a constant. A third check pins the
+fixture shape, because two arms are only two arms while that definition has two
+placements.
+
+Observed, `kicli --project <scratch> sym delete`, both arms in both forms:
+
+```
+- S #PWR01 GND Test:GND
+checked: every invariant passed
+note: definition-kept  another placement still draws Test:GND, so its embedded definition stays
+
+- S #PWR02 GND Test:GND
+checked: every invariant passed
+note: definition-removed  no placement draws Test:GND now, so its embedded definition is gone
+```
+
+```json
+[{"name": "definition-kept", "message": "another placement still draws Test:GND, so its embedded definition stays"}]
+[{"name": "definition-removed", "message": "no placement draws Test:GND now, so its embedded definition is gone"}]
+```
+
+**Falsification, per `.claude/skills/falsification-control/`.** The good state
+was committed first, and each break is anchored to the `shasum` of the file it
+broke rather than to a commit SHA. Good state:
+`6653ef1cf14bd865cda842ce3404851bc5b26242  crates/kicli/src/edit/symbol.rs`,
+`9dbddbd75f58a0a1f78f24d1c3c6144d9529b01e  crates/kicli/src/cli/edit/symbol.rs`,
+`c03c20697cfc3a39cafacad5dc73a4ad84fdfbc0  crates/kicli/tests/edit_symbol_delete_definition.rs`
+— all three green, and all three restored to those hashes afterwards.
+
+| Break | Broken file `shasum` | Result |
+|---|---|---|
+| Report the opposite fork, removal left correct | `91e6c41d…` (`edit/symbol.rs`) | both checks FAIL at arm one (lines 126, 163) |
+| **Anti-vacuity A**: always report `DefinitionKept` | `8d21a64c…` (`edit/symbol.rs`) | both checks FAIL at **arm two** (lines 141, 180); `left: ["definition-kept"] right: ["definition-removed"]` |
+| **Anti-vacuity B**: always report `DefinitionRemoved` | `55f56e5e…` (`edit/symbol.rs`) | both checks FAIL at **arm one**; `left: ["definition-removed"] right: ["definition-kept"]` |
+| CLI wiring reverted to `&[]` | `2855434b…` (`cli/edit/symbol.rs`) | both checks FAIL; `left: [] right: ["definition-kept"]` |
+| Fixture guard pointed at `Test:R` | — | guard FAILS, `left: 19 right: 2` |
+
+The two anti-vacuity controls are the pair that matters: A fails only the gone
+arm and B fails only the kept arm, so **no constant answer passes both**. The
+first break alone would not have shown that, because a check that panics at arm
+one never reaches arm two — which is why B is recorded separately rather than
+treated as the same break inverted.
+
+**`cargo xtask check`: all six gates pass** in the lane worktree (fmt, clippy,
+test, doc, deny, clean), and again through the pre-commit hook. **No golden
+moved** — no golden covers `sym delete`, and the gate confirms it.
+
+**Owed, not done: `AGENT.md`.** Constitution §8 requires agent docs to move with
+a command-surface change in the same change. This adds no noun, verb or flag —
+it fills the documented `notes` array — so the §8 trigger is arguable, but the
+`sym delete` section at `AGENT.md:358-365` states the fork and should now add
+that the report names which way it went. `AGENT.md` was **out of this lane's
+scope by the brief**, held by another lane this session, so this is reported as
+work owed rather than done. **PROPOSED: a one-line addition to the `sym delete`
+section.** Recommendation: fold into whichever lane next holds `AGENT.md`; it is
+one sentence and needs no measurement.
+
 **D6 — the font-cache note fires where the document implies it should not.** Two
 questions, and the agent was right to separate them. The **documentation** half
 is a chore: `AGENT.md` describes the warm-up under `project check` only, while
