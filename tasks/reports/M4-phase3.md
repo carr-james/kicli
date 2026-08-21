@@ -416,6 +416,21 @@ to widen its own sanction and disclose it. *Recommendation: accept* — "any
 `agent_doc` failure naming an undocumented `kicli wire` verb or flag". A condition
 written as a test name goes stale the moment the test suite grows.
 
+**16. C5's probe fix has a remaining half: `ROOT` and `CHILD` are constants.**
+Found by D1. C5 gave probe objects `{series:02x}{n:06x}` identifiers, but
+`crates/kicli-probe/src/drawing.rs:15,18` hold `ROOT` and `CHILD` as fixed
+constants that never received it. So a probe drawing **with a child sheet** gives
+two objects the handle `00000000` — a collision inside a single drawing, which is
+precisely what C5 set out to remove. *Recommendation: accept as a chore.* Small,
+mechanical, and it will bite the first verb that addresses a child sheet by
+handle.
+
+**17. `falsification-control` should show how to do the second-directory run.**
+Raised by D1: the environment-variation rule promoted this session says a test
+"runs once from a second directory", without saying how, and inside a git worktree
+the only clean way is `git archive` into a scratch path. Every lane that hits the
+rule re-derives this. *Recommendation: accept — one worked example line.*
+
 **15. `falsification-control` should name a third shape of blind instrument: a
 control that shares an ancestor with what it controls.** Raised by T19, and it is
 distinct from the two the skill already knows.
@@ -655,6 +670,27 @@ falsification and it is worth naming, because it looks like the procedure being
 followed. The second pass pads the index generator to 1462 bytes and watches the
 check go red at budget 100: a break in the code the check watches.
 
+### The fixture handles (D1)
+
+> WORKFLOW NOTE: The brief's IN list (`fixtures/sch/**`) contradicted its own list
+> of goldens expected to move (`project_info_*` is driven by `fixtures/project/**`,
+> which has no file under `sch/`); the "check wins" clause resolved it, but a brief
+> whose two halves disagree spends lane time on the brief. Second: the brief said
+> "run the suite once from a second directory" without saying how, and in a
+> worktree the only clean way is `git archive` into a scratch path — a one-line
+> worked example in `falsification-control` would save every lane that hits the
+> environment-variation rule from re-deriving it.
+
+**Orchestrator, beside the quote:** the first is mine and it is the **fourth**
+brief this session whose scope list disagreed with its own goal state. The
+standing "check wins" clause — added after the second — did its job here, and this
+is the evidence it was worth adding: the lane resolved it in a paragraph instead of
+a dispatch. But four occurrences says the clause treats a symptom. The cause is
+that I derive scope lists by hand from entries and my hand is the unreliable part;
+PROPOSED 5 should be read with that in mind.
+
+The second is PROPOSED 17.
+
 ### The join, part two (T19) — complete on `lane-t19`, held unmerged
 
 Base `bdc7863` (the tip of T18, not `main`), `main` merged forward twice, three
@@ -720,6 +756,51 @@ file — 10 passed, none skipped. Inverting the oracle clause fails **only** wit
 the variable set. Second-directory run: 10 passed, and identifiers genuinely
 differ across paths (`9dafbd15…` vs `2023ad0a…`), so the hazard is real and the
 checks are insensitive to it, which is the property wanted.
+
+### The fixture handles (D1) — merged, and the netlist oracle survives it
+
+The second half of C5, which fixed the probe crate and **named the fixtures as a
+known second half rather than sweeping them in silently**. This run is that half
+arriving with a cost: the dogfood agent could not use `--uuids` at all and fell
+back to reading handles out of write-command reports.
+
+**Measured before anything moved, and C5's number verified rather than
+inherited:**
+
+| Scope | Identifiers | Distinct handles |
+|---|---|---|
+| whole `fixtures/` tree, before | 1307 | **203** |
+| whole `fixtures/` tree, after | 1307 | **1307** |
+
+Of the 354 atoms under `sch/`, **203 were already distinct** — they are in the
+calibration fixture built today by the post-C5 probe, so C5's fix is visible in a
+committed artefact. The other **151 across nine files all shared `00000000`**,
+which is C5's number exactly.
+
+**Four goldens of eleven moved**, each line a leading-field substitution and
+nothing else. **All five `wire_contract_*` did not** — `without_generated_
+identifiers` absorbed exactly the churn it was built for. That is the T16 merge
+failure not happening again, and it is the first time that fix has been tested by
+an unrelated change.
+
+**Netlist oracle re-run on the merged result: `hierarchies matched: 35/35`, zero
+ignored.** KiCad re-derives its netlists and ERC reports from rewritten fixtures
+and agrees — which is what makes a 1104-identifier remap safe rather than merely
+green.
+
+**A finding reported rather than refreshed.** Remapping the calibration fixture's
+root broke the check that byte-compares it against what the probe recipe builds,
+because the root is a probe-crate constant outside the lane's scope. The lane
+reverted that one object rather than editing out of scope or refreshing the check.
+**PROPOSED 16:** `ROOT` and `CHILD` never received C5's per-series numbering, so a
+probe drawing **with a child sheet** still gives two objects the handle
+`00000000` — a collision *inside one drawing*, and C5's genuinely remaining half.
+
+**The falsification pair that matters is 3a against 3b.** A blind sweep with its
+presence controls removed **passes green on zero files**; the same blind sweep
+with the controls restored is caught, reporting *"the fixture tree was read: 0
+files"*. The contrast is the evidence — and it is the third time this session that
+a presence control has been the thing standing between a sweep and a false green.
 
 ---
 
