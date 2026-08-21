@@ -319,11 +319,11 @@ something outside the score, the shared key wins and is named here — see
   connections should be explicit where possible — hence a *threshold*, not a
   ban).
 - **Detect**: a net whose wire path's bounding-box diagonal ≥ `label_threshold`
-  (default 30 G ≈ 381 mm, i.e. more than a sheet width) and which carries no
+  (default 300 G = 381 mm, i.e. more than a sheet width) and which carries no
   label.
 - **Interaction with R9**: this threshold is the same one the router uses to
   decide "emit paired net labels instead of a wire". They must be one knob.
-- **Knob**: `routing.label_threshold = "30G"` — the key the router reads, and
+- **Knob**: `routing.label_threshold = "300G"` — the key the router reads, and
   the only one. C14 resolved this rule's threshold and the router's into one
   key; `spec/SPEC.md` §15 carries it, and neither side may grow one of its own.
 

@@ -80,11 +80,16 @@ fn named_symbol() -> String {
 ///
 /// `U1.1` is the top pin of the lower symbol and leaves upwards. `U2.2` is the
 /// bottom pin of the upper symbol and leaves downwards.
+///
+/// **The default is 381.00 mm, so the two ends sit in opposite corners of the
+/// A4 page the probe draws on.** Nothing shorter would be over it: the drawing
+/// has to genuinely straddle the boundary for this to be a check on the
+/// documented default rather than on a knob the check set for itself.
 fn far_apart(name: &str) -> Probe {
     let mut probe = Probe::new(name, scratch());
     probe.define(named_symbol());
-    probe.place("U", "U1", ("50.8", "105.41"), &["1", "2"]);
-    probe.place("U", "U2", ("152.4", "76.2"), &["1", "2"]);
+    probe.place("U", "U1", ("12.7", "203.2"), &["1", "2"]);
+    probe.place("U", "U2", ("285.75", "6.35"), &["1", "2"]);
     probe
 }
 
@@ -95,7 +100,11 @@ fn far_apart(name: &str) -> Probe {
 /// measured on no drawing at all.
 fn far_apart_and_named(name: &str, net: &str) -> Probe {
     let mut probe = far_apart(name);
-    probe.label_of_kind("label", "", net, ("50.8", "101.6"));
+    probe.label_of_kind(
+        kicli_probe::drawing::LabelKind::Local,
+        net,
+        ("12.7", "199.39"),
+    );
     probe
 }
 
@@ -264,7 +273,7 @@ fn a_long_route_is_proposed_as_labels_and_not_drawn() {
     let (routed, approach) = route(&hierarchy, &source, &target, &weights);
     assert_eq!(routed.status, Status::Routed, "{:?}", routed.blocked_by);
     let length = routed.length(GRID);
-    assert_eq!(length, Iu(1_231_900), "the best path is 123.19mm");
+    assert_eq!(length, Iu(4_622_800), "the best path is 462.28mm");
     assert!(
         length.0 > weights.label_threshold.0,
         "which is over the threshold of {}",
@@ -286,8 +295,8 @@ fn a_long_route_is_proposed_as_labels_and_not_drawn() {
     assert_eq!(report.from, "U1.1");
     assert_eq!(report.to, "U2.2");
     let reason = report.reason.as_deref().expect("a proposal says why");
-    assert!(reason.contains("123.19mm"), "the length: {reason}");
-    assert!(reason.contains("38.10mm"), "and the threshold: {reason}");
+    assert!(reason.contains("462.28mm"), "the length: {reason}");
+    assert!(reason.contains("381.00mm"), "and the threshold: {reason}");
 
     // It proposes. Nothing is drawn and nothing is added.
     assert!(report.path.is_empty(), "a proposal draws no wire");
@@ -297,7 +306,7 @@ fn a_long_route_is_proposed_as_labels_and_not_drawn() {
     assert_eq!(pair.name, "U1_SCK");
     assert_eq!(
         pair.at,
-        [at("50.8", "99.06"), at("152.4", "82.55")],
+        [at("12.7", "196.85"), at("285.75", "12.7")],
         "two grid steps along each pin's own direction"
     );
     for anchor in pair.at {
@@ -388,11 +397,11 @@ fn auto_labels_writes_the_pair_and_says_so() {
         "the status word comes first: {printed}"
     );
     assert!(
-        printed.contains("  reason: path length 123.19mm is over the threshold 38.10mm\n"),
+        printed.contains("  reason: path length 462.28mm is over the threshold 381.00mm\n"),
         "and it says why: {printed}"
     );
     assert!(
-        printed.contains("  labels: \"U1_SCK\" at 50.80,99.06 and 152.40,82.55\n"),
+        printed.contains("  labels: \"U1_SCK\" at 12.70,196.85 and 285.75,12.70\n"),
         "and where the pair went: {printed}"
     );
     assert!(
@@ -419,8 +428,8 @@ fn auto_labels_writes_the_pair_and_says_so() {
     assert_eq!(
         labels,
         vec![
-            ("U1_SCK", at("50.8", "99.06")),
-            ("U1_SCK", at("152.4", "82.55")),
+            ("U1_SCK", at("12.7", "196.85")),
+            ("U1_SCK", at("285.75", "12.7")),
         ],
         "one label per end, both carrying the name the net had none of"
     );
@@ -439,8 +448,8 @@ fn auto_labels_writes_the_pair_and_says_so() {
     assert_eq!(
         wires,
         vec![
-            (at("50.8", "101.6"), at("50.8", "99.06")),
-            (at("152.4", "80.01"), at("152.4", "82.55")),
+            (at("12.7", "199.39"), at("12.7", "196.85")),
+            (at("285.75", "10.16"), at("285.75", "12.7")),
         ],
         "a stub from each pin to its own label, and nothing joining the two"
     );
@@ -477,7 +486,7 @@ fn a_named_net_keeps_its_name() {
         stderr(&run)
     );
     assert!(
-        stdout(&run).contains("  labels: \"SPI_SCK\" at 50.80,99.06 and 152.40,82.55\n"),
+        stdout(&run).contains("  labels: \"SPI_SCK\" at 12.70,196.85 and 285.75,12.70\n"),
         "the pair takes the name the net had: {}",
         stdout(&run)
     );
@@ -526,12 +535,12 @@ fn the_threshold_is_the_configured_one() {
     let default = Config::read(project).expect("a directory with no kicli.toml reads as defaults");
     assert_eq!(
         default.routing.label_threshold,
-        Iu(30 * GRID.0),
+        Iu(300 * GRID.0),
         "the documented default"
     );
     assert!(
         settings(&default.routing).is_none(),
-        "30.48mm is under 38.10mm, so it is drawn"
+        "30.48mm is under 381.00mm, so it is drawn"
     );
 
     std::fs::write(&settings_file, "[routing]\nlabel_threshold = \"10G\"\n")

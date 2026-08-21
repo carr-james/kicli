@@ -18,6 +18,7 @@ use kicli::edit::mark::PinAddress;
 use kicli::edit::wire::{End, Polyline, WireError, draw};
 use kicli::geometry::{GRID, Iu, Point};
 use kicli::model::{Config, Hierarchy, Refdes, SheetPath, Target, WriteOptions};
+use kicli_probe::drawing::{LabelKind, LabelShape};
 use kicli_probe::oracle::{Kicad, Partition, kicli_partition, net};
 use kicli_probe::scratch::Fixtures;
 use kicli_probe::{Port, Probe, rectangle, symbol};
@@ -98,8 +99,7 @@ fn a_sheet_with_a_port(name: &'static str) -> (Probe, Probe) {
         }],
     );
     child.strand_of_kind(
-        "hierarchical_label",
-        "(shape bidirectional)",
+        LabelKind::Hierarchical(LabelShape::Bidirectional),
         "RC1",
         "25.4",
         "29.21",

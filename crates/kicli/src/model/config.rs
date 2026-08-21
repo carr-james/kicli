@@ -172,7 +172,7 @@ impl Default for Config {
             },
             view: View { max_bytes: 32_768 },
             routing: Routing {
-                label_threshold: Iu(30 * GRID.0),
+                label_threshold: Iu(300 * GRID.0),
                 w_len: 1,
                 w_turn: 6,
                 w_cross: 20,
@@ -544,7 +544,7 @@ fn string(section: &str, key: &str, value: &Value) -> Result<String, ConfigError
 #[cfg(test)]
 mod tests {
     use super::{Config, ConfigError};
-    use crate::geometry::Iu;
+    use crate::geometry::{GRID, Iu};
 
     #[test]
     fn an_absent_file_gives_the_documented_defaults() {
@@ -590,7 +590,16 @@ mod tests {
     fn config_reads_every_routing_key() {
         // Each key parses to the value the specification documents.
         let defaults = Config::default().routing;
-        assert_eq!(defaults.label_threshold, Iu(381_000), "30 grid steps");
+        // 300 grid steps and 381 mm are the same length. The two forms are
+        // asserted against each other because they once were not: `Iu(381_000)`
+        // is internal units, and a gloss that read that constant as millimetres
+        // put the documented default a factor of ten from the code's.
+        assert_eq!(defaults.label_threshold, Iu(300 * GRID.0), "300 grid steps");
+        assert_eq!(
+            defaults.label_threshold,
+            Iu::from_millimetres_text("381").expect("381 mm is a length"),
+            "which is 381 mm exactly, the gloss spec/SPEC.md \u{00a7}9 publishes"
+        );
         assert_eq!(defaults.margin, Iu(101_600), "8 grid steps");
         assert_eq!(defaults.u_max, Iu(76_200), "6 grid steps");
         assert_eq!(

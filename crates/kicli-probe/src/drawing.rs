@@ -316,10 +316,19 @@ impl Probe {
     }
 
     /// Draw a label of any of the three kinds.
-    pub fn label_of_kind(&mut self, head: &str, shape: &str, text: &str, at: (&str, &str)) {
+    ///
+    /// The kind carries its own shape, and the `(shape …)` list is built here
+    /// rather than passed in, so a caller can write neither a bare `input`
+    /// token nor a second wrapping of a list it built itself.
+    pub fn label_of_kind(&mut self, kind: LabelKind, text: &str, at: (&str, &str)) {
         let uuid = self.uuid();
+        let head = kind.head();
+        let shape = match kind.shape() {
+            Some(shape) => format!(" (shape {})", shape.token()),
+            None => String::new(),
+        };
         self.items.push(format!(
-            "({head} \"{text}\" {shape} (at {} {} 0)\n\
+            "({head} \"{text}\"{shape} (at {} {} 0)\n\
              (effects (font (size 1.27 1.27)) (justify left bottom)) (uuid \"{uuid}\"))",
             at.0, at.1
         ));
@@ -331,14 +340,13 @@ impl Probe {
     /// and the resistor pin makes the net visible in a netlist. The resistor
     /// anchor sits one pin length below the wire, so pin 1 lands on it.
     pub fn named_strand(&mut self, reference: &str, wire_y: &str, anchor_y: &str, text: &str) {
-        self.strand_of_kind("label", "", reference, wire_y, anchor_y, text);
+        self.strand_of_kind(LabelKind::Local, reference, wire_y, anchor_y, text);
     }
 
     /// The same strand, named by a label of the kind asked for.
     pub fn strand_of_kind(
         &mut self,
-        head: &str,
-        shape: &str,
+        kind: LabelKind,
         reference: &str,
         wire_y: &str,
         anchor_y: &str,
@@ -346,7 +354,7 @@ impl Probe {
     ) {
         self.place("R", reference, ("50.8", anchor_y), &["1", "2"]);
         self.wire(("50.8", wire_y), ("76.2", wire_y));
-        self.label_of_kind(head, shape, text, ("76.2", wire_y));
+        self.label_of_kind(kind, text, ("76.2", wire_y));
     }
 
     /// The file text.
@@ -435,6 +443,80 @@ impl Probe {
     #[must_use]
     pub fn directory(&self) -> &Path {
         &self.directory
+    }
+}
+
+/// Which of the three kinds of label to draw, with the shape its kind carries.
+///
+/// A local label has no shape at all; a hierarchical or a global label always
+/// has one (`research/sch-format.md` §3.3). Pairing the two here is why a probe
+/// can draw neither a local label wearing a shape nor a hierarchical label
+/// without one.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum LabelKind {
+    /// A local label, which names a net within one sheet and has no shape.
+    Local,
+    /// A hierarchical label, which meets the sheet pin of the same name.
+    Hierarchical(LabelShape),
+    /// A global label, which names a net across every sheet.
+    Global(LabelShape),
+}
+
+impl LabelKind {
+    /// The record head this kind is written under.
+    #[must_use]
+    pub fn head(self) -> &'static str {
+        match self {
+            Self::Local => "label",
+            Self::Hierarchical(_) => "hierarchical_label",
+            Self::Global(_) => "global_label",
+        }
+    }
+
+    /// The shape this kind carries, which a local label does not have.
+    #[must_use]
+    pub fn shape(self) -> Option<LabelShape> {
+        match self {
+            Self::Local => None,
+            Self::Hierarchical(shape) | Self::Global(shape) => Some(shape),
+        }
+    }
+}
+
+/// The shape of a hierarchical or a global label: the direction it draws.
+///
+/// KiCad writes the shape as a `(shape …)` list and reads only that list —
+/// `tests/fixtures/sch/nets/nets_channel.kicad_sch` line 385, which KiCad
+/// wrote. A bare `input` beside the name leaves the label in the file and out
+/// of KiCad's netlist, while kicli's own reader is lenient and takes it, so a
+/// probe that wrote the bare token measured its own defect and called it
+/// KiCad's answer. This type is the reason a probe cannot write it: the token
+/// never leaves the drawing builder as text a caller chose.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum LabelShape {
+    /// A signal that enters the sheet.
+    Input,
+    /// A signal that leaves it.
+    Output,
+    /// A signal that goes both ways.
+    Bidirectional,
+    /// A signal that is driven or released.
+    TriState,
+    /// A signal with no direction of its own.
+    Passive,
+}
+
+impl LabelShape {
+    /// The token KiCad writes inside the `(shape …)` list.
+    #[must_use]
+    pub fn token(self) -> &'static str {
+        match self {
+            Self::Input => "input",
+            Self::Output => "output",
+            Self::Bidirectional => "bidirectional",
+            Self::TriState => "tri_state",
+            Self::Passive => "passive",
+        }
     }
 }
 

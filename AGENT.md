@@ -488,13 +488,13 @@ kicli wire draw --from-pin U1.1 --to-pin U2.2 --auto-labels
 ```
 ```
 labels U1.1 -> U2.2
-  reason: path length 123.19mm is over the threshold 38.10mm
-  labels: "U1_SCK" at 50.80,99.06 and 152.40,82.55
+  reason: path length 462.28mm is over the threshold 381.00mm
+  labels: "U1_SCK" at 12.70,196.85 and 285.75,12.70
   wires added: 2   junctions added: 0
-+ W 911e62dd 50.80,99.06..50.80,101.60
-+ W a483082e 152.40,80.01..152.40,82.55
-+ T 9bcbcb13 "U1_SCK"
-+ T bc9b55d4 "U1_SCK"
++ W d58d24fb 285.75,10.16..285.75,12.70
++ W f4ba12b5 12.70,196.85..12.70,199.39
++ T 43aab6e9 "U1_SCK"
++ T 479f4a3c "U1_SCK"
 checked: every invariant passed
 note: auto-labels  kicli wrote the label "U1_SCK" at each end instead of a wire. Each label sits on a short stub from its own pin. Nothing joins the two ends but the name they share.
 ```
@@ -698,7 +698,7 @@ What a wire costs, and how far kicli looks. The commands that read it are
 
 ```toml
 [routing]
-label_threshold = "30G"   # above this, a pair of labels is proposed, not a wire
+label_threshold = "300G"  # above this, a pair of labels is proposed, not a wire
 margin          = "8G"    # how far outside the wire kicli looks for obstacles
 u_max           = "6G"    # how far outward a U-shaped route may reach
 w_len           = 1       # the cost of one grid step of wire: the base unit
@@ -708,7 +708,7 @@ w_text          = 12      # the cost of one grid step inside a label or text box
 w_near          = 2       # the cost of one grid step beside a symbol body
 ```
 
-Distances take `"30G"` (whole grid steps), `"1.27mm"` or `"50mil"`. Weights are
+Distances take `"300G"` (whole grid steps), `"1.27mm"` or `"50mil"`. Weights are
 whole numbers and **none of them may be negative** — a negative term would make
 a longer route cheaper.
 
