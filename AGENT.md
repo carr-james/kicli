@@ -616,6 +616,9 @@ against the route, delete the wires the report just named you.
 any grid point of its wires, or any of its pins — and `to` says which point it
 joined:
 
+```sh
+kicli wire connect --from-pin R11.2 --to-net "#n3"
+```
 ```
 routed R11.2 -> #n3@35.56,88.9   via 3 segments, 2 corners, 12.70mm
 ```

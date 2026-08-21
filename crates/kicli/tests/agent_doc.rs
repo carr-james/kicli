@@ -4,7 +4,7 @@
 //! document that describes a command the binary does not have is worse than no
 //! document. This test reads both and compares them, so neither can drift.
 
-use clap::CommandFactory;
+use clap::{CommandFactory, Parser};
 use kicli::cli::{Cli, ExitCode};
 use std::path::Path;
 
@@ -127,6 +127,77 @@ fn agent_doc_covers_every_command() {
         }
     }
     assert!(checked >= 3, "the binary has commands to document");
+}
+
+/// Every command line the document shows is one the binary accepts.
+///
+/// The synopsis blocks state a shape — `kicli wire delete <TARGET>` — and the
+/// worked examples state a command someone can run. This test reads the second
+/// kind and hands each one to the parser, so an example that names a flag the
+/// binary does not have, or spells one the way an older build did, fails here
+/// rather than in an agent's terminal.
+///
+/// The two kinds are told apart by their placeholders: a synopsis carries `<`
+/// or the `|` that separates the forms of an end, and a runnable line carries
+/// neither. That rule is why `kicli sch view | grep -E 'R99|SPY'` is out of
+/// scope — it is a pipeline, and this test parses commands, not shells.
+fn documented_commands(doc: &str) -> Vec<Vec<String>> {
+    let mut found = Vec::new();
+    let mut fenced = false;
+    let mut joined = String::new();
+    for line in doc.lines() {
+        if line.trim_start().starts_with("```") {
+            fenced = !fenced;
+            joined.clear();
+            continue;
+        }
+        if !fenced {
+            continue;
+        }
+        // A command may be wrapped over several lines with a trailing `\`.
+        let text = line.trim();
+        joined.push_str(text.strip_suffix('\\').unwrap_or(text));
+        if text.ends_with('\\') {
+            joined.push(' ');
+            continue;
+        }
+        let command = std::mem::take(&mut joined);
+        if !command.starts_with("kicli ") || command.contains('<') || command.contains('|') {
+            continue;
+        }
+        found.push(
+            command
+                .split_whitespace()
+                .map(|word| word.trim_matches(['\'', '"']).to_owned())
+                .collect(),
+        );
+    }
+    found
+}
+
+/// The document's worked examples parse, flags and all.
+#[test]
+fn agent_doc_examples_are_commands_the_binary_accepts() {
+    let doc = agent_doc();
+    let examples = documented_commands(&doc);
+
+    // A rule that stopped matching would otherwise pass by finding nothing.
+    // Measured on the document as it stands: 12 runnable lines.
+    assert!(
+        examples.len() >= 8,
+        "only {} runnable example(s) found in AGENT.md, so the rule that \
+         recognises one has stopped working",
+        examples.len()
+    );
+
+    for words in &examples {
+        if let Err(why) = Cli::try_parse_from(words) {
+            panic!(
+                "AGENT.md shows a command the binary does not accept:\n  {}\n{why}",
+                words.join(" ")
+            );
+        }
+    }
 }
 
 #[test]
