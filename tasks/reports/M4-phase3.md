@@ -1812,3 +1812,105 @@ outranks its completeness, and a skill nobody finishes reading enforces nothing.
 They are one idea at four levels — **an instrument is blind in the dimension its
 author was not thinking in** — and stating it once with four worked examples is
 shorter than four rules, and truer.
+
+
+---
+
+## The mutation run, and the four counts
+
+**Standing exit criterion from the M4 close, James's ruling on the advisor's
+recommendation.** Scoped to `crates/kicli/src/route/`. Run only after every M4
+task was ticked and the gates were green; nothing about it ran before then.
+
+`cargo-mutants 27.1.0`. All nine `route/` files, **488 mutants**.
+
+### The counts
+
+| | |
+|---|---|
+| **generated** | **488** |
+| **killed** | **402** |
+| **survived — genuine coverage gap** | **42** |
+| **survived — benign** | **6** |
+| unviable (did not compile) | 35 |
+| genuine hangs (still timing out at 900s on an idle machine) | 3 |
+
+Kill rate over viable, terminating mutants: **402 / 450 = 89 %**.
+
+Unviable and hang counts are reported **apart from** the four, because they are
+neither kills nor survivors, and folding a timeout into "killed" to make the
+arithmetic close is the specific dishonesty this run exists to avoid.
+
+### The run's first result was wrong, and finding that out is the main event
+
+The batch was started **while lanes were still building**, and it reported:
+
+> `488 mutants tested in 4h: 303 caught, 35 unviable, 150 timeouts` — **0 missed.**
+
+A perfect score. It was false.
+
+`cargo-mutants` sets its per-mutant timeout from a **baseline measured under
+whatever load exists at the time**. The loaded baseline produced a **191s**
+auto-timeout; the same baseline on an idle machine is **35s**. Every mutant test
+then competed with that same load, and 150 of them ran out of clock.
+
+**A timeout is not a result. It is the absence of one** — it says nothing about
+whether the mutant would have been caught or missed.
+
+Rather than bank the favourable number, I re-ran a three-mutant sample on the
+idle machine at `--timeout 600`. **All three were caught** — so they were never
+hangs. That was enough to disqualify the headline, and all 150 were re-run at
+`--timeout 900`:
+
+| | Loaded run | Idle re-run |
+|---|---|---|
+| timeouts | 150 | **3** |
+| survivors found | 0 | **48** |
+
+**Only 3 of the 150 were genuine hangs.** Had the run been banked as it stood,
+M4 would have recorded a perfect mutation score over its router while **42
+genuine coverage gaps went unfiled**, one of which may be a live defect.
+
+**The cause was mine**: the exit criteria call this an hours-scale batch run and
+say nothing about machine state, and I started it in parallel with lane work to
+save wall-clock. The lesson is now the centrepiece of
+`.claude/skills/mutation-run/SKILL.md`.
+
+### Triage
+
+All 48 are recorded in `tasks/M5.md` under "Carried in from M4 — the mutation
+run's survivors", **each quoted verbatim**, grouped by mechanism into ten
+candidate chores. **Filed, not fixed** — per the ruling, driving the survivor
+count to zero with unrecorded test edits would destroy the evidence the run
+exists to produce.
+
+**Only 6 were placed in the benign class**, each with a stated reason why *no
+input distinguishes it* — two provably-equal predicates, an equal-string
+assignment, a divide-by-zero guard on a value that is never zero, and two covered
+by a measurement already recorded in the source. Everything else was filed,
+including mutants whose practical risk is plainly low: *a generous benign class
+is how a mutation run talks itself into a good score.*
+
+### The two survivors worth reading even if you read nothing else
+
+```
+crates/kicli/src/route/obstacles.rs:354:33:
+  replace match guard to.x.0 >= from.x.0 with true in Obstacles::lay
+```
+
+`Obstacles::lay` picks its walk direction from that guard. Forced to `true`, the
+walk always heads `PlusX` — **a segment drawn right-to-left lays its obstacles
+mirrored about its start point, on the wrong side of the wire.** `steps` uses
+`.abs()`, so the count stays right and nothing complains. No fixture happens to
+draw a wire in the negative direction. **This is the one that may be a defect
+rather than a missing test**, and the question to answer first is whether callers
+normalise segment order.
+
+```
+crates/kicli/src/route/window.rs:105:9: replace Window::holds -> bool with true
+crates/kicli/src/route/window.rs:105:9: replace Window::holds -> bool with false
+```
+
+Both directions survive because **nothing calls it**. `clippy` does not flag it —
+the method is `pub`. **A mutant surviving in both directions is the signature of
+dead code.**
