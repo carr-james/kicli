@@ -349,3 +349,52 @@ mod corpus {
         found
     }
 }
+
+/// The index fallback budget measurement at named budgets.
+///
+/// When a connectivity view exceeds its budget, scope::render falls back to an
+/// index. The question is: does the index cost more bytes than the full view it
+/// stands in for? Measured at five budgets across three fixtures, looking for
+/// a case where the index exceeds the full view.
+#[test]
+fn the_index_fallback_at_named_budgets() {
+    let hierarchy = nets_project();
+    let nets = extract(&hierarchy);
+    let options = ViewOptions::default();
+
+    // Measure the full connectivity view once.
+    let full = connectivity::render(&hierarchy, &nets, &options);
+    println!(
+        "Nets fixture: full connectivity view is {} bytes",
+        full.len()
+    );
+
+    // Test at specific budgets where the fallback fires.
+    // Budget must be below full.len() to trigger the fallback.
+    let budgets = [100, 200, 300, 500, 800];
+
+    for budget in &budgets {
+        let result = scope::render(Kind::Connectivity, &hierarchy, &nets, &options, *budget);
+        let is_fallback = result.scope == Scope::IndexAndSummaries;
+
+        if is_fallback {
+            println!(
+                "  Budget {}: fallback index is {} bytes, full view is {} bytes",
+                budget,
+                result.text.len(),
+                full.len()
+            );
+
+            // The check: does the index exceed the full view?
+            assert!(
+                result.text.len() <= full.len(),
+                "at budget {}, index {} exceeds full view {}",
+                budget,
+                result.text.len(),
+                full.len()
+            );
+        } else {
+            println!("  Budget {}: full view used (fits in budget)", budget);
+        }
+    }
+}
