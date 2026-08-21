@@ -30,31 +30,55 @@
 //!
 //! # The claim, stated so it can be checked
 //!
-//! **No expression anywhere under `crates/` takes the first eight characters
-//! or bytes of a string, at a literal width of eight, in any spelling the
-//! standard library offers for doing so, except at the sites listed in
-//! `ACCOUNTED` with the reason each is there.**
+//! > No expression anywhere under `crates/` takes the first eight characters
+//! > or bytes of a string, at a literal width of eight, **by any of the four
+//! > mechanisms enumerated below**, except at the sites in `ACCOUNTED` with
+//! > the reason each is there.
 //!
-//! Read the qualifiers, because each one is a thing this cannot see:
+//! The claim used to end "in any spelling the standard library offers for
+//! doing so". That was wider than any grep can be, and it was wrong in the
+//! specific way this chore keeps being wrong: the derivation behind it
+//! enumerated `str`, `String` and `Iterator` **methods**, so
+//! `format!("{:.8}", uuid)` — `core::fmt` precision, as std-offered as
+//! `chars().take(8)` and the way an engineer would actually write it — sat
+//! outside the derivation while sounding inside the claim.
 //!
-//! - *at a literal width of eight* — `&uuid[..LEN]` behind a `const LEN = 8`
-//!   passes, as does a width computed at run time;
-//! - *in any spelling the standard library offers* — a hand-rolled loop that
-//!   pushes characters until a counter reaches eight passes;
-//! - it reads text, so a macro that expands to a cut passes.
+//! ## The taxonomy is the boundary
 //!
-//! That is a narrower claim than "the handle rule has one home", and it is
-//! written down at this width rather than at the comfortable one because the
-//! comfortable one has now been wrong three times in this chore. Closing the
-//! remaining gap needs a different instrument — a lint over the compiled MIR,
-//! not a reader of source text — which is a different piece of work and is
-//! recorded as such in the C1 entry rather than half-done here.
+//! Four mechanisms are covered, and naming them **is** the limit of the claim:
 //!
-//! What the sweep *does* cover, it covers exhaustively rather than by
-//! guesswork: see `CUTS` for the three external enumerations it is built from. That is the same ceiling
-//! `the_router_holds_no_floating_point` and `the_four_way_rule_has_one_home`
-//! work under, and it is recorded rather than papered over: the claim is that
-//! no cut **in these spellings** exists unaccounted for.
+//! 1. method calls on `str` and `String`;
+//! 2. method calls on `[T]`, reached by `as_bytes` or `into_bytes`;
+//! 3. `Iterator` adaptors over `chars`, `char_indices`, `bytes`, `into_chars`;
+//! 4. `core::fmt` precision in a format spec, in any macro that takes one.
+//!
+//! Plus the `core::ops::Index` range forms, which are an operator rather than
+//! a method and are listed with (1).
+//!
+//! ## What is outside it, named rather than implied
+//!
+//! - **A width that is not the literal 8 in the expression**: `&uuid[..LEN]`
+//!   behind a `const LEN = 8`, a width read from configuration, and the
+//!   indirect format precisions `{:.*}`, `{:.1$}`, `{:.n$}` — the last three
+//!   are `core::fmt`'s own grammar, but binding a `$`-parameter to its
+//!   argument means parsing the macro call, which this does not do.
+//! - **A hand-rolled loop** with its own counter, or `retain`/`take_while`
+//!   closing over one.
+//! - **A user macro** whose body expands to any of the above.
+//! - **A helper from outside `std`** — no dependency offers one today, and a
+//!   new dependency would need its own enumeration.
+//! - **Anything visible only after monomorphisation or const evaluation.**
+//!
+//! Closing those needs a lint over compiled MIR rather than a reader of source
+//! text. That is separate work, recorded as such in the C1 entry rather than
+//! half-done here.
+//!
+//! **And the honest residual: a fifth mechanism may exist.** Three of the four
+//! above were found by somebody else pointing at a gap. What is claimed is
+//! that these four are covered exhaustively and that the boundary is written
+//! down — not that the taxonomy is complete. A reader who finds a fifth is
+//! finding a real defect in this sweep, and the sweep says so out loud rather
+//! than leaving them to discover it against a sentence that promised more.
 
 use std::path::{Path, PathBuf};
 
@@ -79,12 +103,18 @@ const DEFINER: &str = "crates/kicli/src/model/items.rs";
 /// 3. the first fix for (2) grepped `std` — with a hand-written alternation of
 ///    method names, which is the same closed list one level up.
 ///
-/// So the list below is **exhaustive over three external enumerations**, each
+/// 4. and the enumerations that fixed (3) were **three method lists**, chosen
+///    by the author. `format!("{:.8}", uuid)` is a complete second copy of the
+///    rule, and passed. The vocabulary had moved outside the author's head;
+///    the **taxonomy** had not.
+///
+/// So the list below is **exhaustive over four external enumerations**, each
 /// mechanically re-derivable and each checkable against `doc.rust-lang.org` by
 /// a reader who has never seen this repository. Every public method of `str`,
-/// of `String`, and of `Iterator` was listed and considered; the ones that can
-/// yield a prefix at a literal width of eight appear here, and the reasoning
-/// for the rest is in the C1 task entry, item by item.
+/// of `String`, of `Iterator` and of `[T]` was listed and considered, and the
+/// `core::fmt` format-spec grammar was transcribed from std's own statement of
+/// it. The ones that can yield a prefix at a literal width of eight appear
+/// here; the reasoning for the rest is in the C1 task entry, item by item.
 ///
 /// ```text
 /// SRC=$(rustc --print sysroot)/lib/rustlib/src/rust/library
@@ -94,7 +124,14 @@ const DEFINER: &str = "crates/kicli/src/model/items.rs";
 ///   | grep -oE 'pub (const )?fn [a-z_0-9]+' | sed -E 's/.*fn //' | sort -u
 /// grep -oE '^\s+fn [a-z_0-9]+' "$SRC"/core/src/iter/traits/iterator.rs \
 ///   | sed -E 's/.*fn //' | sort -u
+/// awk '/^impl<T> \[T\] \{/,/^impl<T, const N: usize>/' "$SRC"/core/src/slice/mod.rs \
+///   | grep -oE 'pub (const )?fn [a-z_0-9]+' | sed -E 's/.*fn //' | sort -u
+/// sed -n '/format_spec :=/,/parameter :=/p' "$SRC"/alloc/src/fmt.rs
 /// ```
+///
+/// **Four enumerations is not a claim that four is all there are.** It is the
+/// number of mechanisms this instrument covers, and the taxonomy is stated as
+/// the boundary on the module rather than implied to be complete.
 ///
 /// Whitespace is stripped from a line before matching, so `get(.. 8)` and
 /// `get(..8)` are the same cut. Byte and character forms are both here: which
@@ -132,6 +169,39 @@ const CUTS: &[&str] = &[
     "zip(0..8)",
     "next_chunk::<8>",
     "array_chunks::<8>",
+    // `[T]`, reached from a string by `as_bytes` or `into_bytes`. Found by
+    // this lane, not by a reviewer: the first three enumerations covered
+    // `str`, `String` and `Iterator`, and a byte prefix goes through none of
+    // them. The range-taking `split_off` here is the slice one, which is a
+    // different signature from `String`'s.
+    "split_off(..8)",
+    "first_chunk::<8>",
+    "split_first_chunk::<8>",
+    "as_chunks::<8>",
+    "array_windows::<8>",
+    "chunks(8)",
+    "chunks_exact(8)",
+    "windows(8)",
+    // `core::fmt` precision, which is not a method at all and is why the
+    // taxonomy — not the method lists — is the real boundary. From std's own
+    // grammar: `format_spec := …['.' precision][type]`, so a literal precision
+    // of eight is `.8` followed by an optional `type` and the closing brace.
+    // The `type` production is transcribed from that grammar, not recalled:
+    // `type := '?' | 'x?' | 'X?' | 'o' | 'x' | 'X' | 'p' | 'b' | 'e' | 'E'`.
+    // Matching the spec rather than the macro name is deliberate — it covers
+    // `format!`, `write!`, `panic!`, `assert!` and anything else that takes a
+    // format string, including macros std has not written yet.
+    ".8}",
+    ".8?}",
+    ".8x?}",
+    ".8X?}",
+    ".8o}",
+    ".8x}",
+    ".8X}",
+    ".8p}",
+    ".8b}",
+    ".8e}",
+    ".8E}",
 ];
 
 /// One cut that is allowed to exist, and the reason it does.
