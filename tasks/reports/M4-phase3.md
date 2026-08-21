@@ -696,6 +696,24 @@ falsification and it is worth naming, because it looks like the procedure being
 followed. The second pass pads the index generator to 1462 bytes and watches the
 check go red at budget 100: a break in the code the check watches.
 
+### The join's tick reviewer (T18, T19)
+
+> **WORKFLOW NOTE:** The scratchpad directory provided to concurrent reviewer
+> subagents in this session was shared, not session-isolated as documented —
+> writing a fixed-name notes file (`scratch_path.txt`) there let a concurrent T22
+> review's path overwrite mine, and I broke code in their scratch copy before
+> catching it via a mismatched compile path in the output. Fix: never write
+> scratch-path bookkeeping to a shared file; keep it in a local shell variable
+> within one tool call, or use a reviewer-unique filename derived from a value
+> only that reviewer holds.
+
+**Orchestrator, beside the quote:** this is the most valuable note of the session
+and the reviewer volunteered it against its own interest. Full incident above,
+PROPOSED 21. Two things I want on the record: it caught the collision **by having
+an expectation about where its own work should be** — not by a check — and it
+restored the other reviewer's tree and verified the restore before continuing,
+rather than pressing on and hoping.
+
 ### The loop (T21)
 
 > **WORKFLOW NOTE:** The brief's gate-bypass sanction had no exit procedure for
@@ -1068,6 +1086,58 @@ be read as one thing, not three failures:**
 | 1 | parameter named `id`; method on a type named `Ident` | it classified by **name**, against a closed word list |
 | 2 | `format!("{:.8}", uuid)` | it enumerated **methods**; precision is not a method |
 | 3 | `chars().take(0x8)` | it matches a **spelling**, not a **value** |
+
+### An incident: two concurrent reviewers shared a scratchpad, and one broke code in the other's tree
+
+**Disclosed voluntarily by the T18/T19 reviewer, in its own verdict, before
+anyone asked.** Recorded here in full because a mishap that is disclosed is the
+system working and a mishap that is buried is the system failing.
+
+**What happened.** The reviewer wrote its scratch-directory path to a
+**fixed-name** file (`scratch_path.txt`) inside the session scratchpad. A
+concurrently-running T22 reviewer, sharing that same scratchpad, overwrote it with
+its own path. The T18/T19 reviewer then broke `crates/kicli/src/route/search.rs`
+and ran the multi-source test **in the T22 reviewer's scratch copy rather than its
+own**.
+
+**How it was caught, and this is the part worth keeping:** *"the compile path in
+the output didn't match what I expected."* It noticed because it had an
+expectation about where its own work should be happening. It restored the file
+byte-for-byte from the live repository, confirmed by `diff`, then redid every
+break in its own tree using shell variables only.
+
+**This violates a rule the `tick-reviewer` definition already states**: *"Your
+scratch directory is one you created, and no one else's… You never write into a
+path you did not create."* The rule was written against exactly this failure —
+"two reviews running at once against one guessable name is a review reading
+another review's broken tree and reporting it as a finding" — and the *reason* it
+was violated is that the definition assumes a scratch **directory** is the only
+shared surface, while the scratchpad the harness provides is shared too.
+
+**Does T22's APPROVE still stand? Yes, and the reasoning is not "probably".**
+The tick-reviewer definition requires that a disturbed trail be **re-established
+by re-measurement, never by assurance**, so:
+
+- the break was to `route::search`'s multi-source heuristic, which changes
+  **route costs**;
+- T22's review reproduced the worked example's costs **from a fresh build in its
+  own scratch project** and obtained `cost 110 = 74 + 12 + 20 + 0 + 4` and
+  `cost 40 = 24 + 12 + 0 + 0 + 4`, with wire coordinates byte-identical to the
+  document;
+- **had the contamination been live during that measurement, those numbers would
+  have differed.** They did not.
+
+So T22's evidence is self-checking against precisely this contamination, and the
+approval rests on measurements that would have failed had it mattered. Recorded
+rather than assumed.
+
+**PROPOSED 21: the session scratchpad is shared between concurrent subagents, and
+the `tick-reviewer` definition assumes otherwise.** *Recommendation: accept the
+reviewer's own fix* — never write scratch bookkeeping to a shared file; keep it
+in a shell variable within one tool call, or derive a filename from a value only
+that reviewer holds. It belongs in the definition beside the `mktemp -d` rule,
+because that rule's stated reason is exactly this collision and it currently
+covers only half the surface.
 
 ---
 
