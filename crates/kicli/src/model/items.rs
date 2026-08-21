@@ -25,6 +25,14 @@ impl Uuid {
     /// command that takes one refuses an ambiguous prefix and lists what it
     /// matched.
     ///
+    /// This is the only place kicli shortens an identifier, and
+    /// `cargo test --test the_handle_has_one_name` is what keeps it so: five
+    /// private copies of this arithmetic had already drifted apart in what
+    /// they were called and in whether they allocated.
+    /// A key that is *not* an identifier — a snapshot's content key, a hash —
+    /// is not this function's business and keeps a shortener of its own, under
+    /// a name that says what it cuts.
+    ///
     /// # Examples
     ///
     /// ```
@@ -1044,6 +1052,25 @@ mod tests {
     fn schematic(source: &str) -> Schematic {
         let doc = Doc::parse(source).expect("parses");
         Schematic::read(&doc).expect("reads")
+    }
+
+    #[test]
+    fn a_handle_shorter_than_the_handle_is_the_whole_of_it() {
+        // The five private copies this rule replaced each carried their own
+        // answer to a string too short to cut. It is the whole string.
+        assert_eq!(Uuid("short".to_owned()).short(), "short");
+        assert_eq!(Uuid(String::new()).short(), "");
+        assert_eq!(Uuid("01234567".to_owned()).short(), "01234567");
+        assert_eq!(Uuid("012345678".to_owned()).short(), "01234567");
+    }
+
+    #[test]
+    fn a_handle_cuts_characters_rather_than_bytes() {
+        // KiCad writes hexadecimal, so this cannot arise from a file. It is
+        // asserted because cutting bytes would panic rather than misprint,
+        // and a report is not worth a panic.
+        assert_eq!(Uuid("ééééé".to_owned()).short(), "ééééé");
+        assert_eq!(Uuid("ééééééééé".to_owned()).short(), "éééééééé");
     }
 
     #[test]

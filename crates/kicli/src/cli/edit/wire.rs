@@ -557,17 +557,12 @@ fn stranded_note(left: &Stranded) -> Note {
         format!(
             "the junction {} at ({}) now joins {} wire end(s), and is still there. \
              Run junction delete --at {} to take it away.",
-            handle(&left.junction.0),
+            left.junction.short(),
             left.at,
             left.ends.len(),
             left.at
         ),
     )
-}
-
-/// The first characters of an identifier, as a view prints them.
-fn handle(uuid: &str) -> &str {
-    uuid.get(..8).unwrap_or(uuid)
 }
 
 /// Which row of the table a refused wire command is.
@@ -590,7 +585,7 @@ fn refused(error: &WireError) -> Failure {
 
 #[cfg(test)]
 mod tests {
-    use super::{handle, refused};
+    use super::refused;
     use crate::cli::exit::ExitCode;
     use crate::edit::wire::WireError;
     use crate::geometry::Point;
@@ -611,11 +606,5 @@ mod tests {
         assert_eq!(refused(&invalid).code, ExitCode::Operation);
         // A file kicli cannot use is the file's row, not the request's.
         assert_eq!(refused(&WireError::Empty).code, ExitCode::File);
-    }
-
-    #[test]
-    fn a_handle_is_the_first_characters_a_view_prints() {
-        assert_eq!(handle("da5aa983-0000-4000-8000-000000000001"), "da5aa983");
-        assert_eq!(handle("short"), "short");
     }
 }

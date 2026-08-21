@@ -112,11 +112,11 @@ pub enum Motion {
     To(Point),
 }
 
-/// What a symbol command noticed about the grid.
+/// What a symbol command noticed.
 ///
 /// A finding is not a failure. It is the part of the result a caller must feel,
 /// because the command did something other than the plain reading of the
-/// request.
+/// request, or took a fork the request did not name.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Finding {
     /// The position asked for was off the grid, so kicli moved it to the grid.
@@ -131,6 +131,18 @@ pub enum Finding {
         /// The position kicli used.
         placed: Point,
     },
+    /// A delete left the embedded definition in place, because another
+    /// placement still draws through it.
+    DefinitionKept {
+        /// The cache key the placements draw through.
+        definition: String,
+    },
+    /// A delete took the embedded definition with the symbol, because no
+    /// placement draws through it any more.
+    DefinitionRemoved {
+        /// The cache key nothing draws through now.
+        definition: String,
+    },
 }
 
 impl Finding {
@@ -140,6 +152,8 @@ impl Finding {
         match self {
             Finding::Snapped { .. } => "snapped-to-grid",
             Finding::OffGrid { .. } => "off-grid",
+            Finding::DefinitionKept { .. } => "definition-kept",
+            Finding::DefinitionRemoved { .. } => "definition-removed",
         }
     }
 }
@@ -153,6 +167,14 @@ impl fmt::Display for Finding {
             Finding::OffGrid { placed } => {
                 write!(f, "{placed} is off the grid, which the caller asked for")
             }
+            Finding::DefinitionKept { definition } => write!(
+                f,
+                "another placement still draws {definition}, so its embedded definition stays"
+            ),
+            Finding::DefinitionRemoved { definition } => write!(
+                f,
+                "no placement draws {definition} now, so its embedded definition is gone"
+            ),
         }
     }
 }
@@ -315,6 +337,13 @@ pub fn mirror_symbol(
 /// definition stays when another placement still draws through it, and goes
 /// when none does.
 ///
+/// The fork is two-way and the caller cannot see the file, so **which way it
+/// went is a finding**: [`Finding::DefinitionKept`] or
+/// [`Finding::DefinitionRemoved`], exactly one of the two, every time. A file
+/// that embeds no definition under the key still reports `DefinitionRemoved`,
+/// because the finding states the outcome — no definition remains for that key
+/// — and not the number of lines the removal touched.
+///
 /// Only the symbol's own lines change, and the definition's when it goes too.
 /// No other object of the file is touched.
 ///
@@ -332,17 +361,21 @@ pub fn delete_symbol(
     let still_drawn = schematic
         .symbols()
         .any(|other| other.node != symbol.node && definition_key(other) == key);
-    if !still_drawn
-        && let Some((_, entry)) = schematic
+    let finding = if still_drawn {
+        Finding::DefinitionKept { definition: key }
+    } else {
+        if let Some((_, entry)) = schematic
             .library_symbols
             .iter()
             .find(|(name, _)| *name == key)
-    {
-        doc.remove(*entry);
-    }
+        {
+            doc.remove(*entry);
+        }
+        Finding::DefinitionRemoved { definition: key }
+    };
     Ok(Edited {
         symbol: symbol.uuid.clone(),
-        findings: Vec::new(),
+        findings: vec![finding],
     })
 }
 
