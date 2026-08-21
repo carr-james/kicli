@@ -20,28 +20,28 @@ fn fixtures() -> Fixtures {
 
 /// The objects of the fixture that own fields, one field each.
 const OWNERS: [(&str, &str, &str); 4] = [
-    ("symbol", "00000000-0000-4000-8000-000000000020", "Value"),
-    ("sheet", "00000000-0000-4000-8000-000000000030", "Sheetname"),
+    ("symbol", "10000010-0000-4000-8000-000000000020", "Value"),
+    ("sheet", "10000013-0000-4000-8000-000000000030", "Sheetname"),
     (
         "global label",
-        "00000000-0000-4000-8000-00000000001b",
+        "1000000d-0000-4000-8000-00000000001b",
         "Intersheetrefs",
     ),
     (
         "netclass flag",
-        "00000000-0000-4000-8000-00000000001d",
+        "1000000f-0000-4000-8000-00000000001d",
         "Netclass",
     ),
 ];
 
 /// The sheet path of the modern fixture, which is a root sheet.
-const ROOT: &str = "/00000000-0000-4000-8000-000000000002";
+const ROOT: &str = "/10000001-0000-4000-8000-000000000002";
 
 /// The sheet path of the older fixture.
-const LEGACY_ROOT: &str = "/00000000-0000-4000-8000-0000000000e0";
+const LEGACY_ROOT: &str = "/10000022-0000-4000-8000-0000000000e0";
 
 /// The symbol of the older fixture, and its visible field.
-const LEGACY_SYMBOL: &str = "00000000-0000-4000-8000-0000000000e1";
+const LEGACY_SYMBOL: &str = "10000023-0000-4000-8000-0000000000e1";
 
 /// Copy a fixture into a scratch directory and hand back the copy.
 ///

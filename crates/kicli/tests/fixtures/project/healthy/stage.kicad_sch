@@ -2,7 +2,7 @@
 	(version 20260306)
 	(generator "eeschema")
 	(generator_version "10.0")
-	(uuid "00000000-0000-4000-8000-060000000000")
+	(uuid "16000001-0000-4000-8000-060000000000")
 	(paper "A4")
 	(lib_symbols)
 	(text "one stage of the healthy project"
@@ -14,6 +14,6 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "00000000-0000-4000-8000-060000000001")
+		(uuid "16000002-0000-4000-8000-060000000001")
 	)
 )

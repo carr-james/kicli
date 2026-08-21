@@ -22,7 +22,7 @@ const SHEET: &str = concat!(
     "\t(version 20260306)\n",
     "\t(generator \"eeschema\")\n",
     "\t(generator_version \"10.0\")\n",
-    "\t(uuid \"00000000-0000-4000-8000-050000000000\")\n",
+    "\t(uuid \"15000001-0000-4000-8000-050000000000\")\n",
     "\t(paper \"A4\")\n",
     "\t(text \"a note that stays\"\n",
     "\t\t(exclude_from_sim no)\n",

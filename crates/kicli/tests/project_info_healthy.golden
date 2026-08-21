@@ -6,8 +6,8 @@ project healthy
   nets       0
 
 sheets 2
-  page 1  symbols 0  power 0  file healthy.kicad_sch  path /00000000-0000-4000-8000-050000000000
-  page 2  symbols 0  power 0  name stage  file stage.kicad_sch  path /00000000-0000-4000-8000-050000000000/00000000-0000-4000-8000-05a000000001
+  page 1  symbols 0  power 0  file healthy.kicad_sch  path /15000001-0000-4000-8000-050000000000
+  page 2  symbols 0  power 0  name stage  file stage.kicad_sch  path /15000001-0000-4000-8000-050000000000/15000002-0000-4000-8000-05a000000001
 
 files 2
   healthy.kicad_sch  stamp 20260306  layout normal  canonical yes
