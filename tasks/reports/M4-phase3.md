@@ -416,6 +416,24 @@ to widen its own sanction and disclose it. *Recommendation: accept* — "any
 `agent_doc` failure naming an undocumented `kicli wire` verb or flag". A condition
 written as a test name goes stale the moment the test suite grows.
 
+**18. `crates/kicli/tests/mutation_loop.rs`'s P1/P2 assertions are blind in the
+way T21's were.** Found by T21 while fixing its own. The three P1/P2 lines there
+compare `is_canonical()` against `emit()`, both routed through one `prettify`, so
+a break in the prettifier moves claim and control together and the check cannot
+see it. T21 recorded it rather than fixing it, being another file.
+
+*Recommendation: accept as a chore, and give it the control T21 built* — compare
+against `kicad-cli sch upgrade --force` re-saving the same file in the same run.
+This is not hypothetical: T21 demonstrated a genuine P1 violation that its own
+uncorrected check passed.
+
+**19. The gate-bypass sanction needs an exit procedure for the case where its
+ending condition is met mid-lane.** Raised by T21: T22 merged into `main` while
+T21 was still running, so its last commit went through the real hook while
+earlier ones had bypassed it. The lane recorded the transition; nothing told it
+to. *Recommendation: accept* — "when the ending condition is met, say in your
+entry which commits fell either side of it."
+
 **16. C5's probe fix has a remaining half: `ROOT` and `CHILD` are constants.**
 Found by D1. C5 gave probe objects `{series:02x}{n:06x}` identifiers, but
 `crates/kicli-probe/src/drawing.rs:15,18` hold `ROOT` and `CHILD` as fixed
@@ -493,6 +511,41 @@ the check green. The lane established this as a no-op break rather than assuming
 it. *Recommendation: accept as a chore — a fixture with an all-power-pin net, or
 an all-off-sheet one under `--sheet`.* Until then the law is verified in two terms
 of three.
+
+**20. `blocked` is the least-exercised status and has no committed fixture.**
+Raised by T22's reviewer, which could not construct a live `blocked` refusal
+within budget because the router routes around small enclosures too readily. That
+difficulty is the router working as designed — but it leaves `blocked` verified by
+a unit test's mapping table rather than by a real refusal, and it is the status an
+agent most needs to trust, since it is the one that says "no route exists".
+*Recommendation: accept as a chore — a committed walled-in fixture.*
+
+**22. Diff-scope claims must be re-verified after every merge-forward.** Found by
+T21's reviewer, and it is the fourth member of a family this session has been
+assembling without naming it.
+
+T21's entry claimed `crates/kicli/tests/fixtures/**` had a zero diff from its
+base. Measured: **11,059 lines**, entirely from D1's fixture chore, which T21
+merged forward and disclosed merging. **The claim was true when written and went
+stale when `main` moved.**
+
+The family, now visible as one thing — *evidence that names a moving target rots
+silently*:
+
+| # | The claim rots because | Reported by |
+|---|---|---|
+| 11 | it cites a commit SHA, and amend/rebase/merge changes it | the `AGENT.md` lane |
+| 8 | it assumes the base stops moving after resume | the handle chore |
+| 22 | it states a diff scope, and merging forward widens it | T21's reviewer |
+| 19 | it names a condition that ends mid-lane | T21 |
+
+In a session where every lane merged `main` forward at least once and one did so
+six times, **a claim written once is a claim about a tree that no longer exists.**
+
+*Recommendation: accept as one amendment covering all four* — evidence anchors to
+content, not to revisions; and any scope or state claim is re-verified at the last
+merge-forward before hand-off. **Not applied** — skills and definitions change by
+ruling.
 
 **3. `falsification-control` and a one-commit brief are compatible only via
 `--amend`, which neither document mentions.** Also raised by the threshold lane.
@@ -670,6 +723,74 @@ falsification and it is worth naming, because it looks like the procedure being
 followed. The second pass pads the index generator to 1462 bytes and watches the
 check go red at budget 100: a break in the code the check watches.
 
+### The loop's tick reviewer (T21)
+
+> **WORKFLOW NOTE:** Inputs were complete and accurate for the review itself. One
+> flaw found only through independent measurement: `tasks/M4.md`'s "Nothing
+> outside the test was needed" paragraph claims
+> `crates/kicli/tests/fixtures/**` has zero diff from the lane's base, which is
+> false (D1's fixture-handle chore, merged forward, changed 11059 lines there) —
+> the claim was true when first written and went stale after the merge without
+> being re-checked. Worth a note for future entries: re-verify diff-scope claims
+> after every "merged main forward" step, not just once at drafting time.
+
+**Orchestrator, beside the quote:** accepted, PROPOSED 22, and it completes a
+family of four. The reviewer found it *only through independent measurement* — it
+was not asked to check that sentence, and nothing in the diff would have suggested
+it. That is the difference between a reviewer verifying the questions it was given
+and one reading the entry as a claim.
+
+### The join's tick reviewer (T18, T19)
+
+> **WORKFLOW NOTE:** The scratchpad directory provided to concurrent reviewer
+> subagents in this session was shared, not session-isolated as documented —
+> writing a fixed-name notes file (`scratch_path.txt`) there let a concurrent T22
+> review's path overwrite mine, and I broke code in their scratch copy before
+> catching it via a mismatched compile path in the output. Fix: never write
+> scratch-path bookkeeping to a shared file; keep it in a local shell variable
+> within one tool call, or use a reviewer-unique filename derived from a value
+> only that reviewer holds.
+
+**Orchestrator, beside the quote:** this is the most valuable note of the session
+and the reviewer volunteered it against its own interest. Full incident above,
+PROPOSED 21. Two things I want on the record: it caught the collision **by having
+an expectation about where its own work should be** — not by a check — and it
+restored the other reviewer's tree and verified the restore before continuing,
+rather than pressing on and hoping.
+
+### The loop (T21)
+
+> **WORKFLOW NOTE:** The brief's gate-bypass sanction had no exit procedure for
+> the case where its ending condition is met *during* the lane — T22 merged into
+> `main` mid-run, so the last commit went through the real hook while earlier ones
+> had bypassed it; I recorded the transition in the entry, but a brief that says
+> "the deviation ends when X" should also say what to do when X happens before
+> hand-off. Second: the falsification-control skill's "commit the good state
+> first" rule protects source restores, but an *instrument fix made mid-
+> falsification* needs a commit before the next `git checkout --` too — the brief
+> said this explicitly and it was load-bearing, so it belongs in the skill rather
+> than in each brief.
+
+**Orchestrator, beside the quote:** the first is PROPOSED 19 and mine. The second
+is the **fifth** report this session on the same rule and the second to say it
+belongs in the skill rather than in briefs — which is now the strongest signal in
+the retrospective, since it arrived independently from five lanes.
+
+### The agent documentation's tick reviewer (T22)
+
+> **WORKFLOW NOTE:** Constructing a live `blocked` refusal for `wire connect` cost
+> significant effort with no success (the router routes around small symbol
+> enclosures too easily) — a fixture or documented recipe for a genuinely
+> walled-in point would make this claim class checkable without resorting to
+> source inspection as a fallback.
+
+**Orchestrator, beside the quote:** worth acting on, and the interesting part is
+*why* it was hard. The router being difficult to wall in is the router working —
+T12's four-way avoidance and T7's escape rule exist to make it resourceful. But it
+means `blocked` is the least-exercised of the four statuses, and the one an agent
+most needs to trust. **PROPOSED 20: a committed walled-in fixture**, so `blocked`
+can be measured rather than inferred from a unit test's mapping table.
+
 ### The fixture handles (D1)
 
 > WORKFLOW NOTE: The brief's IN list (`fixtures/sch/**`) contradicted its own list
@@ -801,6 +922,54 @@ presence controls removed **passes green on zero files**; the same blind sweep
 with the controls restored is caught, reporting *"the fixture tree was read: 0
 files"*. The contrast is the evidence — and it is the third time this session that
 a presence control has been the thing standing between a sweep and a false green.
+
+### Phase 3 merged — T18, T19, T22 (`880bfb0`), then T21 (`9de8196`)
+
+**Three tasks merged as one commit because they could not land apart.**
+`AGENT.md` is held by one lane at a time, and `agent_doc` fails the moment a wire
+verb exists undocumented — so the two implementing lanes could not make a single
+green commit until the documenting lane landed. They were **held unmerged rather
+than merged red**. The conflict itself is BLOCKED 1 above.
+
+**Merged-result gates, at both merges:**
+
+| Gate | Result |
+|---|---|
+| `cargo xtask check` | six green — fmt, clippy, test, doc, deny, clean. **No bypass**: T22's commits ran the pre-commit hook normally, and the deviation ended |
+| `cargo test --features corpus` | green, zero failures |
+| `KICLI_TEST_KICAD_CLI=1 cargo test --features corpus` | green |
+| netlist oracle | **`hierarchies matched: 35/35`**, zero ignored |
+
+**The loop (T21) is the task that justified its own billing.** It is the only M4
+check that proves the milestone rather than a task, and **no source change was
+needed** — the parts composed. Its two partitions agree exactly, both directions,
+at two levels, and the view's expectation is **derived from KiCad's own netlist**
+rather than from kicli, so it shares no ancestor with what it checks.
+
+It found two things every per-task test missed:
+
+1. **A connectivity write silences a fault that names no symbol.** Joining a
+   second pin to `SIG` makes KiCad stop reporting
+   `[isolated_pin_label] … Label 'SIG'`. The first form of the rule-check clause
+   recognised only `Symbol <ref>` items and **failed on the real run**. A check
+   watching only the pins it connected sees those go quiet and never learns the
+   *label* went quiet too.
+2. **P1's byte clause was blind — and this is the fourth blind instrument this
+   session and the third of one kind.** `doc.is_canonical()` is kicli's opinion
+   of KiCad's layout and `doc.emit()` produces that layout, **both through one
+   `prettify`**. Making kicli write every file space-indented genuinely violates
+   P1 — `round_trip.rs` fails two tests on it — and **the loop stayed green**,
+   because claim and control moved together. The control is now `kicad-cli sch
+   upgrade --force` re-saving the file in the same run, and the break fails.
+
+   Byte-identity against that re-save is **not achievable, and was measured
+   rather than assumed**: KiCad reorders every item and rewrites `(project
+   "probe")` as `(project "")`.
+
+   **`crates/kicli/tests/mutation_loop.rs` carries the same three P1/P2 lines
+   with the same blindness and no such control.** Recorded as PROPOSED 18 rather
+   than fixed, being another lane's file — which means a shipped check in this
+   repository is asserting a property it cannot see.
 
 ---
 
@@ -961,6 +1130,58 @@ be read as one thing, not three failures:**
 | 1 | parameter named `id`; method on a type named `Ident` | it classified by **name**, against a closed word list |
 | 2 | `format!("{:.8}", uuid)` | it enumerated **methods**; precision is not a method |
 | 3 | `chars().take(0x8)` | it matches a **spelling**, not a **value** |
+
+### An incident: two concurrent reviewers shared a scratchpad, and one broke code in the other's tree
+
+**Disclosed voluntarily by the T18/T19 reviewer, in its own verdict, before
+anyone asked.** Recorded here in full because a mishap that is disclosed is the
+system working and a mishap that is buried is the system failing.
+
+**What happened.** The reviewer wrote its scratch-directory path to a
+**fixed-name** file (`scratch_path.txt`) inside the session scratchpad. A
+concurrently-running T22 reviewer, sharing that same scratchpad, overwrote it with
+its own path. The T18/T19 reviewer then broke `crates/kicli/src/route/search.rs`
+and ran the multi-source test **in the T22 reviewer's scratch copy rather than its
+own**.
+
+**How it was caught, and this is the part worth keeping:** *"the compile path in
+the output didn't match what I expected."* It noticed because it had an
+expectation about where its own work should be happening. It restored the file
+byte-for-byte from the live repository, confirmed by `diff`, then redid every
+break in its own tree using shell variables only.
+
+**This violates a rule the `tick-reviewer` definition already states**: *"Your
+scratch directory is one you created, and no one else's… You never write into a
+path you did not create."* The rule was written against exactly this failure —
+"two reviews running at once against one guessable name is a review reading
+another review's broken tree and reporting it as a finding" — and the *reason* it
+was violated is that the definition assumes a scratch **directory** is the only
+shared surface, while the scratchpad the harness provides is shared too.
+
+**Does T22's APPROVE still stand? Yes, and the reasoning is not "probably".**
+The tick-reviewer definition requires that a disturbed trail be **re-established
+by re-measurement, never by assurance**, so:
+
+- the break was to `route::search`'s multi-source heuristic, which changes
+  **route costs**;
+- T22's review reproduced the worked example's costs **from a fresh build in its
+  own scratch project** and obtained `cost 110 = 74 + 12 + 20 + 0 + 4` and
+  `cost 40 = 24 + 12 + 0 + 0 + 4`, with wire coordinates byte-identical to the
+  document;
+- **had the contamination been live during that measurement, those numbers would
+  have differed.** They did not.
+
+So T22's evidence is self-checking against precisely this contamination, and the
+approval rests on measurements that would have failed had it mattered. Recorded
+rather than assumed.
+
+**PROPOSED 21: the session scratchpad is shared between concurrent subagents, and
+the `tick-reviewer` definition assumes otherwise.** *Recommendation: accept the
+reviewer's own fix* — never write scratch bookkeeping to a shared file; keep it
+in a shell variable within one tool call, or derive a filename from a value only
+that reviewer holds. It belongs in the definition beside the `mktemp -d` rule,
+because that rule's stated reason is exactly this collision and it currently
+covers only half the surface.
 
 ---
 
@@ -1379,3 +1600,74 @@ outright: if that happens, **the named check wins over the file list**, and the
 lane reports the excess in its first paragraph. That is PROPOSED 5 being applied
 in practice while it waits for a ruling — cheap to reverse, and it removes a
 choice no lane should have to make twice.
+
+
+---
+
+## The doc-diet check
+
+**The test applied**, from the goal: *any rule now executably enforced whose prose
+can shrink to a pointer.* Its authority is `ENGINEERING.md` §"Rules earn their
+place" — *"the binding set stays small enough to read in full at the start of
+every session, and that property outranks completeness."*
+
+### Result: almost nothing shrinks, and the reason is a good one
+
+Rules with workspace-reading twins today: `the_handle_has_one_name`,
+`the_label_threshold_has_one_name`, `the_four_way_rule_has_one_home`,
+`the_router_holds_no_floating_point`, `the_router_iterates_no_hash_map`,
+`probe_harness_has_one_home`, `probe_crate_is_dev_only`,
+`net_rules_are_written_down`, `fixtures_match_manifest`, `fixture_handles`,
+`net_counts_reconcile`, and the three `agent_doc` checks.
+
+**Every one of them is already referenced in pointer form**, not restated:
+
+- `spec/SPEC.md` §15 — *"duplicating it is a bug, and a test over the sources
+  holds that"* — one clause, naming the enforcement without repeating the rule.
+  This is the model form.
+- `CLAUDE.md` — *"The frozen surface is enforced by a PreToolUse hook over
+  `.claude/hooks/frozen-paths.txt`"* — two lines.
+- M4's exit-criteria table — fourteen rows, each a gate name and one assertion.
+- M4's Rules — *"Constitution §4: the router holds no floating point … The rule
+  has an executable twin in T8."*
+
+So the diet was already being kept. `ENGINEERING.md`'s rule has been enforced
+since it was written, which is why the check finds so little: **the discipline
+worked, and the honest report of a check that finds nothing is that it found
+nothing** — the same standard C2 was held to this session.
+
+### Three things it did find
+
+**1. One genuine duplication.** `CLAUDE.md`'s Tick review section restates the
+reviewer's three questions verbatim from `.claude/agents/tick-reviewer.md`, where
+the agentic-layer rule says role-scoped rules live. *Recommendation: shrink to the
+cross-agent half* — no task is ticked by its implementer; the reviewer gets the
+entry and the diff, never the narrative; two rejections escalate; the verdict is
+recorded beside the tick — **and point at the definition for the questions.**
+Saves four lines and removes a copy that can drift from its original.
+
+**2. The largest cross-agent rule has no executable twin at all.** Worktree
+currency and the manual-flow ruling now occupy **24 lines** of `CLAUDE.md`, and
+nothing mechanical enforces any of it. It is held up by lane discipline and
+orchestrator attention.
+
+`ENGINEERING.md` says a rule that matters *wants* an executable twin, and this is
+the rule that most matters — three saves in three dispatches when it was
+introduced, and this session every lane's base moved under it, one six times.
+**This is the opposite of a diet finding: it is prose doing a job prose is bad
+at.** *Recommendation: a check that a lane branch's merge-base is an ancestor of
+`main` before a merge is accepted, so the orchestrator's scope-verification step
+gains a twin.*
+
+**3. The set is growing, and `falsification-control` fastest.** It stands at
+**198 lines**, and this session's PROPOSED items would add four more sections
+(7, 11, 13, 15, 17, 22). `CLAUDE.md` gained 25 lines today.
+
+That growth is *earned* — each addition is a paid-for incident — but
+`ENGINEERING.md`'s constraint is explicit that the binding set's readability
+outranks its completeness, and a skill nobody finishes reading enforces nothing.
+*Recommendation for the advisor's triage: take the four new
+`falsification-control` items as one restructuring rather than four appends.*
+They are one idea at four levels — **an instrument is blind in the dimension its
+author was not thinking in** — and stating it once with four worked examples is
+shorter than four rules, and truer.
