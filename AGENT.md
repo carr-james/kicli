@@ -362,7 +362,9 @@ kicli sym delete <TARGET>
 ```
 
 The instance data goes with the symbol. The embedded definition stays if another
-placement still uses it, and goes if none does.
+placement still uses it, and goes if none does. The report says which way it
+went, as a note named `definition-kept` or `definition-removed`, so you never
+have to read the file to find out.
 
 ### `kicli sym set-field`
 
@@ -505,17 +507,21 @@ checked: every invariant passed
 
 **Read the cost, not just the total.** The parts are there so you can decide to
 move a symbol instead of accepting a bad route. `turns 12` on a two-corner route
-is normal; `crossings 40` means the route cuts two other nets and the drawing
-would read better if something moved.
+is normal; `crossings 20` is one net cut, and a cut net is usually worth a move
+rather than a wire. **The decision is the point of the breakdown**, and
+`kicli wire connect` below works one all the way through.
 
-The status is one of four words, and it is the first thing on the line:
+The status is one of four words. `routed` and `labels` are answers and print the
+contract above. `blocked` and `invalid` are refusals: they print one
+`kicli: ...` line instead — `{"error": {"kind": "operation", ...}}` in JSON —
+and write nothing.
 
-| Status | Exit | What it means |
-|---|---|---|
-| `routed` | 0 | a wire was drawn |
-| `labels` | 0 | a pair of labels is **proposed** instead of a wire. A proposal is a result, not a failure |
-| `blocked` | 1 | no route exists, and kicli names what stood in the way |
-| `invalid` | 1 | the request itself was not drawable: a diagonal, a vertex off the grid |
+| Status | Exit | What it means | What you do next |
+|---|---|---|---|
+| `routed` | 0 | a wire was drawn | read the `cost` parts. Accept it, or change the drawing and route again |
+| `labels` | 0 | a pair of labels is **proposed** and nothing was written. A proposal is a result, not a failure | run the same command with `--auto-labels`, or choose the path yourself with `wire draw` |
+| `blocked` | 1 | the request was drawable and the way was barred. The message names what barred it | move what it names, or join the ends with `--auto-labels` |
+| `invalid` | 1 | the request itself was not drawable: a diagonal, a vertex off the grid | fix the request. Nothing in the drawing has to change |
 
 **`--auto-labels` writes a pair of labels instead of a long wire.** A connection
 longer than `routing.label_threshold` reads better as two labels than as a wire
@@ -577,6 +583,110 @@ back.
 position** — where the terminal ended up is the matching end of `path`, and the
 point you asked for is that end less `by`. `why` is a closed set, currently the
 single word `four-way`, so you can switch on it and never parse English.
+
+### `kicli wire connect`
+
+```
+kicli wire connect --from-pin <REF.PIN> | --from-port <NAME> | --from-at <X,Y>
+                   --to-pin <REF.PIN> | --to-port <NAME> | --to-at <X,Y> | --to-net <NET>
+                   [--auto-labels]
+```
+
+kicli chooses the path here: the silhouettes a person would draw first, and a
+search when none of them fits. There is no `--via` — the corners are the
+router's to pick, and if you want to pick them yourself the verb is `wire draw`.
+The answer is the same route contract, with the same four statuses and the same
+cost breakdown, so everything above applies.
+
+One extra line sits on top of it, and in JSON it is a top-level `"net"` key
+beside `"wire"` — `null` when nothing was joined:
+
+```
+joined: net #n5
+```
+
+That name is **read back out of the file kicli has just written**, not predicted
+from the route, so it is what the drawing now says.
+
+**A successful connect writes immediately.** There is no dry run: if you decide
+against the route, delete the wires the report just named you.
+
+**`--to-net` joins a whole net**, by its drawn name or by the `#n3` handle
+`sch view` gives an unnamed one. kicli routes to the cheapest point of the net —
+any grid point of its wires, or any of its pins — and `to` says which point it
+joined:
+
+```
+routed R11.2 -> #n3@35.56,88.9   via 3 segments, 2 corners, 12.70mm
+```
+
+A handle names a position in the view you just read, not a conductor: joining a
+net renumbers them, and the `#n3` above comes back as `#n2` once the write lands.
+Re-read the view rather than reusing a handle. Quote it, too — `#` opens a
+comment in most shells. A name that answers for **more than one** net, which the
+same local label text on two sheets does, is refused with both nets and their
+pins listed. There is no `--from-net`: a route leaves one point, and which point
+of a net it should leave is not a question the escape rule can answer.
+
+**A route that ends on the interior of a wire gets a junction; one that ends
+where a wire already ends does not**, because KiCad draws a corner there.
+`junctions added` says which happened.
+
+**`--auto-labels` covers one case more here than under `wire draw`.** kicli
+proposes a pair of labels when the cheapest route is longer than
+`routing.label_threshold`, *and* when no route joins the two ends at all. The
+second kind says `reason: no route reaches ...` and adds a `blocked by:` line
+naming every obstacle it met, which is the list to move something out of.
+
+#### Worked: read the cost, then change the drawing
+
+`R30` and `R31` are 88.9mm apart with another net's wire between them.
+
+```sh
+kicli wire connect --from-pin R30.1 --to-pin R31.1
+```
+```
+joined: net #n5
+routed R30.1 -> R31.1   via 3 segments, 2 corners, 93.98mm
+  cost 110 = length 74 + turns 12 + crossings 20 + text 0 + proximity 4
+  crossings: 1 (at 170.18,171.45 on wire e58e0c77)
+  wires added: 3   junctions added: 0
++ W 2fbd461d 215.90,171.45..215.90,173.99
++ W a3506aad 127.00,171.45..215.90,171.45
++ W f1a99ad0 127.00,171.45..127.00,173.99
+checked: every invariant passed
+```
+
+Cost 110, and the parts say where it went: 74 of it is length and 20 is one
+crossing. Nothing about that is a failure — it is an invitation to move `R31`
+instead. Delete the three wires the report named, move, and route again:
+
+```sh
+kicli wire delete 2fbd461d
+kicli wire delete a3506aad
+kicli wire delete f1a99ad0
+kicli sym move R31 --to 152.4,177.8
+kicli wire connect --from-pin R30.1 --to-pin R31.1
+```
+```
+joined: net #n5
+routed R30.1 -> R31.1   via 3 segments, 2 corners, 30.48mm
+  cost 40 = length 24 + turns 12 + crossings 0 + text 0 + proximity 4
+  wires added: 3   junctions added: 0
++ W 2fbd461d 152.40,171.45..152.40,173.99
++ W a3506aad 127.00,171.45..152.40,171.45
++ W f1a99ad0 127.00,171.45..127.00,173.99
+checked: every invariant passed
+```
+
+110 to 40, and the crossing is gone. Only the last command's answer is shown;
+the three deletes and the move each print their own one-line delta and
+`checked: every invariant passed`.
+
+**Delete the wires first, and mean it.** `sym move` moves the symbol and its
+fields, and **not** the wires that met its pins: a symbol moved out from under a
+route leaves the route behind, joined to nothing, and the net it was on quietly
+disappears from `sch view`. That is why the undo comes before the move.
 
 ### `kicli wire delete`
 
@@ -733,7 +843,7 @@ is an error the moment you write it.
 ### `[routing]`
 
 What a wire costs, and how far kicli looks. The commands that read it are
-`kicli wire draw` and `kicli wire delete`.
+`kicli wire draw`, `kicli wire connect` and `kicli wire delete`.
 
 ```toml
 [routing]
