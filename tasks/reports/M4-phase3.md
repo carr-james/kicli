@@ -747,6 +747,30 @@ falsification and it is worth naming, because it looks like the procedure being
 followed. The second pass pads the index generator to 1462 bytes and watches the
 check go red at budget 100: a break in the code the check watches.
 
+### The orchestrator caught its own phantom, which is the rule proving itself
+
+Worth recording because it is the rule promoted this session (PROPOSED 10)
+demonstrating its own necessity, on the person who promoted it.
+
+Running `cargo xtask check` on the C8 merge, I got **`FAIL clean`** with the other
+five green. The cause was not the merge: it was **my own edit to
+`tasks/reports/M4-phase3.md`, made while the gate was running.** The `clean` gate
+compares the working tree before and after, and the orchestrator writes the report
+per tick — which is precisely the collision the ruling described.
+
+The same merge then passed **all six** through the pre-commit hook moments later,
+with the tree quiet.
+
+The ruling widened the reviewer's rule from "not while other lanes are active" to
+"never", on the grounds that *the reviewer could not reliably evaluate the
+condition.* Neither could I, in my own checkout, about my own edits. **The rule
+was under-scoped, not over-scoped**: it names reviewers, and the person most
+likely to trip it is the one writing the report.
+
+*Recommendation, folded into PROPOSED 10: the rule is about the shared checkout,
+not about the role.* Anyone running the full gate suite there must have a quiet
+tree, and a `clean` failure with five green is a phantom until proven otherwise.
+
 ### The identifier seed (C8)
 
 > **WORKFLOW NOTE:** The brief's site table said three verbs; there are four —
