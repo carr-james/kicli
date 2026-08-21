@@ -50,8 +50,9 @@ use kicli_probe::oracle::{
 };
 use kicli_sexpr::Doc;
 use serde_json::Value;
+use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Output};
+use std::process::{Command, Output, Stdio};
 
 /// Where this binary writes the drawings it builds.
 fn scratch() -> PathBuf {
@@ -282,6 +283,52 @@ fn names_a_wire_the_loop_drew(item: &str) -> bool {
     TOUCHED.iter().any(|name| {
         item.contains(&format!("Symbol {name} ")) || item.contains(&format!("Label '{name}'"))
     })
+}
+
+/// KiCad's own layout of the file kicli wrote, measured rather than assumed.
+///
+/// `kicad-cli sch upgrade --force` re-saves a schematic the way KiCad saves
+/// one, on a **copy**, so the file under test is left as kicli wrote it.
+///
+/// **This is not byte-identity and cannot be.** KiCad reorders the items and
+/// renames the project, which is why SPEC's P4 — "what KiCad would write" — is
+/// informational rather than a gate. What the re-save is good for is the
+/// **layout**: the prefixes KiCad indents its lines with. Those come from the
+/// tool in this run rather than from a constant written here, and — the point —
+/// they do not come from kicli's own prettifier.
+///
+/// # Panics
+///
+/// If the copy cannot be made, or if `kicad-cli` will not re-save it.
+fn as_kicad_would_lay_it_out(written: &Path, into: &Path) -> String {
+    std::fs::create_dir_all(into).expect("the scratch directory is writable");
+    let copy = into.join("resaved.kicad_sch");
+    std::fs::copy(written, &copy).expect("the written file copies");
+    let binary = std::env::var("KICLI_KICAD_CLI").unwrap_or_else(|_| "kicad-cli".to_owned());
+    let status = Command::new(binary)
+        .args(["sch", "upgrade", "--force"])
+        .arg(&copy)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .expect("kicad-cli runs");
+    assert!(status.success(), "kicad-cli re-saved the file kicli wrote");
+    std::fs::read_to_string(&copy).expect("the re-saved file reads")
+}
+
+/// The distinct indentations a file's lines carry.
+///
+/// A set rather than a count: KiCad's re-save moves one record to a depth of
+/// its own, and the claim here is about the **alphabet and the depths** a
+/// layout uses, not about how many lines sit at each.
+fn indentations(text: &str) -> BTreeSet<String> {
+    text.lines()
+        .map(|line| {
+            line.chars()
+                .take_while(|character| character.is_whitespace())
+                .collect()
+        })
+        .collect()
 }
 
 /// The four nets the loop is about, as they stand after the four writes.
@@ -520,6 +567,25 @@ fn an_agent_wires_a_sheet_and_kicad_agrees() {
                 "KiCad does not carry {joined:?}: {kicad_partition:?}"
             );
         }
+
+        // **P1's layout half, against a control KiCad supplied.**
+        // `doc.is_canonical()` below is kicli's opinion of KiCad's layout, and
+        // `doc.emit()` produces that layout — both through one prettifier, so a
+        // break in it moves the claim and the control together and neither
+        // notices. This clause asks the tool instead: the indentations kicli
+        // wrote are the indentations KiCad writes.
+        let resaved = as_kicad_would_lay_it_out(&project.root, &project.directory.join("resaved"));
+        let kicad_layout = indentations(&resaved);
+        assert!(
+            kicad_layout.len() > 1,
+            "the control read no indentation at all, so it would agree with \
+             anything"
+        );
+        assert_eq!(
+            indentations(&written),
+            kicad_layout,
+            "kicli does not indent a file the way KiCad indents one"
+        );
     }
 
     // ---- P1 and P2, on the file the four writes produced. ------------------
