@@ -408,6 +408,32 @@ the tick under review had not merged. Small, and it cost a reviewer a
 reconciliation it should not have had to do. *Recommendation: accept, as a line in
 the review-brief pattern.*
 
+**11. Falsification evidence should be anchored to content hashes, not commit
+SHAs.** Raised by the `AGENT.md` lane, and it resolves the third of three
+independent collisions between `falsification-control` and commit discipline
+reported this session:
+
+| # | Reported by | The collision |
+|---|---|---|
+| 1 | the threshold lane | "commit the good state first" vs. a one-commit brief — reconcilable only by `--amend`, which neither document mentions |
+| 2 | the handle chore | after that commit, any *further* improvement is uncommitted too, and the next `git checkout --` discards it |
+| 3 | the `AGENT.md` lane | citing the good-state commit's SHA in the entry, then folding the entry in by `--amend`, destroys the SHA the entry names |
+
+*Recommendation: accept, and let it subsume the other two.* **A content hash
+survives amending, rebasing, and merging `main` forward; a SHA does not** — and
+this session every lane merged forward at least once, one of them four times, so
+SHA-anchored evidence rots by default rather than by accident. **Not applied** —
+skills change by ruling.
+
+**12. No fixture exercises a net with no visible pin.** Raised by the `AGENT.md`
+lane while falsifying D4's law, and it is a gap in the instruments rather than in
+the code. `listed + tallied + hidden = total` holds, but `hidden` is **0 on all
+seven fixture projects that have nets**, so dropping that term from the law leaves
+the check green. The lane established this as a no-op break rather than assuming
+it. *Recommendation: accept as a chore — a fixture with an all-power-pin net, or
+an all-off-sheet one under `--sheet`.* Until then the law is verified in two terms
+of three.
+
 **3. `falsification-control` and a one-commit brief are compatible only via
 `--amend`, which neither document mentions.** Also raised by the threshold lane.
 The skill requires the good state committed *before* any deliberate break; the
@@ -481,6 +507,66 @@ costing the original against the full sheet — **fails, but by the skip guard
 rather than by the tolerance**: the strands become uncostable rather than
 mis-priced, 82/82 and 67/87 skipped. So the tolerance alone would not have caught
 a broken symmetry, and a reader needs to know which assertion is load-bearing.
+
+### The AGENT.md lane (C7, D4, D6) — merged `984545c`
+
+Lane `lane-doc`, base `491c254`, three commits, merged no-ff. Six gates green on
+the merged result. **Scope:** one file outside the brief's IN list —
+`crates/kicli/tests/net_counts_reconcile.rs` — because D4's check asked for a test
+holding the two numbers to their stated relationship and no in-scope file could
+hold an integration test. **This is the standing answer working**: the brief said
+the named check wins over the file list, the lane took it, and declared the excess
+in its first paragraph rather than stopping for a dispatch. No reversal trigger.
+
+**C7 — what "documented" now means, which was the judgement the chore existed to
+make.** The command's name appears as its own **backticked span in a heading
+line**, and the section that heading opens **has a body** of at least 80
+non-whitespace characters. The floor is measured, not chosen: the smallest real
+section is 135 characters, the largest 4391, and a one-sentence stub is about 50.
+
+The lane declined the obvious answer and gave a reason: **one heading per command
+*name*, not one section per command.** Six shared headings cover 16 of the 28
+commands and they group verbs differing by one word of behaviour. *The check
+should describe the document's shape, not impose one.* What it does insist on is
+that a shared heading **names every verb it covers** — which is grouping's real
+failure mode, and break 2a proves it: dropping one verb from a shared heading
+while leaving the body intact **passed the old check and fails the new one**.
+
+**One hole is recorded rather than closed**, and recording it is the right call: a
+heading kept with its body replaced by a pointer elsewhere still passes. No
+textual check can judge whether a body is *about* its command, and raising the
+floor only lengthens the evasion.
+
+**A parser defect found on the way, and load-bearing.** The section reader must
+skip fenced blocks, because `AGENT.md` prints view samples inside fences and a
+kicli view comments itself with a hash — which reads as an H1 to a naive scanner
+and truncates the section. Break 4 plants a heading inside a fence and fails.
+
+**D4 — the law, and why the dogfood agent's arithmetic was right but not
+general.** `listed + tallied + hidden = total`. The agent computed `10 + 18 = 28`
+unaided; the third term is the one it never had to reckon with, because a net with
+**no** visible pin is dropped in silence. Measured whole-project on the `nets`
+fixture: `14 + 18 + 0 = 32`, and the binary prints `nets 32`. On the root sheet:
+`10 + 18 = 28` against 32. **So the obvious signpost — "they add up" — is false
+under `--sheet`**, and would have been the natural thing to write.
+
+And the reason there was no signpost to find: **`AGENT.md`'s `project info` sample
+was missing the `nets` line entirely.**
+
+**Break F is a no-op break established as one, not assumed.** Dropping `hidden`
+from the law stayed green — because `hidden` is 0 on all seven fixture projects
+with nets. Recorded as a PROPOSED gap: no fixture exercises a net with no visible
+pin, so that term of the law is untested by construction.
+
+**D6 — and the timing half is now half-measured.** The document claimed
+`project check` "warms KiCad's font cache". It does not: it asks
+`kicad-cli --version`, and that ask is what may build the cache. Beyond the doc
+fix, the lane measured what it could and **recorded rather than acted**: the note
+**prints unconditionally** (confirmed — two runs seconds apart print it
+identically, and `probe` emits it whenever discovery succeeds), the cache being
+genuinely cold each time is **refuted**, and the cold-cache "over two minutes"
+figure **remains inherited, not observed**, so the standing sentence was left
+byte-identical.
 
 ---
 
@@ -819,6 +905,30 @@ because a sweep that *classifies* is a different risk from a check that
 review this milestone whose decisive finding came from making the instrument
 fail rather than from reading the diff. Carried into the retrospective as a
 candidate standing line for review briefs.
+
+### The AGENT.md lane (C7, D4, D6)
+
+> WORKFLOW NOTE: The brief told me to record under `#### Done, 2026-08-21` in both
+> `tasks/dogfood.md` entries, which would have put two identically-titled headings
+> in one file; I used `#### D4 — Done, 2026-08-21` and `#### D6 — Done …` so a
+> reviewer can locate them. Second: the brief's instruction to commit the good
+> state before falsifying collides with citing that commit's SHA in the entry,
+> because folding the entry in by `--amend` destroys the SHA the entry names — I
+> anchored the falsification to `shasum -a 256` values instead, and that should be
+> the documented pattern rather than a per-lane improvisation.
+
+**Orchestrator, beside the quote:** both accepted. The first is a small brief
+defect — I wrote one heading template for three items in one file — and the lane's
+fix is better than what I asked for.
+
+The second is the **third** distinct report this session of `falsification-control`
+colliding with commit discipline, after "commit the good state first vs. one
+commit" and "any improvement made after that commit is uncommitted too". The
+lane's answer generalises past all three: **anchor falsification evidence to
+content hashes rather than to commit SHAs.** A hash survives amending, rebasing
+and merging forward; a SHA does not, and every lane that merges `main` forward —
+which, this session, is all of them — invalidates its own citations. Filed as
+PROPOSED 11.
 
 ### The handle chore's second tick reviewer (C1)
 
