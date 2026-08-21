@@ -28,12 +28,30 @@
 //! identifier/key distinction gets stated, in prose, in a place a reader will
 //! see it.
 //!
-//! # What it still cannot see
+//! # The claim, stated so it can be checked
 //!
-//! It reads text. A cut written as `&uuid[..LEN]` behind a `const LEN = 8`
-//! would pass, as would one assembled at runtime. The *spellings* it knows are
-//! not guessed, though: they are read off the standard library's own
-//! prefix-yielding API, by the grep recorded on `CUTS`. That is the same ceiling
+//! **No expression anywhere under `crates/` takes the first eight characters
+//! or bytes of a string, at a literal width of eight, in any spelling the
+//! standard library offers for doing so, except at the sites listed in
+//! `ACCOUNTED` with the reason each is there.**
+//!
+//! Read the qualifiers, because each one is a thing this cannot see:
+//!
+//! - *at a literal width of eight* — `&uuid[..LEN]` behind a `const LEN = 8`
+//!   passes, as does a width computed at run time;
+//! - *in any spelling the standard library offers* — a hand-rolled loop that
+//!   pushes characters until a counter reaches eight passes;
+//! - it reads text, so a macro that expands to a cut passes.
+//!
+//! That is a narrower claim than "the handle rule has one home", and it is
+//! written down at this width rather than at the comfortable one because the
+//! comfortable one has now been wrong three times in this chore. Closing the
+//! remaining gap needs a different instrument — a lint over the compiled MIR,
+//! not a reader of source text — which is a different piece of work and is
+//! recorded as such in the C1 entry rather than half-done here.
+//!
+//! What the sweep *does* cover, it covers exhaustively rather than by
+//! guesswork: see `CUTS` for the three external enumerations it is built from. That is the same ceiling
 //! `the_router_holds_no_floating_point` and `the_four_way_rule_has_one_home`
 //! work under, and it is recorded rather than papered over: the claim is that
 //! no cut **in these spellings** exists unaccounted for.
@@ -48,46 +66,72 @@ const DEFINER: &str = "crates/kicli/src/model/items.rs";
 
 /// How Rust spells "the first eight of these".
 ///
-/// **Not chosen by hand.** A hand-chosen list is the name list's mistake in a
-/// second costume, and it was made once here: an eleven-spelling list written
-/// from memory was blind to `split_off(8)`, `drain(8..)` and
-/// `split_at_mut(8)`, all three of which cut a string to eight characters and
-/// all three of which passed as plants. The list below is instead read off the
-/// standard library's own prefix-yielding API, which is re-derivable:
+/// **The vocabulary does not come from the author's head, and that is the
+/// whole point of this constant.** Three instruments have now failed in this
+/// chore for the same reason — each was built from what its writer could think
+/// of, so its own falsification table was spelled the way it expected and
+/// could not see the gap:
+///
+/// 1. the sweep classified by *name*, against `["uuid", "kiid", "identifier"]`,
+///    and the tick reviewer walked `fn short(id: &str)` straight through it;
+/// 2. the cut-based rework hand-listed *slice spellings*, and `split_off(8)`,
+///    `drain(8..)` and `split_at_mut(8)` walked through that;
+/// 3. the first fix for (2) grepped `std` — with a hand-written alternation of
+///    method names, which is the same closed list one level up.
+///
+/// So the list below is **exhaustive over three external enumerations**, each
+/// mechanically re-derivable and each checkable against `doc.rust-lang.org` by
+/// a reader who has never seen this repository. Every public method of `str`,
+/// of `String`, and of `Iterator` was listed and considered; the ones that can
+/// yield a prefix at a literal width of eight appear here, and the reasoning
+/// for the rest is in the C1 task entry, item by item.
 ///
 /// ```text
-/// SRC=~/.rustup/toolchains/<toolchain>/lib/rustlib/src/rust/library
-/// grep -hE '^\s+pub (const )?fn (truncate|split_at|split_at_checked|split_at_mut\
-/// |get|split_off|floor_char_boundary|ceil_char_boundary|drain|chars|char_indices\
-/// |bytes)\b' "$SRC"/core/src/str/mod.rs "$SRC"/alloc/src/string.rs
+/// SRC=$(rustc --print sysroot)/lib/rustlib/src/rust/library
+/// awk '/^impl str \{/,0' "$SRC"/core/src/str/mod.rs \
+///   | grep -oE 'pub (const )?fn [a-z_0-9]+' | sed -E 's/.*fn //' | sort -u
+/// awk '/^impl String \{/,/^impl FromUtf8Error/' "$SRC"/alloc/src/string.rs \
+///   | grep -oE 'pub (const )?fn [a-z_0-9]+' | sed -E 's/.*fn //' | sort -u
+/// grep -oE '^\s+fn [a-z_0-9]+' "$SRC"/core/src/iter/traits/iterator.rs \
+///   | sed -E 's/.*fn //' | sort -u
 /// ```
-///
-/// Each method that can yield a prefix appears here at the width eight, plus
-/// the iterator adaptors those methods feed (`take`, `nth`) and the two
-/// `Index` forms. When the standard library grows another, this comment says
-/// where to look rather than asking the next reader to guess.
 ///
 /// Whitespace is stripped from a line before matching, so `get(.. 8)` and
 /// `get(..8)` are the same cut. Byte and character forms are both here: which
-/// one a site uses is part of what the reader below has to justify.
+/// one a site uses is part of what its accounted-for reason has to justify.
+///
+/// What this still cannot reach is recorded on the module, not hidden: a width
+/// behind a `const`, a width computed at run time, or a hand-rolled loop.
 const CUTS: &[&str] = &[
-    "take(8)",
-    "nth(8)",
-    "truncate(8)",
-    "split_at(8)",
-    "split_at_mut(8)",
-    "split_at_checked(8)",
-    "split_off(8)",
-    "drain(8..)",
-    "drain(..8)",
+    // `str`, by index or by explicit split.
     "get(..8)",
     "get(0..8)",
     "get(..=7)",
     "get(0..=7)",
-    "..8]",
-    "..=7]",
+    "get_mut(..8)",
+    "get_mut(0..8)",
+    "split_at(8)",
+    "split_at_checked(8)",
+    "split_at_mut(8)",
+    "split_at_mut_checked(8)",
     "floor_char_boundary(8)",
     "ceil_char_boundary(8)",
+    // The `Index` operator forms, from `core::ops` rather than an inherent fn.
+    "..8]",
+    "..=7]",
+    // `String`, which can cut in place.
+    "truncate(8)",
+    "split_off(8)",
+    "drain(8..)",
+    "drain(..8)",
+    "replace_range(8..",
+    // `Iterator`, which is what `chars`, `char_indices`, `bytes` and
+    // `into_chars` feed. These four are not cuts themselves.
+    "take(8)",
+    "nth(8)",
+    "zip(0..8)",
+    "next_chunk::<8>",
+    "array_chunks::<8>",
 ];
 
 /// One cut that is allowed to exist, and the reason it does.
