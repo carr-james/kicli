@@ -32,10 +32,13 @@
 //!
 //! # What is deliberately not here
 //!
-//! No identifier is quoted. Identifiers are a SHA-256 of a seed built on the
-//! document's **absolute path**, so an assertion that named one would pass in
-//! the worktree it was written in and fail everywhere else. Counts and
-//! positions are asserted instead.
+//! No identifier is quoted. Identifiers are a SHA-256 of a seed built from the
+//! request and the document it lands in, so an assertion that named one would
+//! have to be rewritten whenever anything about either moved. Counts and
+//! positions are asserted instead. Until the identifier-seed chore (C8) the
+//! seed carried the document's **absolute path** as well, and a quoted
+//! identifier would have passed in the worktree it was written in and failed
+//! everywhere else — the sharper version of the same reason.
 //!
 //! The oracle half runs only with `KICLI_TEST_KICAD_CLI` set, so the default
 //! run needs no KiCad install — and [`the_oracle_says_when_it_did_not_run`]

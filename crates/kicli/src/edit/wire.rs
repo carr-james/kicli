@@ -49,7 +49,7 @@ use std::path::Path;
 use kicli_sexpr::{NodeId, SexprError, quote};
 
 use crate::connectivity::{Net, NetPin, Nets, extract};
-use crate::edit::insert::{Identifiers, insertion_index};
+use crate::edit::insert::{Identifiers, document_name, insertion_index};
 use crate::edit::mark::{PinAddress, WireEnd, wire_ends_at};
 use crate::geometry::{Iu, Point, on_segment, resolve_pins};
 use crate::model::config::Routing;
@@ -472,7 +472,7 @@ pub fn draw(
     // file rather than two that differ only in their identifiers.
     let seed = format!(
         "{} wire {} to {}",
-        target.path.display(),
+        document_name(target.path, target.project),
         from.name,
         to.name
     );
@@ -1183,7 +1183,7 @@ pub fn draw_plan(
     // file rather than two that differ only in their identifiers.
     let seed = format!(
         "{} connect {} to {}",
-        target.path.display(),
+        document_name(target.path, target.project),
         plan.source.name,
         plan.target.name
     );

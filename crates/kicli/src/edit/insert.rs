@@ -8,6 +8,7 @@
 
 use std::collections::BTreeSet;
 use std::fmt::Write as _;
+use std::path::Path;
 
 use kicli_sexpr::{Doc, NodeId};
 use sha2::{Digest, Sha256};
@@ -27,6 +28,31 @@ pub(crate) fn insertion_index(doc: &Doc, root: NodeId) -> usize {
             doc.head_is(child, "sheet_instances") || doc.head_is(child, "embedded_fonts")
         })
         .unwrap_or(children.len())
+}
+
+/// What a seed calls the document it is editing, free of where the checkout is.
+///
+/// Every seed names its file, so two commands over two sheets of one design do
+/// not derive one identifier. The **absolute** path would name it at the cost
+/// of naming the directory the project happens to sit in, so one design in two
+/// checkouts would write two files that differ only in their identifiers — the
+/// opposite of what seeding is for. The path relative to the project directory
+/// says the same thing about *which file of this design* and nothing about
+/// where the design is.
+///
+/// A file with no relative form — one outside the project directory it is being
+/// edited under — is named by its file name, which is checkout-independent too.
+/// This is why the seed does not reuse `Loaded::shorten`, which falls back to
+/// the whole path because a *report* must not hide where a file is.
+///
+/// Two projects can hold the same relative path, so two designs can reach one
+/// seed. That is not a collision: [`Identifiers`] hands out only values the
+/// document does not already carry, and the two documents are different files.
+pub(crate) fn document_name(path: &Path, project: &Path) -> String {
+    path.strip_prefix(project)
+        .unwrap_or_else(|_| Path::new(path.file_name().unwrap_or(path.as_os_str())))
+        .display()
+        .to_string()
 }
 
 /// An identifier for a new object that no object of this file already has.
@@ -114,8 +140,45 @@ fn uuid_from(seed: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{Identifiers, fresh_uuid, uuid_from};
+    use super::{Identifiers, document_name, fresh_uuid, uuid_from};
     use kicli_sexpr::Doc;
+    use std::path::Path;
+
+    #[test]
+    fn a_document_is_named_by_its_place_in_its_project() {
+        let here = document_name(
+            Path::new("/one/checkout/sheets/power.kicad_sch"),
+            Path::new("/one/checkout"),
+        );
+        assert_eq!(here, "sheets/power.kicad_sch");
+
+        let elsewhere = document_name(
+            Path::new("/somewhere/entirely/else/sheets/power.kicad_sch"),
+            Path::new("/somewhere/entirely/else"),
+        );
+        assert_eq!(here, elsewhere, "the checkout does not reach the name");
+
+        assert_ne!(
+            here,
+            document_name(
+                Path::new("/one/checkout/sheets/analog.kicad_sch"),
+                Path::new("/one/checkout"),
+            ),
+            "but which file of the design still does"
+        );
+    }
+
+    #[test]
+    fn a_document_outside_its_project_is_named_by_its_file() {
+        assert_eq!(
+            document_name(
+                Path::new("/somewhere/quite/other/power.kicad_sch"),
+                Path::new("/one/checkout"),
+            ),
+            "power.kicad_sch",
+            "a name with no directory in it is still not a checkout"
+        );
+    }
 
     #[test]
     fn an_identifier_has_the_shape_kicad_reads() {

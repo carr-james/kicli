@@ -6,7 +6,7 @@
 
 use kicli_sexpr::{Doc, NodeId, SexprError, quote};
 
-use crate::edit::insert::{fresh_uuid, insertion_index};
+use crate::edit::insert::{document_name, fresh_uuid, insertion_index};
 use crate::geometry::{Angle, Point, Size};
 use crate::model::items::{ReadError, Schematic, Uuid};
 use crate::model::mutate::{Mutation, MutationError, Target, commit, state_before};
@@ -95,7 +95,7 @@ pub fn add(
         doc,
         &format!(
             "{} text {} {} {}",
-            target.path.display(),
+            document_name(target.path, target.project),
             request.text,
             request.at,
             request.angle
