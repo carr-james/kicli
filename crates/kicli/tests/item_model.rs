@@ -132,9 +132,9 @@ fn the_item_zoo_names_every_kind_it_holds() {
 #[test]
 fn a_symbol_reports_the_reference_of_the_sheet_path_it_is_asked_about() {
     let (_doc, schematic) = read("sch/nets/nets_channel.kicad_sch");
-    let root = "00000000-0000-4000-8000-030000000000";
-    let sheet_a = SheetPath(format!("/{root}/00000000-0000-4000-8000-03a000000001"));
-    let sheet_b = SheetPath(format!("/{root}/00000000-0000-4000-8000-03b000000001"));
+    let root = "13000001-0000-4000-8000-030000000000";
+    let sheet_a = SheetPath(format!("/{root}/1300006c-0000-4000-8000-03a000000001"));
+    let sheet_b = SheetPath(format!("/{root}/1300006d-0000-4000-8000-03b000000001"));
 
     let symbol = schematic
         .symbols()
