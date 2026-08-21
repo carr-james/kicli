@@ -151,18 +151,27 @@ fn lines(partition: &Partition) -> BTreeSet<String> {
     partition.iter().map(|pins| pins.join(",")).collect()
 }
 
-/// Two resistors, with the second one's net named by a label on a stub.
+/// Two resistors to join, a name for one of them, and a net in the way.
 ///
 /// R1.1 sits at `(50.8, 50.8)` and R2.1 at `(88.9, 50.8)`; a resistor's pin 1
 /// is above its anchor and its body below, so both are left upwards. The stub
 /// leaves R2.1 sideways, clear of the column the route comes down, so the wire
 /// kicli draws lies on top of nothing.
+///
+/// **The third net is what makes "no other net changed" a live claim.** R5.1
+/// and R6.1 are joined by a wire the route has to cross to get from one
+/// resistor to the other. A crossing is allowed and costed, and it is
+/// emphatically not a connection — so a drawing with nothing to cross would
+/// let the oracle's control pass by having nothing to say.
 fn two_resistors_one_named(name: &str) -> PathBuf {
     let mut probe = Probe::new(name, scratch());
     probe.place("R", "R1", ("50.8", "54.61"), &["1", "2"]);
     probe.place("R", "R2", ("88.9", "54.61"), &["1", "2"]);
     probe.wire(("88.9", "50.8"), ("101.6", "50.8"));
     probe.label_of_kind(LabelKind::Local, "SIG_A", ("101.6", "50.8"));
+    probe.place("R", "R5", ("69.85", "34.29"), &["1", "2"]);
+    probe.place("R", "R6", ("69.85", "67.31"), &["1", "2"]);
+    probe.wire(("69.85", "30.48"), ("69.85", "63.5"));
     probe.write()
 }
 
@@ -286,6 +295,11 @@ fn without_the_junction(sheet: &Path, uuid: &str) -> PathBuf {
     path
 }
 
+/// Does the written drawing still hold this net?
+fn after_holds(path: &Path, wanted: &[String]) -> bool {
+    kicli_nets(path).contains(wanted)
+}
+
 #[test]
 fn a_route_joins_the_two_pins_it_names() {
     let sheet = two_resistors_one_named("connect-two-pins");
@@ -301,6 +315,23 @@ fn a_route_joins_the_two_pins_it_names() {
         run.wire()["segments"].as_u64().unwrap_or_default() > 0,
         "a routed answer draws a wire: {}",
         run.object()
+    );
+    // The route crosses the third net on its way, and a crossing is not a
+    // connection: no junction is written for one.
+    assert_eq!(
+        run.wire()["crossings"].as_array().map(Vec::len),
+        Some(1),
+        "the route crosses the net in the way, and says so: {}",
+        run.object()
+    );
+    assert!(
+        run.junctions().is_empty(),
+        "a crossing gets no dot: {}",
+        run.object()
+    );
+    assert!(
+        after_holds(&sheet, &net(&["R5.1", "R6.1"])),
+        "the net the route crossed is still its own net"
     );
 
     // The extractor agrees about the file the command wrote.
