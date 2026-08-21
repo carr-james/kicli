@@ -136,6 +136,20 @@ impl Sheet {
         })
     }
 
+    /// The same sheet, with its objects listed in the opposite order.
+    ///
+    /// **The environment variation this gate is exposed to.** KiCad reorders a
+    /// file's objects when it saves, so the order a sheet lists its wires,
+    /// junctions and symbols in is not a property of the drawing. Every number
+    /// this gate reports, and every row of its table, must be the same either
+    /// way — and one of them was not: the strand sort's key left ties to file
+    /// order until the run-order break of 2026-08-21 found it.
+    #[must_use]
+    pub fn with_objects_reversed(mut self) -> Self {
+        self.hierarchy.files[self.file].schematic.items.reverse();
+        self
+    }
+
     /// The loaded file this placement draws.
     fn file(&self) -> &LoadedFile {
         &self.hierarchy.files[self.file]
@@ -530,7 +544,14 @@ fn strands_of(sheet: &Sheet, drawing: &Drawing) -> Vec<Strand> {
     let mut strands: Vec<Strand> = grouped
         .into_values()
         .map(|(wire_indices, pin_indices)| {
-            let members: Vec<PinSite> = pin_indices.iter().map(|&i| pins[i].clone()).collect();
+            let mut members: Vec<PinSite> = pin_indices.iter().map(|&i| pins[i].clone()).collect();
+            // Sorted here rather than inherited from the sheet's own pin list,
+            // because `spanning_tree` breaks ties on these indices and the
+            // sheet's list is whatever order KiCad last saved its symbols in.
+            // This is the sort the order check actually rests on: with it gone
+            // and `pins_of`'s gone too, reversing the file's objects changes
+            // the report.
+            members.sort_by(|one, other| (one.at, &one.handle).cmp(&(other.at, &other.handle)));
             let mut names: BTreeSet<String> = BTreeSet::new();
             for pin in &members {
                 let (reference, number) = pin.handle.rsplit_once('.').unwrap_or((&pin.handle, ""));
@@ -551,15 +572,26 @@ fn strands_of(sheet: &Sheet, drawing: &Drawing) -> Vec<Strand> {
             }
         })
         .collect();
-    strands.sort_by(|one, other| {
-        let key = |strand: &Strand| {
-            (
-                strand.pins.first().map(|pin| pin.at),
-                strand.net.clone(),
-                strand.pins.len(),
-            )
-        };
-        key(one).cmp(&key(other))
+    // **A total order, and it has to be.** Two strands share no pin and no wire,
+    // so the whole set of pin positions followed by the whole set of wire
+    // endpoints separates any two of them; the net name is only there to make
+    // the key readable. The earlier key was "first pin, net, pin count", which
+    // is also total on these sheets — no two strands share their smallest pin —
+    // but it is total by luck rather than by construction, and a report whose
+    // row order can be settled by file order is a report no reader can diff.
+    // `the_report_does_not_depend_on_the_order_the_file_lists_its_objects` is
+    // the check; removing this sort and the one below makes it fail, measured
+    // 2026-08-21.
+    strands.sort_by_cached_key(|strand| {
+        (
+            strand.pins.iter().map(|pin| pin.at).collect::<Vec<Point>>(),
+            strand.net.clone(),
+            strand
+                .wires
+                .iter()
+                .map(|&index| ordered(drawing.wires[index].from, drawing.wires[index].to))
+                .collect::<BTreeSet<(Point, Point)>>(),
+        )
     });
     strands
 }
@@ -1236,16 +1268,22 @@ fn re_routing_a_known_good_sheet_costs_what_the_original_did() {
 /// of `complex_hierarchy`, and it is loaded through its parent because a
 /// reference designator belongs to a placement.
 #[cfg(feature = "corpus")]
-#[test]
-fn re_routing_a_demo_sheet_costs_what_the_original_did() {
+fn demo_sheet() -> Option<Sheet> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../target/corpus/demos/complex_hierarchy/complex_hierarchy.kicad_sch");
     if !root.is_file() {
+        return None;
+    }
+    Some(Sheet::child_of(&root, "ampli_ht.kicad_sch").expect("the demo places ampli_ht"))
+}
+
+#[cfg(feature = "corpus")]
+#[test]
+fn re_routing_a_demo_sheet_costs_what_the_original_did() {
+    let Some(sheet) = demo_sheet() else {
         eprintln!("skipped: the corpus is not there. Run `cargo xtask corpus` first.");
         return;
-    }
-    let sheet =
-        Sheet::child_of(&root, "ampli_ht.kicad_sch").expect("the demo places ampli_ht once");
+    };
     let measured = Calibration::of(&sheet);
     println!("{}", measured.report());
     measured.assert_skipped_pins_are_a_minority();
@@ -1647,4 +1685,34 @@ fn a_bus_entry_halo_is_one_grid_step() {
     assert!(within_one_step(Point::new(2 * GRID.0, GRID.0), entry));
     assert!(!within_one_step(Point::new(3 * GRID.0, 0), entry));
     assert!(!within_one_step(Point::new(0, -2 * GRID.0), entry));
+}
+
+/// The whole report is a function of the drawing, not of the file's item order.
+///
+/// The hazard the environment-variation break names: this gate builds a
+/// spanning tree with ties broken on `(x, y)` and routes its edges in order, so
+/// anything that reaches the answer through the order a file happens to list
+/// its objects in is a calibration number that is not one. The comparison is of
+/// the **whole report**, not of the totals: the run-order break found totals
+/// that agreed and rows that did not, which is a report no reader can diff.
+#[test]
+fn the_report_does_not_depend_on_the_order_the_file_lists_its_objects() {
+    let forwards = Calibration::of(&Sheet::root_of(&fixture())).report();
+    let backwards = Calibration::of(&Sheet::root_of(&fixture()).with_objects_reversed()).report();
+    assert_eq!(forwards, backwards);
+}
+
+/// The same, on the demo sheet, which has junctions and branching strands the
+/// fixture does not.
+#[cfg(feature = "corpus")]
+#[test]
+fn the_demo_report_does_not_depend_on_the_order_the_file_lists_its_objects() {
+    let Some(sheet) = demo_sheet() else {
+        eprintln!("skipped: the corpus is not there. Run `cargo xtask corpus` first.");
+        return;
+    };
+    let forwards = Calibration::of(&sheet).report();
+    let sheet = demo_sheet().expect("the corpus is still there");
+    let backwards = Calibration::of(&sheet.with_objects_reversed()).report();
+    assert_eq!(forwards, backwards);
 }
