@@ -345,6 +345,36 @@ and not about whether you committed *once* — it is about whether git knows **t
 state you want back, at the moment you break something**. *Recommendation:
 accept.* **Not applied** — skills change by ruling.
 
+**7. `falsification-control` should require that a derivation bottom out in an
+enumeration nobody in the loop wrote.** Raised by the handle chore's lane, in the
+words quoted in the retrospective, and it **supersedes the looser rule I proposed
+in this report's own stop section** ("derive its vocabulary from a source outside
+the author's head").
+
+The correction is that *a citation is not a derivation.* The lane's own first fix
+grepped std — but with a hand-written alternation of method names as the pattern,
+which is the same closed list one level up, now wearing a reference. The test that
+distinguishes them is mechanical: **can a reader re-run the derivation and get the
+list, without trusting anyone's judgement about what belongs in it?**
+
+*Recommendation: accept, as an amendment to `falsification-control` alongside the
+environment-variation class promoted this session.* The two are the same family —
+both are about a check that is falsifiable in the dimension its author was
+thinking in, and blind in one they were not. **Not applied**, skills change by
+ruling.
+
+**8. A resuming lane should expect its base to move *during* its work, not only
+before it.** Also raised by the handle chore's lane, and it is the orchestrator's
+defect. The resume briefs gave a one-shot "bring your worktree forward" sequence,
+which assumes the base then stops moving. With four lanes live and the record
+committed per tick, it does not — that lane merged `main` forward twice and had to
+decide for itself that the second merge was in order.
+
+*Recommendation: accept, as a line in the resume-brief pattern rather than in a
+governing document* — "merge forward whenever `main` moves under you, and say how
+many times you did." Cheap, and it removes a judgement call from a lane that has
+no way to know what the orchestrator is committing.
+
 **3. `falsification-control` and a one-commit brief are compatible only via
 `--amend`, which neither document mentions.** Also raised by the threshold lane.
 The skill requires the good state committed *before* any deliberate break; the
@@ -480,6 +510,35 @@ strengthened sweep, where it fails both arms.
 That is the skill's case 2 — the control was blind and the code was innocent —
 caught only because the lane refused to read a green break as good news. It is
 the second time this milestone that discipline has caught a blind instrument.
+
+### The handle chore (C1), rework
+
+> **WORKFLOW NOTE:** An instrument built from its author's vocabulary tests
+> itself, and this chore hit that four times, not three — the fourth was my own
+> "grep std" fix, whose grep used a hand-written list of method names, i.e. the
+> closed list one level up. The generalisable rule for `falsification-control` is
+> not "derive from an external source" but "**the derivation must bottom out in
+> an enumeration nobody in the loop wrote**"; a grep whose pattern you authored is
+> still your vocabulary wearing a citation. Second: a lane resuming after an
+> interruption should expect `main` to move *during* its work, not only before it
+> — I merged forward twice, and the brief's one-shot "bring it forward" phrasing
+> left the second case to judgement.
+
+**Orchestrator, beside the quote:** the first half is the sharpest statement
+anyone has produced of this session's recurring finding, and it is sharper than
+mine. I wrote "derive its vocabulary from a source outside the author's head";
+the lane's correction is that **a citation is not a derivation** — the fix that
+merely *names* std while grepping a hand-written alternation is the same defect
+wearing a reference. Filed as PROPOSED 7, superseding my looser wording.
+
+It is also the fourth occurrence and it was found by the lane in its own work, in
+the act of writing it up, not by a reviewer. That is the discipline functioning at
+the level it is supposed to.
+
+The second half is my defect: the resume briefs said "your base moved" and gave a
+one-shot command sequence, which silently assumes the base stops moving. With
+four lanes live and the orchestrator committing the record per tick, it does not.
+Filed as PROPOSED 8.
 
 ### The handle chore's tick reviewer (C1)
 
