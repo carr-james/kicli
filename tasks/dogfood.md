@@ -196,6 +196,61 @@ golden change is part of the change. Note the agent correctly diagnosed it as a
 fixture artifact rather than a tool bug, which is the diagnosis C5 already
 recorded.
 
+#### D1 — Done, 2026-08-21
+
+Lane `lane-d1`, base `42d5201`.
+
+**The measurement, taken before anything was changed** (worktree at `42d5201`,
+clean). Counted with
+`grep -rhoE 'uuid "[^"]*"' crates/kicli/tests/fixtures/sch/` and, for the
+identifier-shaped strings that are not `uuid` atoms — sheet instance `path`
+fields, netlist `tstamps`, ERC JSON — with
+`grep -rhoE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'`.
+
+| scope | `uuid` atoms | distinct 8-char handles |
+|---|---|---|
+| `tests/fixtures/sch/` **before** | 354 | 204 |
+| `tests/fixtures/sch/` **after** | 354 | 354 |
+| `tests/fixtures/` (whole tree, all identifier-shaped strings) **before** | 1307 | 203 |
+| `tests/fixtures/` (whole tree, all identifier-shaped strings) **after** | 1307 | 1307 |
+
+**C5's "151 atoms, 1 prefix" was verified rather than inherited, and it has
+moved.** The tree has gained fixtures since C5 was written. Of the 354 `uuid`
+atoms now under `sch/`, **203 are in `sch/routing/calibration.kicad_sch` and
+already carry distinct handles** — that file was written by the probe crate
+*after* C5's fix, so it is C5's fix visible in a committed artefact. The
+remaining **151 atoms across the other nine `sch/` files all shared the handle
+`00000000`**, which is C5's number exactly.
+
+**Files affected — the blast radius as a fact.** 1105 of the 1307 distinct
+identifier-shaped strings in the fixture tree carried the colliding `00000000`
+prefix. They live in these files:
+
+| fixture group | identifiers remapped | files |
+|---|---|---|
+| misc `sch/` | 41 | `sch/future_version.kicad_sch`, `sch/item_zoo.kicad_sch`, `sch/lib_name_redirect.kicad_sch`, `sch/multi_instance/channel.kicad_sch`, `sch/multi_instance/multi_instance.kicad_sch`, `sch/unreadable_coordinate.kicad_sch`, `sch/v9_legacy.kicad_sch` |
+| `geometry/orientations` | 25 | `.kicad_sch`, `.expected`, `.erc.json` |
+| `geometry/asymmetric` | 41 | `.kicad_sch`, `.expected`, `.erc.json` |
+| `sch/nets` | 110 | `nets.kicad_sch`, `nets_channel.kicad_sch`, `nets.kicad_pro`, `nets.netlist` |
+| `project/healthy` | 4 | `healthy.kicad_sch`, `stage.kicad_sch` |
+| `project/broken` | 6 | `broken.kicad_sch`, `future.kicad_sch`, `commented.kicad_sch` |
+| `project/cycle` | 4 | `cycle.kicad_sch`, `inner.kicad_sch` |
+| `text/calibration` | 873 | `calibration.kicad_sch` |
+| `sch/routing/calibration` | 1 | `calibration.kicad_sch` — its **root sheet** only |
+
+**The last row is the one worth reading.** `sch/routing/calibration.kicad_sch`
+was probe-written and its 202 object identifiers are already distinct, but its
+**root sheet uuid is not**: the probe crate hard-codes
+`const ROOT: &str = "00000000-0000-4000-8000-999999999999"` and
+`const CHILD: &str = "00000000-0000-4000-8000-cccccccccccc"`
+(`crates/kicli-probe/src/drawing.rs:15,18`), and C5's `{series:02x}{n:06x}`
+change did not reach them. **Carried, not fixed here:** the probe crate is out
+of this lane's scope, and a probe drawing *with a child sheet* gives its root
+and its child sheet symbol the two distinct-but-both-`00000000`-prefixed
+handles `00000000` — a collision **inside a single drawing**, which is exactly
+what C5 set out to remove. Recorded as of `42d5201`; see the PROPOSED item at
+the end of this entry.
+
 **D2 — nothing read-only will tell an agent where a pin is.** The agent had to
 infer a pin offset from a label kicli itself had placed, and learned its guess
 was wrong only from a **write command's** output. Defect 6 is the same wound: a
