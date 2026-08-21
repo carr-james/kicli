@@ -1914,3 +1914,122 @@ crates/kicli/src/route/window.rs:105:9: replace Window::holds -> bool with false
 Both directions survive because **nothing calls it**. `clippy` does not flag it —
 the method is `pub`. **A mutant surviving in both directions is the signature of
 dead code.**
+
+
+---
+
+# M4 — CLOSED. The milestone retrospective's four counts
+
+`CLAUDE.md` requires four counts at a milestone retrospective. They are stated
+here for **M4 as a whole**, not for this session alone, and each is a number I
+had to go looking for rather than one that fell out.
+
+## 1. Reversed PROPOSED items — **0**
+
+No PROPOSED item was reversed by a later ruling in M4. Several were **promoted**
+(9, 10, 13 this session, and PROPOSED 7 which superseded my own looser wording),
+and several were **narrowed** — C1's claim was narrowed three times — but none
+was decided one way and then decided back.
+
+**This count is less reassuring than it looks**, and the honest gloss is that the
+milestone's rulings arrived in batches after the evidence was recorded, so
+PROPOSED items were mostly ruled *once*, correctly, on a full record. A zero here
+is evidence about the review cadence, not about the quality of the proposing.
+
+## 2. Re-litigated decisions — **1**
+
+The rescinded worktree rule. It was ruled, rescinded as never executable, and
+then **superseded** this session when the mechanism changed under it — the same
+question opened twice.
+
+It is counted because it was genuinely re-opened, and it is the good kind: the
+first ruling was correct about the mechanism that existed, and the answer was to
+change the mechanism rather than weaken the rule. Both readings are kept in
+`CLAUDE.md` because the pair is the lesson.
+
+*(The threshold BLOCKED item is **not** counted. It was raised once, escalated
+once, and ruled once — a long-lived open question is not a re-litigated one.)*
+
+## 3. Gate failures found after a tick — **1**
+
+The T16 `routed` goldens, in Phase 2: the lane's six gates were green, the tick
+review approved, and the **merged** run failed on two goldens that had been
+asserting identifiers derived from the checkout's absolute path.
+
+**Nothing was found after a tick this session** — but that is not a clean result
+either, because it is the merged-run discipline doing the catching rather than
+the ticks getting better, and the cause of that one failure was only fully
+removed today, by C8.
+
+## 4. BLOCKED items decidable from the record — **0 of 3**
+
+Three BLOCKED items were raised across M4. **None was decidable from the record**,
+and each is genuinely James's:
+
+- the **threshold** default — a value-level call on a knob shared with M5's
+  linter, where the record contained two contradictory numbers and no way to
+  choose between them without deciding what the linter will score;
+- the **pre-commit gate versus an undocumentable verb** — a conflict between two
+  governing documents, which `CLAUDE.md` forbids resolving by precedence;
+- the **joined net's frozen home** — a frozen-surface change, which is a ruling
+  path by construction.
+
+A zero here is the result I would want: the BLOCKED bar was not used as a way to
+avoid deciding things that the record already settled.
+
+---
+
+# What the milestone exit criteria say, measured
+
+M4 is complete when these pass on a clean checkout:
+
+| Command | Result |
+|---|---|
+| `cargo xtask check` | **six gates green** — fmt, clippy, test, doc, deny, clean |
+| `cargo test` | green |
+| `cargo xtask corpus` | corpus fetched, demos canonicalised |
+| `cargo test --features corpus` | green |
+| `KICLI_TEST_KICAD_CLI=1 cargo test --features corpus` | green, **zero tests ignored** |
+
+| Gate | Status |
+|---|---|
+| probe harness | one home; no test file carries a copy; dev-dependency only |
+| determinism | 100 runs and a shuffled order, byte-identical |
+| no floating point | none under `src/route/`; no hash-map iteration feeds a decision |
+| escape | every route leaves and enters along its pin's own direction |
+| collinear block | a wire is never drawn along another net's wire |
+| four-way | never created; offset by 1 G and reported |
+| one knob | `routing.label_threshold` read by the router, and by `KI-LBL-001` when M5 arrives — **now 300 G = 381 mm** |
+| refusals | each exits its documented code and writes nothing |
+| calibration | in-repo sheet **+0.0 %**, `ampli_ht` **+1.1 %**, skipped nets named — **and the gate's own limits reported, PROPOSED 9** |
+| netlist oracle | **35 / 35**, measured again after the fixture rewrite |
+| round trip | P1 and P2 hold after every wire write — **and P1's byte clause got a control it lacked, T21** |
+| locality | a wire command changes only its own object's lines |
+| KiCad agrees | the netlist of every written file carries the partition the route reported |
+| mutation | **run, 488 mutants, four counts reported, 48 survivors triaged and filed** |
+
+**One gate is weaker than its row claims and the row should be re-worded before
+M5 reads it**: `calibration` measures *agreement between two costings*, not
+whether the weights are right. PROPOSED 9, with the sweep that does answer the
+question and its numbers.
+
+---
+
+# The thread running through this session
+
+Twelve of this session's findings are one finding. An instrument is blind in the
+dimension its author was not thinking in, and the dimensions found were:
+
+| Blind because | Found by |
+|---|---|
+| it read no files and reported clean | D1, C1, and the fixture sweep |
+| its vocabulary was its author's word list | C1, three times over |
+| its control was computed by the code under test | T19, T21 |
+| the two sides agree because neither does anything | C8 |
+| it never varied the environment | the T16 goldens, and every lane since |
+| **the machine was loaded, so the result was an absence** | **the mutation run** |
+
+The last one nearly closed the milestone on a false perfect score.
+
+**What made the difference, every time, was refusing to accept a favourable
+result without breaking it.** Not one of these was found by reading a diff.
