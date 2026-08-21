@@ -747,6 +747,31 @@ falsification and it is worth naming, because it looks like the procedure being
 followed. The second pass pads the index generator to 1462 bytes and watches the
 check go red at budget 100: a break in the code the check watches.
 
+### C8's tick reviewer
+
+> **WORKFLOW NOTE:** The task prompt's item (c) labels the constant-`document_name`
+> blind spot "break 4," but the entry's own table has it at row 3 (row 4 is the
+> `Identifiers::next` break) — a harmless numbering mismatch between reviewer
+> instructions and the entry, worth aligning next time. Separately, I could not
+> reproduce the entry's fine-grained inventory breakdown (60 files / 71
+> goldens-and-test-source values / 36 hand-written) from a plain regex sweep — the
+> entry doesn't state its file-classification rule precisely enough to replicate
+> exactly, though the headline total (1811) matched exactly and the safety
+> conclusion was independently confirmed by a full test run. A one-line note in
+> the entry on how "fixture trees" vs "goldens and test sources" was partitioned
+> would make this reproducible rather than merely plausible.
+
+**Orchestrator, beside the quote:** the numbering slip is mine — I renumbered the
+lane's rows in the review brief and did not say so.
+
+The second half is the substantive one and it is now recorded in the C8 entry as
+work owed. It is worth stating as a general principle, because this session has
+leaned hard on measurements: **a measurement whose method is not written down is
+plausible rather than reproducible**, and the whole discipline here is the
+difference between those two words. The reviewer did the right thing — it could
+not replicate the breakdown, said so, and then confirmed the load-bearing
+conclusion by a stronger route instead of waving the sub-claim through.
+
 ### The orchestrator caught its own phantom, which is the rule proving itself
 
 Worth recording because it is the rule promoted this session (PROPOSED 10)
