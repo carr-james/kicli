@@ -520,6 +520,33 @@ a unit test's mapping table rather than by a real refusal, and it is the status 
 agent most needs to trust, since it is the one that says "no route exists".
 *Recommendation: accept as a chore — a committed walled-in fixture.*
 
+**22. Diff-scope claims must be re-verified after every merge-forward.** Found by
+T21's reviewer, and it is the fourth member of a family this session has been
+assembling without naming it.
+
+T21's entry claimed `crates/kicli/tests/fixtures/**` had a zero diff from its
+base. Measured: **11,059 lines**, entirely from D1's fixture chore, which T21
+merged forward and disclosed merging. **The claim was true when written and went
+stale when `main` moved.**
+
+The family, now visible as one thing — *evidence that names a moving target rots
+silently*:
+
+| # | The claim rots because | Reported by |
+|---|---|---|
+| 11 | it cites a commit SHA, and amend/rebase/merge changes it | the `AGENT.md` lane |
+| 8 | it assumes the base stops moving after resume | the handle chore |
+| 22 | it states a diff scope, and merging forward widens it | T21's reviewer |
+| 19 | it names a condition that ends mid-lane | T21 |
+
+In a session where every lane merged `main` forward at least once and one did so
+six times, **a claim written once is a claim about a tree that no longer exists.**
+
+*Recommendation: accept as one amendment covering all four* — evidence anchors to
+content, not to revisions; and any scope or state claim is re-verified at the last
+merge-forward before hand-off. **Not applied** — skills and definitions change by
+ruling.
+
 **3. `falsification-control` and a one-commit brief are compatible only via
 `--amend`, which neither document mentions.** Also raised by the threshold lane.
 The skill requires the good state committed *before* any deliberate break; the
@@ -695,6 +722,23 @@ measures the wrong thing — which here it did.** That is the degenerate case of
 falsification and it is worth naming, because it looks like the procedure being
 followed. The second pass pads the index generator to 1462 bytes and watches the
 check go red at budget 100: a break in the code the check watches.
+
+### The loop's tick reviewer (T21)
+
+> **WORKFLOW NOTE:** Inputs were complete and accurate for the review itself. One
+> flaw found only through independent measurement: `tasks/M4.md`'s "Nothing
+> outside the test was needed" paragraph claims
+> `crates/kicli/tests/fixtures/**` has zero diff from the lane's base, which is
+> false (D1's fixture-handle chore, merged forward, changed 11059 lines there) —
+> the claim was true when first written and went stale after the merge without
+> being re-checked. Worth a note for future entries: re-verify diff-scope claims
+> after every "merged main forward" step, not just once at drafting time.
+
+**Orchestrator, beside the quote:** accepted, PROPOSED 22, and it completes a
+family of four. The reviewer found it *only through independent measurement* — it
+was not asked to check that sentence, and nothing in the diff would have suggested
+it. That is the difference between a reviewer verifying the questions it was given
+and one reading the entry as a claim.
 
 ### The join's tick reviewer (T18, T19)
 
