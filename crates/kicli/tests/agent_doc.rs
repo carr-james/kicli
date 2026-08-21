@@ -276,3 +276,43 @@ fn agent_doc_states_what_the_spec_requires_it_to_state() {
         "the recommendation for Python users"
     );
 }
+
+/// The `kicad-cli` wait is documented in both places it can happen.
+///
+/// `project info` and `project check` both call `cli::tools::probe`, which
+/// prints the font-cache note and then blocks on `kicad-cli --version`.
+/// `AGENT.md` described the wait under `project check` alone, so a reader who
+/// ran `project info` met a pause of up to two minutes that the document had
+/// told them nothing about (dogfood D6). One section carries the explanation
+/// and the other points at it; both have to name the tool they run.
+#[test]
+fn agent_doc_warns_about_the_kicad_cli_wait_in_both_places() {
+    let doc = agent_doc();
+    let sections = sections(&doc);
+    let body = |name: &str| {
+        sections
+            .iter()
+            .find(|section| code_spans(section.title).contains(&name))
+            .unwrap_or_else(|| panic!("AGENT.md has a section for `{name}`"))
+            .body
+            .clone()
+    };
+
+    let info = body("kicli project info");
+    assert!(
+        info.contains("kicad-cli") && info.contains("font cache"),
+        "`project info` runs kicad-cli and blocks on it exactly as \
+         `project check` does, so its section has to say so"
+    );
+
+    let check = body("kicli project check");
+    assert!(
+        check.contains("kicad-cli"),
+        "`project check` runs kicad-cli, and its section has to name it"
+    );
+    assert!(
+        check.contains("project info"),
+        "`project check`'s section defers to `project info`'s for what the note \
+         is, so it has to say where to look"
+    );
+}

@@ -251,9 +251,9 @@ then out of a running view, before any prose was written.
   text (`crates/kicli/src/view/connectivity.rs:96`). A net is left out of it two
   ways: one with exactly one visible pin whose KiCad name starts `unconnected-`
   is **tallied** as `# N pin(s) join nothing` instead of listed
-  (`connectivity.rs:271-277`), and one with **no** visible pin at all — every pin
+  (`connectivity.rs:271-274`), and one with **no** visible pin at all — every pin
   a power pin without `--include-power`, or every pin on another sheet under
-  `--sheet` — is dropped in silence (`connectivity.rs:270`).
+  `--sheet` — is dropped in silence (`connectivity.rs:265-267`).
 
 **So the dogfood agent's `10 + 18 = 28` is right, and is not a general law.** The
 exact statement is `listed + tallied + hidden = total`, and it is the third term
@@ -269,7 +269,7 @@ project.**
 **Where the signpost went.** Beside both numbers, in the document the end user
 reads:
 
-- `AGENT.md`, `### \`kicli project info\`` — and the sample output there was
+- `AGENT.md`, the `kicli project info` section — and the sample output there was
   **missing the `nets` line entirely**, which is its own small part of why there
   was no signpost to find. Added, from the golden
   (`crates/kicli/tests/project_info_healthy.golden:6`), plus a paragraph saying
@@ -311,13 +311,28 @@ time.
 established rather than assumed.** `hidden` is **0 on every fixture**, measured
 across all seven projects that have nets, so removing the term changes no
 arithmetic anywhere and the identity is arithmetically identical with and
-without it. The term is read from the code (`connectivity.rs:270`), not from a
+without it. The term is read from the code (`connectivity.rs:265-267`), not from a
 fixture. **PROPOSED: no fixture exercises a net with no visible pin** — a net of
 only power pins under the default view, or a whole net off-sheet under
 `--sheet`. Recommendation: leave it. The term is correct, cheap, and self-
 documenting, and manufacturing a fixture to exercise it belongs to whoever owns
 `tests/fixtures/` rather than to a documentation chore. Recorded so that a later
 reader does not mistake break F for evidence the term is tested.
+
+**Confirmed end-to-end at the command line**, added while measuring D6 on the
+same machine and recorded here because it belongs to this defect. On a copy of
+the `nets` fixture, with a real `kicad-cli` present:
+
+```
+$ kicli --project <dir> project info   # stdout
+  nets       32
+$ kicli --project <dir> sch view       # stdout
+# scope project  sheets=3 sym=23 pwr=4 nets=14
+# 18 pin(s) join nothing; sch erc lists them
+```
+
+`14 + 18 = 32`, from the binary rather than from the library, which is the form
+an agent actually meets and the form `AGENT.md` now documents.
 
 **`cargo xtask check`: all six gates pass.** `cargo test` green throughout;
 nothing kicli prints was changed, so no golden moved.
@@ -335,6 +350,71 @@ is a chore: `AGENT.md` describes the warm-up under `project check` only, while
 is genuinely cold each time or the note prints unconditionally — is a
 measurement nobody has made, and the agent said so rather than guessing.
 Recorded as unmeasured.
+
+#### D6 — Done (documentation half), 2026-08-21
+
+**Verified at source, then at runtime.** The note comes from
+`crates/kicli/src/cli/tools.rs`, `probe`, printed through `Reporter::note` —
+which writes to **standard error** with a `kicli: ` prefix and is silenced by
+`--quiet` (`cli/output.rs:82-86`). `probe` has exactly **two** callers:
+`cli/check.rs:65` (`project check`) and `cli/project.rs:65` (`project info`).
+The document named only the first. The agent was right.
+
+Observed black-box, `kicli --project <dir> project info`, stderr separated from
+stdout:
+
+```
+kicli: asking /opt/homebrew/bin/kicad-cli its version. The first KiCad run on a machine builds the font cache. It can take over 120 seconds.
+```
+
+**The document now says where the note can appear.** `AGENT.md`'s
+the `kicli project info` section carries the explanation — the note's own words, that
+it goes to standard error and cannot corrupt a parse, that `--quiet` silences
+it, and that it is a warning about what kicli is about to do rather than a
+report of what happened. The `kicli project check` section names `kicad-cli`, says it
+prints the same note, and points at the other section. The old sentence's claim
+that `project check` "warms KiCad's font cache" is also gone: kicli warms
+nothing, it asks `kicad-cli --version` and that ask is what may build the cache.
+
+**Check:** `agent_doc_warns_about_the_kicad_cli_wait_in_both_places`, in
+`crates/kicli/tests/agent_doc.rs`. Both sections must name `kicad-cli`, the
+`project info` section must carry the font-cache explanation, and the
+`project check` section must point at it.
+
+**Falsification** — against the checkpointed good state; `shasum -a 256`
+returned `AGENT.md` to `dece3025…` after every restore.
+
+| # | The break | Result |
+|---|---|---|
+| G | The note deleted from the `project info` section — D6's original defect, put back | **FAILED**: "`project info` runs kicad-cli and blocks on it exactly as `project check` does" |
+| H | The cross-reference removed from `project check` | **FAILED**: "it has to say where to look" |
+| I | `kicad-cli` no longer named in the `project check` section | **FAILED**: "its section has to name it" |
+
+**The timing half — measured incidentally, recorded, NOT acted on.** The lane
+brief reserved this and the reservation is respected: nothing below changed any
+code or any timing claim in `AGENT.md`.
+
+- **The note prints unconditionally.** Two `project info` runs seconds apart on
+  a machine whose cache was necessarily warm by the second: **the note printed
+  both times, identically.** It fires whenever `Discovery::locate()` finds the
+  binary, before `kicad-cli --version` is run; kicli never inspects the cache
+  and has no way to. So of the agent's two candidate explanations, "the note
+  prints unconditionally" is **confirmed** and "the cache is genuinely cold each
+  time" is **refuted**.
+- **A warm run costs 0.12s.** `kicli -q project info` on the `nets` fixture,
+  three consecutive runs, `real 0.12` each. This **corroborates** `AGENT.md`'s
+  standing "later runs take under a second", which was previously unmeasured;
+  the sentence is left exactly as it was, now with a measurement behind it.
+- **Still unmeasured:** the cold-cache cost. Nobody has run this on a machine
+  with no KiCad font cache, so the "over two minutes" figure remains inherited
+  rather than observed. Recorded so it is not mistaken for measured.
+
+**PROPOSED:** the note is a warning that fires on every run of two commands, and
+an agent that runs `project info` in a loop reads it every time. Recommendation:
+leave it. It costs one stderr line, `--quiet` removes it, and the failure it
+prevents — an agent concluding kicli has hung — is far more expensive than the
+line. Raised only because the measurement above makes the tradeoff explicit for
+the first time; not a defect, and not this chore's to change.
 
 **7 — recorded, stands, and it is the orchestrator's defect not the tool's.** The
 brief said "take it back out" and then described removing only the wiring. The

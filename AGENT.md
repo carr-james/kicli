@@ -63,6 +63,19 @@ nothing. `sch view` counts a smaller number on purpose, and the two are
 reconciled under the connectivity view below. If the two disagree by more than
 that reconciliation, you are looking at different scopes, not at a bug.
 
+**This command runs `kicad-cli`, and so does `project check`.** Before either of
+them does, it prints a note on **standard error**:
+
+```
+kicli: asking /usr/bin/kicad-cli its version. The first KiCad run on a machine builds the font cache. It can take over 120 seconds.
+```
+
+It is a warning, not a report. kicli says what it is about to do before it
+blocks, because an agent that sees nothing for two minutes decides kicli has
+hung. **The note appears whenever `kicad-cli` is found; it does not mean the
+cache was cold this time.** It never appears on standard output, so it cannot
+corrupt a parse, and `--quiet` silences it.
+
 ### `kicli project check`
 
 What is wrong with the project, as a list of findings. Every file parses and
@@ -81,9 +94,10 @@ findings 3
 The command also names the checks it does **not** yet make, rather than passing
 silently: library resolution is not covered in this build.
 
-`project check` warms KiCad's font cache when `kicad-cli` is present and says so
-first. The first run on a machine can take over two minutes; later runs take
-under a second.
+`project check` runs `kicad-cli` when one is present, and prints the same
+standard-error note before it does as `project info` does — see there for what
+the note is and how to silence it. The first run on a machine can take over two
+minutes; later runs take under a second.
 
 ### `kicli sch view`
 
