@@ -19,6 +19,17 @@
 //! Every term is non-negative, so the estimate never exceeds the truth and the
 //! first goal state off the queue is the cheapest route there is.
 //!
+//! **A route may be asked to reach any one of many terminals**, which is what
+//! joining a whole net asks for: every grid point of the net's wires and every
+//! pin of it will do. That is one search over one frontier rather than one
+//! search per terminal, and the estimate is then the **smallest** of the
+//! per-terminal estimates. Each of those is under the truth for its own
+//! terminal, so their minimum is under the truth for whichever terminal the
+//! route ends on — and the first goal state off the queue is still the
+//! cheapest route there is. An estimate measured to one chosen terminal would
+//! exceed the truth for a route that ends at another, and the search would
+//! then answer with a route that is not the cheapest.
+//!
 //! **The target-cell exception is repeated here, and it is a twin.** §3.2's
 //! first row ends "except the grid point at a target pin", and
 //! [`Tally::of_path`] excepts the two ends of the path it walks. This module
@@ -114,19 +125,57 @@ impl Search {
         obstacles: &Obstacles,
         weights: &Routing,
     ) -> Self {
+        Self::to_any(source, std::slice::from_ref(target), obstacles, weights)
+    }
+
+    /// Search for the cheapest route from one terminal to **any** of many.
+    ///
+    /// One search, not one search per terminal. The frontier is shared, so a
+    /// state expanded on the way to one terminal is never expanded again on
+    /// the way to another, and the first goal state off the queue is the
+    /// cheapest route to the cheapest terminal — rather than the cheapest of
+    /// several answers each found on its own.
+    ///
+    /// **The heuristic is the smallest of the per-terminal estimates.** Each
+    /// one is admissible for its own terminal, so their minimum is admissible
+    /// for the set: the route must reach one of them, and it cannot cost less
+    /// than the cheapest estimate of reaching any. An estimate taken to one
+    /// chosen terminal instead would exceed the truth for a route that ends at
+    /// another, and the search would answer with a route that is not the
+    /// cheapest.
+    ///
+    /// A terminal the window does not hold names no cell and is left out. A
+    /// terminal standing on the source's own cell is left out too: the route
+    /// from a point to itself draws nothing.
+    #[must_use]
+    pub fn to_any(
+        source: &Terminal,
+        targets: &[Terminal],
+        obstacles: &Obstacles,
+        weights: &Routing,
+    ) -> Self {
         let mut found = Self::default();
         let window = obstacles.window();
-        let (Some(start), Some(goal)) = (window.cell(source.at), window.cell(target.at)) else {
+        let Some(start) = window.cell(source.at) else {
             return found;
         };
-        if start == goal {
+        let goals: Vec<Goal> = targets
+            .iter()
+            .filter_map(|target| {
+                window.cell(target.at).map(|cell| Goal {
+                    cell,
+                    arrival: target.escape.map(Heading::reversed),
+                })
+            })
+            .filter(|goal| goal.cell != start)
+            .collect();
+        if goals.is_empty() {
             return found;
         }
         let field = Field {
             obstacles,
             weights,
-            goal,
-            arrival: target.escape.map(Heading::reversed),
+            goals,
         };
 
         let mut frontier = Frontier::default();
@@ -239,29 +288,54 @@ impl Search {
     }
 }
 
+/// One terminal the search may end on, and the way it must be met.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct Goal {
+    /// The grid point, as an index into the routing window.
+    cell: Cell,
+    /// The direction a route must be travelling when it arrives, when the
+    /// terminal fixes one.
+    arrival: Option<Heading>,
+}
+
 /// Everything one step is measured against, so that one step is one call.
 struct Field<'a> {
     obstacles: &'a Obstacles,
     weights: &'a Routing,
-    goal: Cell,
-    arrival: Option<Heading>,
+    goals: Vec<Goal>,
 }
 
 impl Field<'_> {
     /// Does this state end the route?
     ///
     /// The escape rule at the target end: a route arrives along the terminal's
-    /// own direction, so a state on the goal cell that got there any other way
+    /// own direction, so a state on a goal cell that got there any other way
     /// has not arrived. A terminal that fixes no direction may be met from any
-    /// side.
+    /// side. Any one goal answering is enough, because the route was asked to
+    /// reach one of them rather than a named one.
     fn reaches(&self, state: State) -> bool {
-        state.at == self.goal && self.arrival.is_none_or(|heading| state.dir == heading)
+        self.goals.iter().any(|goal| {
+            state.at == goal.cell && goal.arrival.is_none_or(|heading| state.dir == heading)
+        })
     }
 
     /// What the rest of the route must cost at least.
+    ///
+    /// The smallest per-goal estimate. Every term of each estimate is
+    /// non-negative and each estimate is under the truth for its own goal, so
+    /// the smallest is under the truth for whichever goal the route ends on.
     fn heuristic(&self, state: State) -> i64 {
-        let dx = i64::from(self.goal.column - state.at.column);
-        let dy = i64::from(self.goal.row - state.at.row);
+        self.goals
+            .iter()
+            .map(|goal| self.estimate(state, *goal))
+            .min()
+            .unwrap_or(0)
+    }
+
+    /// What the rest of a route to one goal must cost at least.
+    fn estimate(&self, state: State, goal: Goal) -> i64 {
+        let dx = i64::from(goal.cell.column - state.at.column);
+        let dy = i64::from(goal.cell.row - state.at.row);
         let mut estimate = self.weights.w_len * (dx.abs() + dy.abs());
         if turns_again(state.dir, dx, dy) {
             estimate += self.weights.w_turn;
@@ -419,7 +493,7 @@ mod tests {
     //! makes them unreachable is another module's invariant rather than this
     //! one's.
 
-    use super::{Field, Search, State, turns_again};
+    use super::{Field, Goal, Search, State, turns_again};
     use crate::geometry::{GRID, Point, Rect};
     use crate::model::Config;
     use crate::route::obstacles::{Obstacles, SheetGeometry};
@@ -462,8 +536,10 @@ mod tests {
         let field = Field {
             obstacles: &obstacles,
             weights: &weights,
-            goal,
-            arrival: Some(Heading::PlusX),
+            goals: vec![Goal {
+                cell: goal,
+                arrival: Some(Heading::PlusX),
+            }],
         };
 
         // Arriving: the step that ends the route is excepted, and it is still

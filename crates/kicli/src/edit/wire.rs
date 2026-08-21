@@ -48,6 +48,7 @@ use std::path::Path;
 
 use kicli_sexpr::{NodeId, SexprError, quote};
 
+use crate::connectivity::{Net, NetPin, Nets, extract};
 use crate::edit::insert::{Identifiers, insertion_index};
 use crate::edit::mark::{PinAddress, WireEnd, wire_ends_at};
 use crate::geometry::{Iu, Point, on_segment, resolve_pins};
@@ -58,9 +59,12 @@ use crate::model::library::{definition_of, read_library};
 use crate::model::mutate::{Mutation, MutationError, Target, commit, state_before};
 use crate::route::cost::{Cost, Tally, Uncostable};
 use crate::route::obstacles::{Axis, Feature, Obstacles};
-use crate::route::report::{Added, Crossing, Report, Status};
+use crate::route::propose::walked;
+use crate::route::report::{Added, Adjusted, Crossing, Report, Status};
+use crate::route::search::Search;
+use crate::route::shapes::Shapes;
 use crate::route::sheet::{Routed, SheetObjects};
-use crate::route::terminal::{Heading, Terminal};
+use crate::route::terminal::{Heading, Terminal, has_room, settled};
 use crate::route::window::Window;
 use crate::view::snapshot::{Snapshot, SnapshotError};
 
@@ -84,6 +88,21 @@ pub struct Polyline {
     pub to: End,
     /// The corners between the two ends, in the order the wire meets them.
     pub via: Vec<Point>,
+}
+
+/// What a connection is asked to reach.
+///
+/// One end and a whole net are different requests rather than two spellings of
+/// one. An end names a point; a net names everything a route could join it at,
+/// and choosing between those is the router's decision rather than the
+/// caller's.
+#[derive(Clone, Debug)]
+pub enum Destination {
+    /// One end: a pin, a port, or a point of the drawing.
+    End(End),
+    /// A whole net, by the name the drawing gives it or by the handle kicli
+    /// gives one the drawing does not name.
+    Net(String),
 }
 
 /// What one drawn wire produced.
@@ -178,6 +197,35 @@ pub enum WireError {
     #[error("a wire needs two ends, and this request gives fewer.")]
     TooShort,
 
+    /// The two ends of a connection are one point.
+    #[error(
+        "both ends of this connection are at ({at}), so there is nothing to join. \
+         Name two different ends."
+    )]
+    SamePoint {
+        /// The point both ends are at.
+        at: Point,
+    },
+
+    /// No route joins the two ends.
+    #[error(
+        "no route joins {from} to {to}{}. \
+         Move a symbol out of the way, or connect them with a pair of labels.",
+        if .blocked_by.is_empty() {
+            String::new()
+        } else {
+            format!(": {} is in the way", .blocked_by.join(", "))
+        }
+    )]
+    NoRoute {
+        /// The end the route was to leave.
+        from: String,
+        /// The end it was to reach.
+        to: String,
+        /// What stood in the way, named once each.
+        blocked_by: Vec<String>,
+    },
+
     /// The wire does not leave a terminal the way that terminal is left.
     #[error(
         "a wire leaves {terminal} through ({escape}). This one goes to ({at}) instead. \
@@ -229,6 +277,51 @@ pub enum WireError {
         reference: String,
         /// The library identifier the symbol was placed from.
         lib_id: String,
+    },
+
+    /// No net of this project answers to the name given.
+    #[error(
+        "this project has no net called {name}. \
+         Run sch view to list the nets, which names an unnamed one #n1, #n2 and so on."
+    )]
+    NoSuchNet {
+        /// The name the caller gave.
+        name: String,
+    },
+
+    /// More than one net of this project answers to the name given.
+    #[error(
+        "{name} names {} nets of this project: {}. \
+         A local label names one net per sheet, so the same text can name several. \
+         Name a pin of the net you mean with --to-pin, or a point on it with --to-at.",
+        .candidates.len(),
+        .candidates.join("; ")
+    )]
+    AmbiguousNet {
+        /// The name the caller gave.
+        name: String,
+        /// Every net it named, each with the name KiCad gives it and its pins.
+        candidates: Vec<String>,
+    },
+
+    /// The net is a net of this project, and nothing of it is on this sheet.
+    #[error(
+        "the net {name} is not drawn on this sheet, so a wire on this sheet cannot reach it. \
+         Draw it on the sheet the net is on, or join the two with a pair of labels."
+    )]
+    NetOffSheet {
+        /// The net the caller named.
+        name: String,
+    },
+
+    /// The net is on this sheet and offers no point a route may end on.
+    #[error(
+        "the net {name} offers no point on this sheet that a wire may join. \
+         Every point of it already carries as many wire ends as one point may."
+    )]
+    NetHasNoRoom {
+        /// The net the caller named.
+        name: String,
     },
 
     /// No child sheet of this file carries a port of that name.
@@ -313,7 +406,7 @@ impl WireError {
     #[must_use]
     pub const fn status(&self) -> Status {
         match self {
-            Self::Blocked { .. } => Status::Blocked,
+            Self::Blocked { .. } | Self::NoRoute { .. } => Status::Blocked,
             _ => Status::Invalid,
         }
     }
@@ -439,6 +532,784 @@ fn segment_fragment(from: Point, to: Point, uuid: &Uuid) -> String {
         from.y,
         to.x,
         to.y,
+        quote(&uuid.0)
+    )
+}
+
+/// The connection a caller asked for: two ends, and no path between them.
+///
+/// The difference from [`Polyline`] is the whole of the difference between the
+/// two verbs. A polyline says where the wire goes; a connection says only what
+/// must end up joined, and the router chooses the path.
+#[derive(Clone, Debug)]
+pub struct Connection {
+    /// Where the connection starts.
+    pub from: End,
+    /// What it must reach.
+    pub to: Destination,
+}
+
+/// The route the router found, before anything is written.
+///
+/// Planning and writing are two calls because the decision between them is not
+/// the router's: a route longer than `routing.label_threshold` is proposed as a
+/// pair of labels, and the name that pair carries comes from connectivity and
+/// from the pins, which is the command layer's own vocabulary. So the router
+/// answers with what it found and the caller decides what to do about it.
+#[derive(Clone, Debug)]
+pub struct Plan {
+    /// The end the route leaves, after any four-way adjustment.
+    pub source: Terminal,
+    /// The end it arrives at, after any four-way adjustment.
+    pub target: Terminal,
+    /// The terminals the router moved, empty when it moved neither.
+    pub adjusted: Vec<Adjusted>,
+    /// The route, when one was found.
+    pub route: Option<Planned>,
+    /// What stood in the way, when none was.
+    pub blocked_by: Vec<String>,
+    /// How many candidates were tried before this one was chosen.
+    pub considered: u32,
+}
+
+/// One route the router would draw, and the junctions drawing it needs.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Planned {
+    /// The vertices, from the source terminal to the target terminal.
+    pub path: Vec<Point>,
+    /// What walking it meets.
+    pub tally: Tally,
+    /// What that costs, in parts.
+    pub cost: Cost,
+    /// The crossings, in the order the route makes them.
+    pub crossings: Vec<Crossing>,
+    /// Where the route needs a junction, in the order the route meets them.
+    ///
+    /// A junction goes where an existing wire of the same net has the route's
+    /// own end in its **interior**, and nowhere else: a KiCad wire's connection
+    /// points are its two ends and nothing between them, so a route that ends
+    /// where an old one ends is already joined and a dot there says nothing.
+    /// Empty is the common answer.
+    pub junctions: Vec<Point>,
+}
+
+impl Planned {
+    /// How long the route is, walked leg by leg.
+    #[must_use]
+    pub fn length(&self) -> Iu {
+        walked(&self.path)
+    }
+}
+
+impl Plan {
+    /// The report of a route this plan would draw, before it is drawn.
+    ///
+    /// `added` is left empty: nothing has been written yet, and a report that
+    /// claimed otherwise would be a second answer waiting to disagree with the
+    /// file.
+    #[must_use]
+    pub fn report(&self, routing: &Routing) -> Report {
+        let status = if self.route.is_some() {
+            Status::Routed
+        } else {
+            Status::Blocked
+        };
+        let mut report = Report::of(status, &self.source.name, &self.target.name);
+        report.adjusted.clone_from(&self.adjusted);
+        report.alternatives_considered = self.considered;
+        report.blocked_by.clone_from(&self.blocked_by);
+        if let Some(route) = &self.route {
+            report.path.clone_from(&route.path);
+            report.tally = route.tally;
+            report.cost = Cost::of(route.tally, routing);
+            report.crossings.clone_from(&route.crossings);
+        }
+        report
+    }
+}
+
+/// Route one connection, and answer with what would be drawn.
+///
+/// Nothing is written and nothing is decided about whether to write: this is
+/// the router run over one sheet, in the composition
+/// `research/wire-routing.md` §4 fixes. [`settled`] settles every terminal
+/// against the drawing first, so everything after it is asked about the
+/// terminals it answered with; the silhouettes are tried before the search,
+/// because half of all real segments are drawn as an I or an L.
+///
+/// **A whole net is one request, not many.** A connection that names a net is
+/// given every terminal of it at once: the silhouettes are tried against the
+/// nearest first and the cheapest candidate wins, and the search — when no
+/// silhouette fits — runs once over the whole set rather than once per
+/// terminal. The route that comes back is the cheapest route to the net, and
+/// the plan names the terminal it ends on.
+///
+/// **Whose a wire is, is answered here.** A wire that already passes through
+/// either end of the route is the route's own: the route is joining it rather
+/// than avoiding it, and a route refused by the wire already on its own pin
+/// would be refused at the very point it was asked to leave. Every other wire
+/// blocks along its own axis and is costed across it.
+///
+/// # Errors
+///
+/// Returns [`WireError`] when an end cannot be resolved, when an end is off the
+/// placement grid, or when the two ends are one point. None of those writes a
+/// byte, and neither does a route the router could not find: that comes back as
+/// a [`Plan`] with no route and the list of what stood in the way.
+pub fn plan(
+    hierarchy: &Hierarchy,
+    request: &Connection,
+    routing: &Routing,
+    target: &Target<'_>,
+) -> Result<Plan, WireError> {
+    let file = file_of(hierarchy, target.path)?;
+    let loaded = &hierarchy.files[file];
+    let asked_from = terminal_of(loaded, target.sheet_path, &request.from)?;
+    if !asked_from.is_on_grid(target.grid) {
+        return Err(WireError::OffGrid { at: asked_from.at });
+    }
+    let (source, moved) = settled(&asked_from, &loaded.schematic, target.grid);
+    let mut adjusted: Vec<Adjusted> = moved.into_iter().collect();
+    let aim = aim_of(hierarchy, loaded, request, target, &source, &mut adjusted)?;
+
+    let objects = SheetObjects::read(
+        loaded,
+        target.sheet_path,
+        &Routed {
+            wires: &aim.own,
+            terminals: &aim.named,
+        },
+    );
+    let (least, most) = bounds(&aim.reach(&source));
+    let window = Window::around(least, most, routing.margin, objects.page(), target.grid);
+    let obstacles = Obstacles::build(window, &objects.geometry());
+
+    let found = cheapest(&source, &aim.targets, &obstacles, routing);
+    let route = found.walked.map(|(path, tally)| Planned {
+        crossings: crossings_on(&path, &obstacles),
+        junctions: junctions_of(&loaded.schematic, &aim.own, &path),
+        cost: Cost::of(tally, routing),
+        tally,
+        path,
+    });
+    // A route that was found stood in nobody's way in the end: the handles
+    // collected on the way to it named candidates that were dropped rather
+    // than a refusal, and reporting them would tell an agent to move a symbol
+    // that is not in the way of the wire it just got.
+    let blocked_by = if route.is_some() {
+        Vec::new()
+    } else {
+        found.blocked_by
+    };
+    Ok(Plan {
+        source,
+        target: found.target,
+        adjusted,
+        route,
+        blocked_by,
+        considered: found.considered,
+    })
+}
+
+/// What one request aims at: one settled terminal, or a whole net's worth.
+///
+/// The `adjusted` list grows here rather than being returned, because a
+/// terminal that moved is reported whichever kind of request moved it.
+fn aim_of(
+    hierarchy: &Hierarchy,
+    loaded: &LoadedFile,
+    request: &Connection,
+    target: &Target<'_>,
+    source: &Terminal,
+    adjusted: &mut Vec<Adjusted>,
+) -> Result<Aim, WireError> {
+    match &request.to {
+        Destination::End(end) => {
+            let asked_to = terminal_of(loaded, target.sheet_path, end)?;
+            if !asked_to.is_on_grid(target.grid) {
+                return Err(WireError::OffGrid { at: asked_to.at });
+            }
+            if source.at == asked_to.at {
+                return Err(WireError::SamePoint { at: source.at });
+            }
+            let (settled_to, moved) = settled(&asked_to, &loaded.schematic, target.grid);
+            adjusted.extend(moved);
+            Ok(Aim {
+                own: wires_through(&loaded.schematic, &[source.at, settled_to.at]),
+                named: vec![source.name.clone(), settled_to.name.clone()],
+                targets: vec![settled_to],
+            })
+        }
+        Destination::Net(name) => {
+            let net = net_named(&extract(hierarchy), name)?.clone();
+            aim_at_net(loaded, target, source, &net)
+        }
+    }
+}
+
+/// What a planned route is aimed at, and what it owns on the way.
+///
+/// One terminal and a whole net differ only in how many terminals are in the
+/// list. Everything after this point asks the same questions of both, which is
+/// what makes the net-addressed form one search rather than a composition of
+/// several.
+struct Aim {
+    /// Every terminal the route may end on, cheapest-to-reach first.
+    targets: Vec<Terminal>,
+    /// The wires the route joins rather than avoids.
+    own: Vec<Uuid>,
+    /// The pins and ports the route may end on, as the obstacle map names them.
+    named: Vec<String>,
+}
+
+impl Aim {
+    /// The source and every target, which is the area the window must hold.
+    fn reach(&self, source: &Terminal) -> Vec<Point> {
+        let mut points = vec![source.at];
+        points.extend(self.targets.iter().map(|terminal| terminal.at));
+        points
+    }
+}
+
+/// The net one name or handle addresses.
+///
+/// The rule is the one `net rename` already addresses a net by: the name the
+/// drawing gives it, or the `#n` handle kicli gives one the drawing does not
+/// name. A name that answers for more than one net is refused with the
+/// candidates, because a local label names one net **per sheet** and the same
+/// text on two sheets is two nets. Choosing one of them for the caller is
+/// guessing at which net they meant to join.
+fn net_named<'a>(nets: &'a Nets, name: &str) -> Result<&'a Net, WireError> {
+    let matched: Vec<&Net> = nets.nets().iter().filter(|net| net.name == name).collect();
+    match matched.as_slice() {
+        [only] => Ok(only),
+        [] => Err(WireError::NoSuchNet {
+            name: name.to_owned(),
+        }),
+        many => Err(WireError::AmbiguousNet {
+            name: name.to_owned(),
+            candidates: many.iter().map(|net| candidate(net)).collect(),
+        }),
+    }
+}
+
+/// One candidate of an ambiguous name, as the refusal lists it.
+///
+/// KiCad's own name for the net and the pins on it. The name is what
+/// distinguishes two nets that share a label text, because KiCad prefixes a
+/// local name with the sheet it is on; the pins are what let a caller pick one
+/// with `--to-pin`.
+fn candidate(net: &Net) -> String {
+    let pins: Vec<String> = net.pins.iter().map(NetPin::label).collect();
+    format!("{} on pins {}", net.kicad_name, pins.join(", "))
+}
+
+/// The pins of one net that are drawn on one sheet, as terminals.
+///
+/// A pin the sheet does not draw, and one whose library definition the file
+/// does not carry, contribute nothing: there is no point on the drawing for a
+/// route to end at.
+fn net_pins(loaded: &LoadedFile, sheet: &SheetPath, net: &Net) -> Vec<Terminal> {
+    net.pins
+        .iter()
+        .filter(|pin| pin.sheet == *sheet)
+        .filter_map(|pin| {
+            crate::route::sheet::pin_terminal(loaded, sheet, &pin.reference.0, &pin.number)
+                .map(|(terminal, _)| terminal)
+        })
+        .collect()
+}
+
+/// Every terminal of one net on one sheet, in the order the router tries them.
+///
+/// **The target set is every grid point of the net's wires, plus its pins.**
+/// A route joining a net may end anywhere the net already is, so the search is
+/// given all of it at once rather than one point somebody chose in advance.
+///
+/// The wires are found from the net's **pins**, which the extractor answered
+/// for: a wire with an end at a pin of the net is on the net, a junction on a
+/// point of the net joins every line through that point, and both rules carry
+/// on from each wire they admit. The walk therefore only ever adds a wire that
+/// is on the net — it is sound rather than complete, and a wire it does not
+/// reach is one terminal the router is not offered rather than a wrong one it
+/// is.
+///
+/// A point that already carries as many wire ends as one point may is left
+/// out. The route's own end would be one too many, and there is another point
+/// of the same net one grid step away.
+fn aim_at_net(
+    loaded: &LoadedFile,
+    target: &Target<'_>,
+    source: &Terminal,
+    net: &Net,
+) -> Result<Aim, WireError> {
+    let schematic = &loaded.schematic;
+    let pinned = net_pins(loaded, target.sheet_path, net);
+    let anchors: Vec<Point> = pinned.iter().map(|terminal| terminal.at).collect();
+    let mut named: Vec<String> = vec![source.name.clone()];
+    named.extend(pinned.iter().map(|terminal| terminal.name.clone()));
+    // The pin keeps its escape: a wire drawn to a pin must still leave it the
+    // way a pin is left, whichever net asked for the wire.
+    let mut terminals: Vec<Terminal> = pinned
+        .into_iter()
+        .map(|terminal| Terminal {
+            name: joint(&net.name, &terminal.name),
+            ..terminal
+        })
+        .collect();
+    if anchors.is_empty() {
+        return Err(WireError::NetOffSheet {
+            name: net.name.clone(),
+        });
+    }
+
+    let own = net_wires(schematic, &anchors);
+    for at in grid_points(schematic, &own, target.grid) {
+        if terminals.iter().any(|held| held.at == at) {
+            continue;
+        }
+        terminals.push(Terminal::of_point(at, &joint(&net.name, &at.to_string())));
+    }
+
+    // A terminal with no room, and a terminal on the source's own point, are
+    // both points no route may end on.
+    terminals.retain(|terminal| terminal.at != source.at && has_room(terminal.at, schematic));
+    if terminals.is_empty() {
+        return Err(WireError::NetHasNoRoom {
+            name: net.name.clone(),
+        });
+    }
+    // Nearest first. No orthogonal route is shorter than the Manhattan
+    // distance, so this is the order of a lower bound on what each terminal
+    // costs to reach — which is what lets the search stop early.
+    terminals.sort_by_key(|terminal| {
+        (
+            span(source.at, terminal.at),
+            terminal.at.x.0,
+            terminal.at.y.0,
+        )
+    });
+
+    let mut own_and_ends = wires_through(schematic, &[source.at]);
+    for uuid in own {
+        if !own_and_ends.contains(&uuid) {
+            own_and_ends.push(uuid);
+        }
+    }
+    Ok(Aim {
+        targets: terminals,
+        own: own_and_ends,
+        named,
+    })
+}
+
+/// What to call a terminal that is one point of a net.
+///
+/// The net and the point, because both are the answer: a caller asked to join
+/// a net and needs to read back **where** the route joined it.
+fn joint(net: &str, at: &str) -> String {
+    format!("{net}@{at}")
+}
+
+/// The wires of one net on one sheet, from the points its pins stand on.
+///
+/// Two of KiCad's merge rules, and no more. A wire whose **end** is a point of
+/// the net is on the net, because a wire's connection points are its two ends
+/// (`SCH_LINE::GetConnectionPoints`). A junction at a point of the net joins
+/// every line through that point, interior included
+/// (`CONNECTION_GRAPH::updateItemConnectivity`). Each wire admitted brings its
+/// own two ends, and every junction on it, into the set of points — so the two
+/// rules carry the net out along the drawing until nothing more joins.
+///
+/// A bus is never admitted: a bundle carries several nets and joining one to a
+/// route is not this verb's decision.
+fn net_wires(schematic: &Schematic, anchors: &[Point]) -> Vec<Uuid> {
+    let mut points: Vec<Point> = anchors.to_vec();
+    let mut found: Vec<Uuid> = Vec::new();
+    let mut growing = true;
+    while growing {
+        growing = false;
+        for line in schematic.lines().filter(|line| line.kind == LineKind::Wire) {
+            if found.contains(&line.uuid) {
+                continue;
+            }
+            let joined = points.contains(&line.from)
+                || points.contains(&line.to)
+                || schematic.junctions().any(|junction| {
+                    points.contains(&junction.at) && on_segment(line.from, line.to, junction.at)
+                });
+            if !joined {
+                continue;
+            }
+            found.push(line.uuid.clone());
+            growing = true;
+            for at in [line.from, line.to] {
+                if !points.contains(&at) {
+                    points.push(at);
+                }
+            }
+            for junction in schematic.junctions() {
+                if on_segment(line.from, line.to, junction.at) && !points.contains(&junction.at) {
+                    points.push(junction.at);
+                }
+            }
+        }
+    }
+    found
+}
+
+/// Every grid point on the given wires, in file order then along each wire.
+///
+/// A wire that runs along neither axis, or whose length is not a whole number
+/// of grid steps, contributes only the points the lattice holds — which for a
+/// diagonal is none. The router works on a lattice, so a point off it is a
+/// point no route can end on.
+fn grid_points(schematic: &Schematic, wires: &[Uuid], grid: Iu) -> Vec<Point> {
+    let mut found: Vec<Point> = Vec::new();
+    for line in schematic.lines().filter(|line| wires.contains(&line.uuid)) {
+        let Some(heading) = Heading::between(line.from, line.to) else {
+            continue;
+        };
+        let span = span(line.from, line.to);
+        if grid.0 == 0 || span % i64::from(grid.0) != 0 {
+            continue;
+        }
+        let steps = span / i64::from(grid.0);
+        for step in 0..=steps {
+            let Ok(distance) = i32::try_from(step * i64::from(grid.0)) else {
+                continue;
+            };
+            let at = heading.step(line.from, Iu(distance));
+            if !found.contains(&at) {
+                found.push(at);
+            }
+        }
+    }
+    found
+}
+
+/// The Manhattan distance between two points, in internal units.
+fn span(from: Point, to: Point) -> i64 {
+    i64::from(to.x.0 - from.x.0).abs() + i64::from(to.y.0 - from.y.0).abs()
+}
+
+/// What the two searches between them found.
+struct Found {
+    /// The vertices and what walking them meets, when a route was found.
+    walked: Option<(Vec<Point>, Tally)>,
+    /// The terminal the route ends on, or the nearest one when none was found.
+    target: Terminal,
+    /// How many candidates were tried, feasible or not.
+    considered: u32,
+    /// What stood in the way, named once each, in the order first met.
+    blocked_by: Vec<String>,
+}
+
+/// The cheapest route from one terminal to any one of many.
+///
+/// The silhouettes first and the search only when none of them fits, which is
+/// the order `research/wire-routing.md` §4 fixes: A\* with a corner penalty
+/// finds *a* minimal route and often not the one a person would draw, and half
+/// of all real segments are drawn as an I or an L.
+///
+/// **The silhouettes are tried against the nearest terminal first, and the
+/// cheapest candidate wins.** Nearest is by Manhattan distance, which prices a
+/// lower bound on any route to that terminal: no orthogonal path is shorter,
+/// and every step costs at least `w_len`. So once a candidate is held, the
+/// first terminal whose lower bound reaches its cost ends the enumeration —
+/// and every terminal after that one is further still. A tie is kept by the
+/// nearer terminal, because the enumeration is in that order and only a
+/// strictly cheaper candidate replaces the one held.
+///
+/// **The search, when it runs, runs once over every terminal at once.** One
+/// search per terminal would expand the same states again for each, and would
+/// answer with the cheapest of several separate answers rather than with the
+/// cheapest route.
+fn cheapest(
+    source: &Terminal,
+    targets: &[Terminal],
+    obstacles: &Obstacles,
+    routing: &Routing,
+) -> Found {
+    let nearest = targets.first().cloned().unwrap_or_else(|| source.clone());
+    let Silhouettes {
+        best,
+        considered,
+        mut blocked_by,
+    } = silhouettes(source, targets, obstacles, routing);
+    if let Some((path, tally, _, target)) = best {
+        return Found {
+            walked: Some((path, tally)),
+            target,
+            considered,
+            blocked_by: Vec::new(),
+        };
+    }
+
+    let search = Search::to_any(source, targets, obstacles, routing);
+    let considered = considered.saturating_add(search.expanded());
+    if let Some(route) = search.route() {
+        // The terminal the route ends on is the one its last vertex stands on.
+        // A route that ends where no terminal is would be a route to nowhere,
+        // and the nearest terminal is then the honest thing to name.
+        let reached = route
+            .path
+            .last()
+            .and_then(|at| targets.iter().find(|terminal| terminal.at == *at))
+            .cloned()
+            .unwrap_or(nearest);
+        return Found {
+            walked: Some((route.path.clone(), route.tally)),
+            target: reached,
+            considered,
+            blocked_by: Vec::new(),
+        };
+    }
+    // Both refused, so both lists are worth having: a silhouette meets things
+    // the search never steps on, and the search meets things no silhouette
+    // reaches.
+    for handle in search.blocked_by() {
+        if !blocked_by.contains(handle) {
+            blocked_by.push(handle.clone());
+        }
+    }
+    Found {
+        walked: None,
+        target: nearest,
+        considered,
+        blocked_by,
+    }
+}
+
+/// What the silhouettes offered over every terminal.
+struct Silhouettes {
+    /// The cheapest candidate, with its cost and the terminal it ends on.
+    best: Option<(Vec<Point>, Tally, i64, Terminal)>,
+    /// How many candidates were tried, feasible or not.
+    considered: u32,
+    /// What stood in the way, named once each, in the order first met.
+    blocked_by: Vec<String>,
+}
+
+/// Try the silhouettes against each terminal, nearest first, and keep the
+/// cheapest candidate any of them offered.
+fn silhouettes(
+    source: &Terminal,
+    targets: &[Terminal],
+    obstacles: &Obstacles,
+    routing: &Routing,
+) -> Silhouettes {
+    let grid = obstacles.window().grid();
+    let mut found = Silhouettes {
+        best: None,
+        considered: 0,
+        blocked_by: Vec::new(),
+    };
+    for target in targets {
+        // Nothing from here on can beat what is already held, and every
+        // terminal after this one is further still.
+        if let Some((.., held, _)) = &found.best {
+            if floor(source, target, routing, grid) >= *held {
+                break;
+            }
+        }
+        let shapes = Shapes::of(source, target, obstacles, routing);
+        found.considered = found.considered.saturating_add(shapes.considered());
+        let Some(candidate) = shapes.best() else {
+            for handle in shapes.blocked_by() {
+                if !found.blocked_by.contains(handle) {
+                    found.blocked_by.push(handle.clone());
+                }
+            }
+            continue;
+        };
+        let total = candidate.cost.total();
+        if found
+            .best
+            .as_ref()
+            .is_none_or(|(.., held, _)| total < *held)
+        {
+            found.best = Some((
+                candidate.path.clone(),
+                candidate.tally,
+                total,
+                target.clone(),
+            ));
+        }
+    }
+    found
+}
+
+/// The least a route from one terminal to another can cost.
+///
+/// One step per grid step of the Manhattan distance, at the length weight. An
+/// orthogonal route is never shorter than that, and every other weight is
+/// non-negative — so a candidate already held that costs this much or less
+/// cannot be beaten by anything this far away.
+fn floor(source: &Terminal, target: &Terminal, routing: &Routing, grid: Iu) -> i64 {
+    if grid.0 <= 0 {
+        return 0;
+    }
+    routing.w_len * (span(source.at, target.at) / i64::from(grid.0))
+}
+
+/// Draw a route the router planned, with the junctions it needs.
+///
+/// One mutation over the whole route: the wire records and the junction
+/// records go in together, the invariants run once over the result, and one
+/// delta says what the command did. Two mutations would leave a window in
+/// which the file holds a wire that joins nothing.
+///
+/// # Errors
+///
+/// Returns [`WireError`] when the plan found no route, when the file holds no
+/// outermost list, when no identifier is free, or when the change does not
+/// survive its own checks. Nothing is written unless every invariant holds.
+pub fn draw_plan(
+    hierarchy: &mut Hierarchy,
+    plan: &Plan,
+    routing: &Routing,
+    target: &Target<'_>,
+    taken: &str,
+) -> Result<DrawnWire, WireError> {
+    let file = file_of(hierarchy, target.path)?;
+    let route = plan.route.as_ref().ok_or_else(|| WireError::NoRoute {
+        from: plan.source.name.clone(),
+        to: plan.target.name.clone(),
+        blocked_by: plan.blocked_by.clone(),
+    })?;
+
+    // One seed per request over one design, so a command run twice writes one
+    // file rather than two that differ only in their identifiers.
+    let seed = format!(
+        "{} connect {} to {}",
+        target.path.display(),
+        plan.source.name,
+        plan.target.name
+    );
+    let (wires, junctions, mutation) = write_route(
+        &mut hierarchy.files[file],
+        &route.path,
+        &route.junctions,
+        &seed,
+        target,
+        taken,
+    )?;
+
+    let mut report = plan.report(routing);
+    report.added = Added { wires, junctions };
+    Ok(DrawnWire { report, mutation })
+}
+
+/// Every wire that already passes through one of the route's own ends.
+///
+/// A bus is left out: a bundle carries several nets and joining one to a route
+/// is not this verb's decision.
+fn wires_through(schematic: &Schematic, points: &[Point]) -> Vec<Uuid> {
+    schematic
+        .lines()
+        .filter(|line| line.kind == LineKind::Wire)
+        .filter(|line| points.iter().any(|at| on_segment(line.from, line.to, *at)))
+        .map(|line| line.uuid.clone())
+        .collect()
+}
+
+/// Where a route needs a junction, in the order the route meets them.
+///
+/// Only the two ends are asked, because only an end of the route is a new wire
+/// end: a route that merely crosses a wire is a crossing, and a crossing with
+/// a dot on it is a connection nobody asked for.
+fn junctions_of(schematic: &Schematic, own: &[Uuid], path: &[Point]) -> Vec<Point> {
+    let mut found = Vec::new();
+    for at in [path.first(), path.last()].into_iter().flatten() {
+        if !found.contains(at) && junction_needed(schematic, own, *at) {
+            found.push(*at);
+        }
+    }
+    found
+}
+
+/// Does a route ending at this point need a junction there?
+///
+/// **It does when an existing wire of the same net has the point in its
+/// interior, and does not when the wire ends there.** A KiCad wire's
+/// connection points are its two ends and nothing between them
+/// (`SCH_LINE::GetConnectionPoints`), so a new wire that ends where an old one
+/// ends is joined to it with no dot at all — KiCad renders a corner — while one
+/// that ends in the middle of an old one is joined to nothing until a junction
+/// says so (`CONNECTION_GRAPH::updateItemConnectivity`).
+///
+/// **The wire has to be the route's own**, which is what
+/// [`wires_touching`] decides. A junction joins *every* wire through its
+/// position, so putting one on a foreign wire's interior would merge a net the
+/// caller never named.
+///
+/// The ends at the point are counted by [`wire_ends_at`], which is the one
+/// implementation of that question; a line through the point that is not among
+/// them has the point in its interior.
+fn junction_needed(schematic: &Schematic, own: &[Uuid], at: Point) -> bool {
+    let ends = wire_ends_at(schematic, at);
+    schematic
+        .lines()
+        .filter(|line| line.kind == LineKind::Wire)
+        .filter(|line| own.contains(&line.uuid))
+        .filter(|line| on_segment(line.from, line.to, at))
+        .any(|line| !ends.iter().any(|end| end.handle == line.uuid.short()))
+}
+
+/// Write one record per segment and one per junction, then check and write.
+fn write_route(
+    loaded: &mut LoadedFile,
+    vertices: &[Point],
+    junctions: &[Point],
+    seed: &str,
+    target: &Target<'_>,
+    taken: &str,
+) -> Result<(Vec<Uuid>, Vec<Uuid>, Mutation), WireError> {
+    let segments = vertices.len() - 1;
+    let wanted = segments + junctions.len();
+    let uuids: Vec<Uuid> = Identifiers::for_document(&loaded.doc, seed)
+        .take(wanted)
+        .collect();
+    if uuids.len() != wanted {
+        return Err(WireError::NoIdentifier);
+    }
+    let (wires, dots) = uuids.split_at(segments);
+
+    let before: Snapshot = state_before(&loaded.doc, &loaded.schematic, target.sheet_path, taken)?;
+    let root = loaded.doc.root().ok_or(WireError::Empty)?;
+    let first = insertion_index(&loaded.doc, root);
+    let mut offset = 0;
+    for (pair, uuid) in vertices.windows(2).zip(wires) {
+        let fragment = loaded
+            .doc
+            .add_fragment(&segment_fragment(pair[0], pair[1], uuid))?;
+        loaded.doc.insert_child(root, first + offset, fragment);
+        offset += 1;
+    }
+    for (at, uuid) in junctions.iter().zip(dots) {
+        let fragment = loaded.doc.add_fragment(&junction_fragment(*at, uuid))?;
+        loaded.doc.insert_child(root, first + offset, fragment);
+        offset += 1;
+    }
+
+    let mutation = commit(&loaded.doc, target, &before, taken)?;
+    loaded.schematic = Schematic::read(&loaded.doc)?;
+    Ok((wires.to_vec(), dots.to_vec(), mutation))
+}
+
+/// One junction record, in the shape KiCad writes.
+///
+/// The `junction add` verb builds the same record for itself, and deliberately:
+/// its builder is private to a verb that commits a mutation of its own, and a
+/// route writes its wires and its dots in **one** mutation. The two are one
+/// record shape and no rule, so the rule that would have to be shared is not
+/// there to share.
+fn junction_fragment(at: Point, uuid: &Uuid) -> String {
+    format!(
+        "(junction (at {} {}) (diameter 0) (color 0 0 0 0) (uuid {}))",
+        at.x,
+        at.y,
         quote(&uuid.0)
     )
 }

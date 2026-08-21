@@ -11,7 +11,7 @@
 
 use crate::edit::field::{Horizontal, Vertical};
 use crate::edit::label::PortShape;
-use crate::edit::wire::End;
+use crate::edit::wire::{Destination, End};
 use crate::geometry::{Angle, Iu, Point, Size};
 use crate::model::{LabelKind, Mirror, Refdes};
 use clap::{Args, Parser, Subcommand, ValueEnum};
@@ -152,6 +152,14 @@ pub enum WireVerb {
     /// and refuses rather than drawing something illegal.
     Draw(DrawArgs),
 
+    /// Route a wire between two ends and draw it.
+    ///
+    /// kicli chooses the path: the silhouettes a person would draw first, and
+    /// a search when none of them fits. A route that ends in the middle of a
+    /// wire it is joining gets a junction; one that ends where a wire already
+    /// ends does not, because KiCad renders a corner there.
+    Connect(ConnectArgs),
+
     /// Take one wire segment off a sheet.
     Delete {
         /// The identifier of the segment.
@@ -249,6 +257,102 @@ impl DrawArgs {
     #[must_use]
     pub fn corners(&self) -> Vec<Point> {
         self.via.iter().map(|corner| corner.point()).collect()
+    }
+}
+
+/// The two ends of a routed connection.
+///
+/// The same three forms as a drawn wire, because an end is addressed the same
+/// way whoever chooses the path. There is no `--via`: the corners are what the
+/// router decides, and a caller who wants to choose them wants `wire draw`.
+///
+/// The far end takes a fourth form, `--to-net`. A net is not one point: the
+/// router is given every point of it and chooses which one to join, which is
+/// the common request an agent makes.
+#[derive(Args, Clone, Debug)]
+#[command(group = clap::ArgGroup::new("source")
+    .required(true)
+    .args(["from_pin", "from_port", "from_at"]))]
+#[command(group = clap::ArgGroup::new("target")
+    .required(true)
+    .args(["to_pin", "to_port", "to_at", "to_net"]))]
+pub struct ConnectArgs {
+    /// The pin the connection starts at.
+    #[arg(long, value_name = "REF.PIN")]
+    pub from_pin: Option<PinArg>,
+
+    /// The child sheet's port the connection starts at.
+    #[arg(long, value_name = "NAME")]
+    pub from_port: Option<String>,
+
+    /// The point the connection starts at, in millimetres.
+    #[arg(long, value_name = "X,Y")]
+    pub from_at: Option<PointArg>,
+
+    /// The pin the connection finishes at.
+    #[arg(long, value_name = "REF.PIN")]
+    pub to_pin: Option<PinArg>,
+
+    /// The child sheet's port the connection finishes at.
+    #[arg(long, value_name = "NAME")]
+    pub to_port: Option<String>,
+
+    /// The point the connection finishes at, in millimetres.
+    #[arg(long, value_name = "X,Y")]
+    pub to_at: Option<PointArg>,
+
+    /// The net the connection joins, by its name or by its handle.
+    ///
+    /// kicli routes to the cheapest point of the net: any grid point of its
+    /// wires, or any of its pins. The answer says which point it joined.
+    #[arg(long, value_name = "NET")]
+    pub to_net: Option<String>,
+
+    /// Write a pair of labels instead of a wire, when kicli proposes one.
+    ///
+    /// kicli proposes a pair of labels when the cheapest route is longer than
+    /// `routing.label_threshold`, or when no route joins the two ends at all.
+    /// Without this flag it reports the proposal and writes nothing. With it,
+    /// kicli writes a short stub and a label at each end.
+    #[arg(long)]
+    pub auto_labels: bool,
+}
+
+impl ConnectArgs {
+    /// The end the `--from-*` flags name.
+    ///
+    /// # Errors
+    ///
+    /// Returns the message the argument parser would print when no form of the
+    /// end was given. The argument group requires one, so this cannot happen
+    /// through the command line.
+    pub fn start(&self) -> Result<End, String> {
+        end_of(
+            self.from_pin.as_ref(),
+            self.from_port.as_deref(),
+            self.from_at,
+            "from",
+        )
+    }
+
+    /// What the `--to-*` flags name: one end, or a whole net.
+    ///
+    /// # Errors
+    ///
+    /// Returns the message the argument parser would print when no form of the
+    /// far end was given. The argument group requires one, so this cannot
+    /// happen through the command line.
+    pub fn finish(&self) -> Result<Destination, String> {
+        if let Some(net) = &self.to_net {
+            return Ok(Destination::Net(net.clone()));
+        }
+        end_of(
+            self.to_pin.as_ref(),
+            self.to_port.as_deref(),
+            self.to_at,
+            "to",
+        )
+        .map(Destination::End)
     }
 }
 

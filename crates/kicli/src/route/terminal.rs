@@ -326,6 +326,38 @@ impl Approach {
     }
 }
 
+/// One terminal, settled against the drawing, with the record of any move.
+///
+/// The same answer [`Approach::of`] gives for one end, for a caller that
+/// settles one end against many candidate ends rather than against one. The
+/// rule and the constant behind it stay here, so a caller that offers a route
+/// a hundred terminals still asks the one implementation about each.
+#[must_use]
+pub fn settled(
+    terminal: &Terminal,
+    schematic: &Schematic,
+    grid: Iu,
+) -> (Terminal, Option<Adjusted>) {
+    let mut adjusted = Vec::new();
+    let moved = settle(terminal, schematic, grid, &mut adjusted);
+    (moved, adjusted.pop())
+}
+
+/// Is there room at this point for one more wire end?
+///
+/// A route's own end is a wire end, so a point that already carries three of
+/// them would take the fourth. A caller choosing between many candidate
+/// terminals drops the ones with no room rather than moving them: there is
+/// another point on the same net one grid step away, and a terminal that never
+/// enters the choice needs no adjustment record.
+///
+/// The count is `edit::mark::wire_ends_at`, which is the one implementation of
+/// it, and the boundary is the one `Approach` moves a terminal off.
+#[must_use]
+pub fn has_room(at: Point, schematic: &Schematic) -> bool {
+    wire_ends_at(schematic, at).len() < CROWDED
+}
+
 /// One terminal, moved off a four-way point if it stands on one, and recorded.
 ///
 /// The move and the record are made together and from one answer, because a
