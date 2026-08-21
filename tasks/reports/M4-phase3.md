@@ -520,6 +520,30 @@ a unit test's mapping table rather than by a real refusal, and it is the status 
 agent most needs to trust, since it is the one that says "no route exists".
 *Recommendation: accept as a chore — a committed walled-in fixture.*
 
+**23. When a check asserts two values are EQUAL, ask what else would make them
+equal — the answer is usually "the code doing nothing".** Raised by C8, in its own
+words, and it is a **fourth** kind of blind instrument, distinct from the three
+already catalogued this session.
+
+The catalogue now reads:
+
+| Kind | The check is blind because | Found by |
+|---|---|---|
+| reads nothing | the sweep matched no files and passed | D1, and two others |
+| author's vocabulary | it recognises the spellings its author thought of | C1 |
+| shared ancestor | its control is computed by the code under test | T19, T21 |
+| **degenerate equality** | **the two sides agree because neither does anything** | **C8** |
+
+C8's case: `document_name` returning a **constant** makes two checkouts produce
+identical identifiers, which is exactly what the check asserts. The check was
+watching, the break changed behaviour, and it passed — because a constant is
+checkout-independent in the most trivial possible way.
+
+*Recommendation: accept, and fold all four into the single restructuring the
+doc-diet check recommends.* They are one idea — **an instrument is blind in the
+dimension its author was not thinking in** — with four worked examples, and the
+examples are the valuable part.
+
 **22. Diff-scope claims must be re-verified after every merge-forward.** Found by
 T21's reviewer, and it is the fourth member of a family this session has been
 assembling without naming it.
@@ -722,6 +746,30 @@ measures the wrong thing — which here it did.** That is the degenerate case of
 falsification and it is worth naming, because it looks like the procedure being
 followed. The second pass pads the index generator to 1462 bytes and watches the
 check go red at budget 100: a break in the code the check watches.
+
+### The identifier seed (C8)
+
+> **WORKFLOW NOTE:** The brief's site table said three verbs; there are four —
+> `wire connect` seeds identically to `wire draw` in the same file — so a lane
+> that had trusted the table would have shipped exactly the split convention the
+> chore exists to prevent. Second: the brief warned against controls that share an
+> ancestor with what they control, and the break that mattered was the inverse
+> case it did not name — a break the integration check *could not see* (a constant
+> document name is checkout-independent), caught only because the helper's second
+> job was given its own assertion mid-task. Worth promoting into
+> `falsification-control`: when a check asserts two values are *equal*, ask what
+> else would make them equal, because the answer is usually "the code doing
+> nothing".
+
+**Orchestrator, beside the quote:** the first half is mine — I copied the site
+table out of the entry, which had copied it from the report, and none of the three
+of us checked it. **The brief even told the lane to treat my scope lists with
+suspicion, and that instruction is what saved it**, which is a poor substitute for
+getting the list right.
+
+The second half is PROPOSED 23 and it is the best single sentence produced this
+session. The brief warned about one failure mode and the lane hit its mirror
+image, then named the general rule rather than just fixing its own check.
 
 ### The loop's tick reviewer (T21)
 
@@ -970,6 +1018,50 @@ It found two things every per-task test missed:
    with the same blindness and no such control.** Recorded as PROPOSED 18 rather
    than fixed, being another lane's file — which means a shipped check in this
    repository is asserting a property it cannot see.
+
+### The identifier seed (C8) — merged `7fe7e73`
+
+James's ruling, promoting PROPOSED 13. Base `9de8196`, `main` merged forward
+once, six commits, **every one made with the pre-commit hook enabled**.
+
+**The entry's table said three sites. There are four.** `wire connect` seeds
+identically to `wire draw`, in the same file. **A lane that had trusted the table
+would have shipped exactly the split convention this chore exists to prevent** —
+which is the fifth time this session a brief or entry's enumeration has been wrong
+and the second time the error would have defeated the item's own purpose. Two
+further seed sites carry no path at all (they seed on the run's timestamp) and are
+recorded so nobody re-measures them.
+
+**The measurement came first, in its own commit, as the ruling required.** 1811
+identifier-shaped values across 60 files; 71 in goldens and test sources; of those
+**36 appear in no fixture and every one is hand-authored**. The five
+`wire_contract_*` goldens hold no raw identifier at all. **No committed file
+asserts a value the seeded generator produced.**
+
+**The prediction held, and its stated reason was only half of it.** I predicted
+the goldens would not move because `without_generated_identifiers` normalises
+them. True — for those five. The reason *everything else* is safe was not
+predicted by anyone: **every other committed identifier is hand-written**, so the
+generator's output is frozen nowhere in the repository. A prediction that comes
+true for the wrong reason is worth more than one that simply comes true.
+
+**The control is the part that carries the measurement.** Two checkouts at very
+different absolute paths pass the same 612 tests — *and* their scratch trees
+differ in **101 artefacts, 49 of them written schematics**. So the absolute path
+genuinely reached the written bytes in both runs, and the suite passed anyway.
+Without that, the green run proves only that nothing looked.
+
+**Break 4 is a fourth kind of blind check, and the lane found it in its own
+work.** Making `document_name` return a **constant** fails all three unit tests
+and leaves the two-checkout integration check **green** — because a constant name
+*is* checkout-independent. Not a no-op: a real blind spot, closed by splitting the
+helper's second job into `two_files_of_one_design_are_named_apart`.
+
+**One arm is recorded as not independently falsified rather than counted as one.**
+Isolating the `assert_ne!` on the two identifiers would mean breaking
+`check_invariants`, outside the chore. Declared, with the diagnosis that
+`Invariant::ALL` is a naming list and `check_invariants` builds its outcomes
+literally — reasoned, not waved past.
 
 ---
 
