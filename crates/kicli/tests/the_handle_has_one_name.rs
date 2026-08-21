@@ -31,21 +31,49 @@
 //! # The claim, stated so it can be checked
 //!
 //! > No expression anywhere under `crates/` takes the first eight characters
-//! > or bytes of a string, at a literal width of eight, **by any of the four
-//! > mechanisms enumerated below**, except at the sites in `ACCOUNTED` with
-//! > the reason each is there.
+//! > or bytes of a string, **at a width written as the decimal literal `8`**,
+//! > by any of the four mechanisms enumerated below, except at the sites in
+//! > `ACCOUNTED` with the reason each is there.
 //!
-//! The claim used to end "in any spelling the standard library offers for
-//! doing so". That was wider than any grep can be, and it was wrong in the
-//! specific way this chore keeps being wrong: the derivation behind it
-//! enumerated `str`, `String` and `Iterator` **methods**, so
-//! `format!("{:.8}", uuid)` — `core::fmt` precision, as std-offered as
-//! `chars().take(8)` and the way an engineer would actually write it — sat
-//! outside the derivation while sounding inside the claim.
+//! Read "decimal literal" as the load-bearing phrase. This sweep matches
+//! **spellings**, so `take(8)` is a cut it can see and `take(0x8)` is the same
+//! cut written in a way it cannot. That is a limitation of kind, not of
+//! coverage, and the sentence above is written narrowly enough to be true
+//! rather than widely enough to be comfortable.
 //!
-//! ## The taxonomy is the boundary
+//! ## Why the claim keeps getting narrower, which is the useful part
 //!
-//! Four mechanisms are covered, and naming them **is** the limit of the claim:
+//! Four rejections, each finding a real gap one level below the last:
+//!
+//! 1. it classified by **name**, so `fn short(id: &str)` passed;
+//! 2. it classified by the **cut**, spelled from memory, so `split_off(8)`
+//!    passed;
+//! 3. the spellings came from `std` but through a **hand-written grep
+//!    alternation**, the same closed list one level up;
+//! 4. the alternation was replaced by **method enumerations** — but *which*
+//!    enumerations was still a choice, and `format!("{:.8}", uuid)` passed
+//!    because `core::fmt` is not a method;
+//! 5. and with the taxonomy of mechanisms finally stated, `take(0x8)` passed —
+//!    inside a covered mechanism, at a literal eight, in a sweep that had just
+//!    claimed those were covered exhaustively.
+//!
+//! The lesson generalises one step at each level. Vocabulary from outside the
+//! author's head is not enough, because choosing which enumerations to run is
+//! itself authorship. **And a taxonomy of mechanisms is not enough either, if
+//! the matcher recognises spellings rather than meanings** — a textual matcher
+//! cannot decide a value, so `0x8`, `0o10`, `4 + 4` and `SHORT_LEN` are all the
+//! same number to the compiler and four different strings to this file.
+//!
+//! There is no fixed point on that road, which is why the sweep stops here and
+//! declares its boundary instead of chasing the next spelling. **The honest
+//! instrument for this claim is a lint over MIR**, where the width is a value
+//! rather than a spelling and `take(0x8)` and `take(8)` are one node. This
+//! file is a **regression guard with a stated boundary, not a proof**, and the
+//! lint is carried into M5.
+//!
+//! ## The taxonomy is one boundary
+//!
+//! Four mechanisms are covered, and naming them is one limit of the claim:
 //!
 //! 1. method calls on `str` and `String`;
 //! 2. method calls on `[T]`, reached by `as_bytes` or `into_bytes`;
@@ -55,12 +83,25 @@
 //! Plus the `core::ops::Index` range forms, which are an operator rather than
 //! a method and are listed with (1).
 //!
-//! ## What is outside it, named rather than implied
+//! ## The spelling of the width is the other boundary
 //!
-//! - **A width that is not the literal 8 in the expression**: `&uuid[..LEN]`
-//!   behind a `const LEN = 8`, a width read from configuration, and the
-//!   indirect format precisions `{:.*}`, `{:.1$}`, `{:.n$}` — the last three
-//!   are `core::fmt`'s own grammar, but binding a `$`-parameter to its
+//! **A width of eight not written as the decimal digit `8` is invisible here,
+//! whatever mechanism carries it.** That is a class, and it is stated as one
+//! because listing its members is what this chore has already failed at four
+//! times. It includes — and is not limited to — any other radix (`0x8`,
+//! `0o10`, `0b1000`), any suffix or separator (`8usize`, `0_8`), and any
+//! constant expression that evaluates to eight, whether written in place
+//! (`4 + 4`, `2 * 4`) or named (`const SHORT_LEN: usize = 8`).
+//!
+//! Measured, not assumed: all seven of those forms pass this sweep, while the
+//! byte-for-byte identical `take(8)` in the same file fails it. The difference
+//! is the radix and nothing else.
+//!
+//! ## What else is outside, named rather than implied
+//!
+//! - **A width the source does not contain at all**: read from configuration
+//!   or computed at run time; and the indirect format precisions `{:.*}`,
+//!   `{:.1$}`, `{:.n$}` — grammar-legal, but binding a `$`-parameter to its
 //!   argument means parsing the macro call, which this does not do.
 //! - **A hand-rolled loop** with its own counter, or `retain`/`take_while`
 //!   closing over one.
@@ -69,16 +110,13 @@
 //!   new dependency would need its own enumeration.
 //! - **Anything visible only after monomorphisation or const evaluation.**
 //!
-//! Closing those needs a lint over compiled MIR rather than a reader of source
-//! text. That is separate work, recorded as such in the C1 entry rather than
-//! half-done here.
-//!
-//! **And the honest residual: a fifth mechanism may exist.** Three of the four
-//! above were found by somebody else pointing at a gap. What is claimed is
-//! that these four are covered exhaustively and that the boundary is written
-//! down — not that the taxonomy is complete. A reader who finds a fifth is
-//! finding a real defect in this sweep, and the sweep says so out loud rather
-//! than leaving them to discover it against a sentence that promised more.
+//! **And the honest residual: a fifth mechanism may exist.** Four of the five
+//! gaps above were found by somebody else pointing at one. What is claimed is
+//! that these four mechanisms are covered at the decimal spelling and that the
+//! boundary is written down — **not** that the taxonomy is complete. A reader
+//! who finds a fifth is finding a real defect in this sweep, and the sweep
+//! says so out loud rather than leaving them to discover it against a sentence
+//! that promised more.
 
 use std::path::{Path, PathBuf};
 
