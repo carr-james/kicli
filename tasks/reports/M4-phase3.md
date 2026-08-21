@@ -408,6 +408,33 @@ the tick under review had not merged. Small, and it cost a reviewer a
 reconciliation it should not have had to do. *Recommendation: accept, as a line in
 the review-brief pattern.*
 
+**14. A gate-bypass sanction must be stated by cause, not by test name.** Raised
+by T19. My brief said the only permitted failure was
+`agent_doc_covers_every_command`; the task added a CLI flag, so
+`agent_doc_covers_every_verb_flag` failed for the identical cause and the lane had
+to widen its own sanction and disclose it. *Recommendation: accept* — "any
+`agent_doc` failure naming an undocumented `kicli wire` verb or flag". A condition
+written as a test name goes stale the moment the test suite grows.
+
+**15. `falsification-control` should name a third shape of blind instrument: a
+control that shares an ancestor with what it controls.** Raised by T19, and it is
+distinct from the two the skill already knows.
+
+The skill currently distinguishes *the break was a no-op* from *the check does not
+watch what it claims*. T19 found a third: **the break changed behaviour, the check
+was watching, and the check still passed — because both of its controls were
+computed by the same code the break was in, so they moved together.** A dearer
+route was produced and both sides of the comparison got dearer.
+
+The diagnostic question the lane arrived at is the useful part: **does my control
+share an ancestor with the thing it is controlling?** If it does, it can only
+detect breaks that affect them differently. The fix is a control derived
+independently — here, asking the router for each candidate point separately by a
+different route and comparing.
+
+*Recommendation: accept, as a third case beside the two.* **Not applied** — skills
+change by ruling.
+
 **13. `falsification-control` should carry the three-level rule the handle chore
 produced.** Its final form, assembled from the lane's own words across three
 rejections and one reviewer's extension:
@@ -627,6 +654,72 @@ measures the wrong thing — which here it did.** That is the degenerate case of
 falsification and it is worth naming, because it looks like the procedure being
 followed. The second pass pads the index generator to 1462 bytes and watches the
 check go red at budget 100: a break in the code the check watches.
+
+### The join, part two (T19) — complete on `lane-t19`, held unmerged
+
+Base `bdc7863` (the tip of T18, not `main`), `main` merged forward twice, three
+commits plus two merges. **Held deliberately**: `AGENT.md` does not document
+`kicli wire connect`, so merging T18 or T19 before T22 would put `main` in a red
+state.
+
+**Scope excess, disclosed by the lane in its first paragraph.** `--to-net` is a
+new *flag*, so `agent_doc_covers_every_verb_flag` fails alongside
+`agent_doc_covers_every_command`. The brief sanctioned only the latter by name.
+The lane widened the disclosed bypass by one test, recorded it as a deviation, and
+reported it rather than absorbing it. **My defect**: I stated the bypass condition
+by *test name* rather than by *cause*. The lane's correction is the right one —
+"any `agent_doc` failure naming an undocumented `kicli wire` verb or flag".
+PROPOSED 14.
+
+**Nearest-terminal, measured with two controls rather than asserted.** `SIG` drawn
+as two strands joined by a same-text label, with the same builder making each
+strand alone:
+
+| Drawing | Answer | Cost |
+|---|---|---|
+| near strand only | `SIG@69.85,40.64` | 21 |
+| far strand only | `SIG@114.3,40.64` | 46 |
+| both, asked for the net | `SIG@69.85,40.64` | **21** |
+
+Breaking the choice to keep the dearest candidate fails **on cost** —
+`left: 64, right: 45` — not on connectivity, which is the clause that makes it a
+nearest-terminal check rather than a connectivity check.
+
+**And now the finding, which is the best methodological result of the session.**
+
+The brief asked the lane to break the multi-source heuristic into a single-source
+one and report what it saw, with the warning that a green result would be a
+finding rather than a licence. **It came back green — and it was not a no-op.**
+
+Measured on a third fixture built for the purpose (source in a pocket of three
+symbol bodies, so every route turns at least four times and no silhouette fast
+path answers): replacing `min` over goals with the estimate to `goals[0]` moved
+one arm from cost **83**, 861 states expanded, to cost **84**, 862 expanded — *a
+dearer route to the same strand*. The other arm was byte-identical.
+
+**The check could not see it because both of its controls were built from the
+same broken code.** They moved together. The lane's fix was a control derived
+**independently of the mechanism under test** — the route to the net must be no
+dearer than a route to any single grid point of the strand it did not take, each
+asked for separately by `--to-at` on its own drawing. Re-run against that, the
+break fails: *"the route to the net costs 84 and a route to the single point
+77.47,43.18 costs 83"*. The same masking hid break 5, and the same control
+catches it.
+
+That is a **third** shape of blind instrument this session, distinct from the two
+already recorded: not a check that reads nothing, and not a check whose vocabulary
+is its author's — a check whose *control shares an ancestor with what it
+controls*. PROPOSED 15.
+
+**The freeze holds.** `route/report.rs` has a zero diff from the lane's base. The
+joined point rides in the contract's existing `to` field; the net stays the
+top-level key T18 established.
+
+**Oracle:** `kicad-cli` 10.0.5 present, `KICLI_TEST_KICAD_CLI=1` run of the whole
+file — 10 passed, none skipped. Inverting the oracle clause fails **only** with
+the variable set. Second-directory run: 10 passed, and identifiers genuinely
+differ across paths (`9dafbd15…` vs `2023ad0a…`), so the hazard is real and the
+checks are insensitive to it, which is the property wanted.
 
 ---
 
@@ -1037,6 +1130,27 @@ content hashes rather than to commit SHAs.** A hash survives amending, rebasing
 and merging forward; a SHA does not, and every lane that merges `main` forward —
 which, this session, is all of them — invalidates its own citations. Filed as
 PROPOSED 11.
+
+### The join, part two (T19)
+
+> **WORKFLOW NOTE:** The brief's bypass condition ("the ONLY failure permitted is
+> `agent_doc_covers_every_command`") cannot survive a task that adds a CLI flag —
+> `agent_doc_covers_every_verb_flag` fails for the identical cause, and the
+> condition should be stated by cause ("any `agent_doc` failure naming an
+> undocumented `kicli wire` verb or flag") rather than by test name. Also: the
+> brief's warning that post-commit instrument fixes are lost to the next
+> `git checkout --` is exactly right and cost me two fixes; the actionable form is
+> "commit an instrument fix the moment you make it, before the next restore" — a
+> digest check does not catch it, because there is no committed baseline to
+> compare against.
+
+**Orchestrator, beside the quote:** both accepted; the first is PROPOSED 14 and
+mine. The second is the fourth report this session on the same rule, and the
+lane's sharpening is the operationally useful one — *a digest check cannot catch
+this, because there is no committed baseline to compare against.* Every earlier
+version of this advice said "checksum after restoring", which does not help when
+the thing you lost was never committed. Folded into PROPOSED 11 and passed to
+every lane dispatched after it.
 
 ### The handle chore's second tick reviewer (C1)
 
