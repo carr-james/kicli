@@ -32,8 +32,8 @@ use crate::cli::output::{Failure, Report};
 use crate::connectivity::extract;
 use crate::edit::label::{LabelError, NewLabel, PortShape, add as add_label};
 use crate::edit::wire::{
-    Connection, DeletedWire, DrawnWire, End, Plan, Planned, Polyline, Stranded, WireError, delete,
-    draw, draw_plan, plan,
+    Connection, DeletedWire, Destination, DrawnWire, End, Plan, Planned, Polyline, Stranded,
+    WireError, delete, draw, draw_plan, plan,
 };
 use crate::geometry::pins::ResolvedPin;
 use crate::geometry::{Angle, Iu};
@@ -133,8 +133,14 @@ fn connect_wire(global: &Global, args: &ConnectArgs) -> Result<Report, Failure> 
         let (hierarchy, target, _) = editing.tree_parts();
         plan(hierarchy, &request, &routing, &target).map_err(|error| refused(&error))?
     };
+    // A net names no single point until the router has chosen one, so the far
+    // end of a performed proposal is the point the plan settled on.
+    let far = match &request.to {
+        Destination::End(end) => end.clone(),
+        Destination::Net(_) => End::At(planned.target.at),
+    };
 
-    if let Some(proposed) = proposed_for(&editing, &request, &planned, &routing, grid) {
+    if let Some(proposed) = proposed_for(&editing, &request, &far, &planned, &routing, grid) {
         if !args.auto_labels {
             // A proposal is an answer rather than a failure, so it succeeds and
             // writes nothing. The caller decides whether to perform it.
@@ -150,11 +156,11 @@ fn connect_wire(global: &Global, args: &ConnectArgs) -> Result<Report, Failure> 
         // proposal declines to draw.
         let ends = Polyline {
             from: request.from.clone(),
-            to: request.to.clone(),
+            to: far.clone(),
             via: Vec::new(),
         };
         let performed = perform(&mut editing, &ends, &proposed, &routing, grid)?;
-        return Ok(joined(performed, &root, &request));
+        return Ok(joined(performed, &root, &request, &far));
     }
 
     let drawn = {
@@ -164,7 +170,7 @@ fn connect_wire(global: &Global, args: &ConnectArgs) -> Result<Report, Failure> 
     let rendered = contract::render(&drawn.report, grid);
     let mut result = report(&drawn.mutation, Some(("wire", rendered.json)), &[]);
     result.text = format!("{}{}", rendered.text, result.text);
-    Ok(joined(result, &root, &request))
+    Ok(joined(result, &root, &request, &far))
 }
 
 /// Is this planned connection one kicli proposes as a pair of labels?
@@ -177,6 +183,7 @@ fn connect_wire(global: &Global, args: &ConnectArgs) -> Result<Report, Failure> 
 fn proposed_for(
     editing: &Editing,
     request: &Connection,
+    far: &End,
     planned: &Plan,
     routing: &Routing,
     grid: Iu,
@@ -184,9 +191,13 @@ fn proposed_for(
     let file = &editing.loaded.hierarchy.files[editing.file];
     let sheet = editing.place.sheet_path();
     let source_pin = end_terminal(file, sheet, &request.from).and_then(|(_, pin)| pin);
-    let target_pin = end_terminal(file, sheet, &request.to).and_then(|(_, pin)| pin);
-    let name = name_for(editing, &request.from, source_pin.as_ref())
-        .or_else(|| name_for(editing, &request.to, target_pin.as_ref()))?;
+    let target_pin = end_terminal(file, sheet, far).and_then(|(_, pin)| pin);
+    // A request that names a net names the pair already: joining that net is
+    // the whole of what was asked for. A handle kicli invented for an unnamed
+    // net is not a name to label with, so it falls through to the pins.
+    let name = net_name(editing, &request.to)
+        .or_else(|| name_for(editing, &request.from, source_pin.as_ref()))
+        .or_else(|| name_for(editing, far, target_pin.as_ref()))?;
 
     Proposal::of(
         &planned.source,
@@ -243,8 +254,8 @@ fn unwritten(rendered: &Report, notes: &[Note]) -> Report {
 /// claim is about what the drawing now says. A connection between two ends that
 /// name no pin has no net to report and says so with a null rather than by
 /// leaving the key out, so one parse covers both.
-fn joined(mut result: Report, root: &Path, request: &Connection) -> Report {
-    let net = joined_net(root, request);
+fn joined(mut result: Report, root: &Path, request: &Connection, far: &End) -> Report {
+    let net = joined_net(root, request, far);
     if let Some(name) = &net {
         result.text = format!("joined: net {name}\n{}", result.text);
     }
@@ -253,10 +264,10 @@ fn joined(mut result: Report, root: &Path, request: &Connection) -> Report {
 }
 
 /// The net an end of the connection is on, read back from the written file.
-fn joined_net(root: &Path, request: &Connection) -> Option<String> {
+fn joined_net(root: &Path, request: &Connection, far: &End) -> Option<String> {
     let hierarchy = Hierarchy::load(root).ok()?;
     let nets = extract(&hierarchy);
-    [&request.from, &request.to]
+    [&request.from, far]
         .into_iter()
         .filter_map(|end| match end {
             End::Pin(pin) => Some(pin),
@@ -385,6 +396,23 @@ fn name_for(editing: &Editing, end: &End, pin: Option<&ResolvedPin>) -> Option<S
         &resolved.name,
         &resolved.number,
     ))
+}
+
+/// The name a net destination gives a proposed pair of labels.
+///
+/// Nothing when the far end is not a net, and nothing when the net's name is
+/// the handle kicli invented for one the drawing does not name: a synthetic
+/// handle renumbers when another net gains a label, so a label carrying one
+/// would freeze a name that is going to move.
+fn net_name(editing: &Editing, to: &Destination) -> Option<String> {
+    let Destination::Net(name) = to else {
+        return None;
+    };
+    let nets = extract(&editing.loaded.hierarchy);
+    nets.nets()
+        .iter()
+        .find(|net| net.name == *name && !net.synthetic)
+        .map(|net| net.name.clone())
 }
 
 /// Write the pair of labels the router proposed, and no wire between them.

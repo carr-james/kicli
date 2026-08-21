@@ -303,7 +303,9 @@ fn every_wire_verb_parses() {
     }
 
     // The routed verb addresses its ends the same way and chooses the path
-    // itself, so it takes every form of an end and no `--via` at all.
+    // itself, so it takes every form of an end and no `--via` at all. The far
+    // end takes one form more: a whole net, which is not one point and which
+    // only a verb that chooses the path can be given.
     let help = stdout(&kicli(&["wire", "connect", "--help"]));
     for flag in [
         "--from-pin",
@@ -312,6 +314,7 @@ fn every_wire_verb_parses() {
         "--to-pin",
         "--to-port",
         "--to-at",
+        "--to-net",
         "--auto-labels",
     ] {
         assert!(help.contains(flag), "the help names {flag}: {help}");
@@ -319,6 +322,13 @@ fn every_wire_verb_parses() {
     assert!(
         !help.contains("--via"),
         "the corners are the router's to choose: {help}"
+    );
+    // And the net form is the far end's alone. A route leaves a point it was
+    // told to leave; which point of a net it leaves is not a question the
+    // escape rule can answer.
+    assert!(
+        !help.contains("--from-net"),
+        "a route leaves one end, not a net: {help}"
     );
 }
 
