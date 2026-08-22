@@ -9,7 +9,7 @@
 //! touched this file since kicli last wrote it? It is empty right after a
 //! mutation, because the mutation reported its own changes.
 
-use crate::cli::args::{Global, SchVerb, ViewName};
+use crate::cli::args::{Global, ViewArgs, ViewName};
 use crate::cli::exit::ExitCode;
 use crate::cli::locate::Loaded;
 use crate::cli::output::{Failure, Report, Reporter};
@@ -33,14 +33,14 @@ const CURRENT: &str = "current";
 /// Returns a [`Failure`] when the project cannot be found or read, when the
 /// sheet flag names a placement this project does not have, or when the delta
 /// has no saved state to compare against.
-pub fn view(global: &Global, verb: &SchVerb, reporter: &Reporter) -> Result<Report, Failure> {
-    let SchVerb::View {
+pub fn view(global: &Global, args: &ViewArgs, reporter: &Reporter) -> Result<Report, Failure> {
+    let ViewArgs {
         view: which,
         include_power,
         uuids,
         stats,
         against,
-    } = verb;
+    } = args;
     let loaded = Loaded::for_command(global)?;
 
     if *which == ViewName::Delta {

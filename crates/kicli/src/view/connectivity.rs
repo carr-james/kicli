@@ -260,10 +260,10 @@ fn write_nets(
         if pins.is_empty() {
             continue;
         }
-        // One pin joined to nothing is not a connection. KiCad names those
-        // nets `unconnected-...`, the rule check reports every one of them,
-        // and listing them here costs a fifth of the view to say nothing.
-        if pins.len() == 1 && net.kicad_name.starts_with("unconnected-") {
+        // One pin joined to nothing is not a connection, and listing those
+        // costs a fifth of the view to say nothing. `Net::joins_nothing` is
+        // the one implementation of the question; the pin view asks it too.
+        if pins.len() == 1 && net.joins_nothing() {
             unconnected += 1;
             continue;
         }

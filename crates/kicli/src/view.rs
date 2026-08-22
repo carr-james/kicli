@@ -10,6 +10,7 @@
 pub mod connectivity;
 pub mod delta;
 pub mod layout;
+pub mod pins;
 pub mod scope;
 pub mod snapshot;
 

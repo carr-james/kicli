@@ -134,6 +134,24 @@ pub struct Net {
     pub sheets: Vec<SheetPath>,
 }
 
+impl Net {
+    /// Is this net one pin joined to nothing?
+    ///
+    /// One pin on its own is not a connection. KiCad names such a net
+    /// `unconnected-...`, its own rule check reports every one of them, and
+    /// both the connectivity view and the pin view have to decide the same way
+    /// about the same pin — so the decision lives here rather than twice at the
+    /// two call sites.
+    ///
+    /// The name is the test rather than the pin count alone: a single pin under
+    /// a label is on a named net, and calling that unconnected would contradict
+    /// the drawing.
+    #[must_use]
+    pub fn joins_nothing(&self) -> bool {
+        self.pins.len() == 1 && self.kicad_name.starts_with("unconnected-")
+    }
+}
+
 /// A construct kicli does not join the way KiCad does.
 ///
 /// A warning never changes the partition. It reports a drawing kicli declines

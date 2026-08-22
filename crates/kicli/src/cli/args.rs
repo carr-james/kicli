@@ -382,29 +382,76 @@ pub enum SchVerb {
     /// kicli last wrote it? It is empty right after a mutation, by design.
     /// That mutation's own result already reported what it changed. Keep that
     /// result. Nothing derives it again.
-    View {
-        /// Which view to print.
-        #[arg(long, value_enum, default_value_t = ViewName::Connectivity)]
-        view: ViewName,
+    View(ViewArgs),
 
-        /// List power symbols, which are otherwise left out as noise.
-        #[arg(long)]
-        include_power: bool,
+    /// Say where a symbol's pins are, and what may be connected to each one.
+    ///
+    /// Read-only. It writes nothing, so it is safe to ask before every edit,
+    /// and it is the command to ask before drawing a first wire onto a part:
+    /// each record carries the point the pin connects at, the direction a wire
+    /// must leave in, and the first point it may reach. That last point is a
+    /// legal terminus for a one-segment wire, so `wire draw --from-pin REF.PIN
+    /// --to-at <escape>` is accepted without a guess.
+    Pins(PinsArgs),
+}
 
-        /// Add the first eight characters of each object's identifier.
-        #[arg(long)]
-        uuids: bool,
+/// Which view to print, and how much of it.
+#[derive(Args, Clone, Debug)]
+pub struct ViewArgs {
+    /// Which view to print.
+    #[arg(long, value_enum, default_value_t = ViewName::Connectivity)]
+    pub view: ViewName,
 
-        /// Report the size of the view in bytes.
-        #[arg(long)]
-        stats: bool,
+    /// List power symbols, which are otherwise left out as noise.
+    #[arg(long)]
+    pub include_power: bool,
 
-        /// The saved state the delta compares against.
-        ///
-        /// The default is the state every command that writes leaves behind.
-        #[arg(long, value_name = "NAME")]
-        against: Option<String>,
-    },
+    /// Add the first eight characters of each object's identifier.
+    #[arg(long)]
+    pub uuids: bool,
+
+    /// Report the size of the view in bytes.
+    #[arg(long)]
+    pub stats: bool,
+
+    /// The saved state the delta compares against.
+    ///
+    /// The default is the state every command that writes leaves behind.
+    #[arg(long, value_name = "NAME")]
+    pub against: Option<String>,
+}
+
+/// Which pins to report on.
+#[derive(Args, Clone, Debug)]
+pub struct PinsArgs {
+    /// The symbol, or one pin of it: `R12`, `R12.2`, or a symbol's identifier.
+    #[arg(value_name = "TARGET")]
+    pub target: String,
+
+    /// List only the pins nothing is joined to yet.
+    #[arg(long)]
+    pub free: bool,
+
+    /// Report the size of the answer in bytes.
+    #[arg(long)]
+    pub stats: bool,
+}
+
+impl PinsArgs {
+    /// The symbol the target names, and the pin number when it names one.
+    ///
+    /// A reference designator holds no dot, and a pin address is `REF.PIN`, so
+    /// the last dot separates them — the rule [`PinArg`] already parses by. An
+    /// identifier holds no dot either, so a handle addresses the whole symbol.
+    #[must_use]
+    pub fn parts(&self) -> (&str, Option<&str>) {
+        match self.target.rsplit_once('.') {
+            Some((symbol, number)) if !symbol.is_empty() && !number.is_empty() => {
+                (symbol, Some(number))
+            }
+            _ => (&self.target, None),
+        }
+    }
 }
 
 /// The views `sch view` can print.
