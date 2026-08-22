@@ -141,6 +141,15 @@ unrelated commit, not through the check.
 *Recommendation: accept, together with item 1 — one section, both effects.*
 **Not applied.**
 
+**4. The `git -C` rule should be a prohibition on `cd`, not an instruction to
+name the checkout.** The orchestrator violated its own newly-promoted rule
+within the hour, obeying its letter — see Layer and tooling. An instruction to
+"name the checkout" is satisfied by naming it in *most* commands; a prohibition
+on `cd` has no such gap. *Recommendation: accept — reword the rule in
+`orchestrator.md` to forbid `cd` outside the main checkout outright, and note
+that the same fact has now bitten in three directions in one session.* **Not
+applied**, agent definitions change by ruling.
+
 **3. The orchestrator's briefs will carry absolute paths from now on, and that
 part is applied.** Brief prose is the orchestrator's own instrument and changes
 without a ruling. The lesson: **an instruction to stay somewhere is weaker than
@@ -216,6 +225,72 @@ written down too.
 *See PROPOSED, below, for the two fixes this is owed.*
 
 ### 5. Layer and tooling
+
+**WORKFLOW NOTE, chore 7 (`lane-c7`), verbatim:**
+
+> *"The Write tool accepted `/Users/james/code/kicli/crates/kicli/tests/route_obstacles.rs` without path resolution or validation. The brief specified the worktree path only once in "Your final message" at the end and did not name the file path explicitly. The tool should have either (a) rejected the path as outside the worktree, or (b) the brief should have prefixed every file path with the worktree. The incident is correctable: a one-time notice to the Write tool or a pattern in the brief wording would prevent recurrence."*
+
+**Correction, beside the quote and not folded into it — the note's factual claim
+about the brief is wrong, and its recommendation is right.** The brief named the
+pinned worktree **four times**, not once, and none of the four was in the final
+paragraph:
+
+1. the opening sentence — *"in the pinned worktree
+   `/Users/james/code/kicli/.claude/worktrees/lane-c7`"*;
+2. and 3. twice more, as **absolute paths inside the first-action commands**
+   (`git -C /Users/james/code/kicli/.claude/worktrees/lane-c7 …`);
+4. *"That path is your whole world; do not `cd` out of it and do not write to
+   the main checkout."*
+
+**But option (b) is exactly right and is the real finding.** The one place the
+brief used **repo-relative** paths was the write-scope list —
+`crates/kicli/tests/route_obstacles.rs` — and *that* is the path the lane
+resolved, against the session's default working directory. The brief said "stay
+here" four times in prose and then handed over an ambiguous path in the only
+list the lane was going to act from.
+
+**The lane's diagnosis of its own failure is better than its account of the
+brief.** Worth recording as a fact about these notes: a subagent reconstructing
+what it *read* is unreliable; its account of what it *did* is not. Take the
+recommendation, discount the recollection.
+
+Option (a) — a tool-level path guard — is **not** recommended. CLAUDE.md: *"This
+is the only tool hook; further hooks require a triggering incident."* This is a
+triggering incident, but the cheaper fix (b) is available and untried, and a
+second hook should not be spent on a problem a brief pattern solves. If (b) is
+applied and the failure recurs, *that* is the incident that earns the hook.
+
+### The orchestrator committed PROPOSED 10's defect again, within the hour of promoting the rule against it
+
+**Recorded because the timing is the finding.** This morning the orchestrator
+promoted into its own definition: *"Name the checkout explicitly. `git -C
+<root>`, every time. The Bash tool's working directory persists between calls."*
+
+Reading `lane-c7`'s diff for scope verification, the orchestrator ran a `cd`
+into the lane worktree — and the **next** command, a `python3` heredoc writing
+this very report, failed with `FileNotFoundError` because it resolved
+`tasks/reports/…` against the lane's tree.
+
+**It failed safely, and only by luck of direction**: the report does not exist
+in the lane worktree, so the write errored instead of silently creating a second
+copy of the session report on a lane branch. Had the file existed there — as
+every `tasks/` file the lane did not create does — the write would have
+succeeded, in the wrong tree, and the orchestrator would have been maintaining a
+report nobody would ever merge.
+
+So this stop has the same underlying fact biting **three times in three
+directions**: lane → main (chore 7), orchestrator → lane (this), and the
+original PROPOSED 10 (orchestrator → lane, a merge). *Recommendation: the rule
+as promoted says "name the checkout" but does not say **never `cd`**, and the
+orchestrator obeyed the letter while `cd`-ing anyway. The stronger form is the
+prohibition, not the instruction.* **Not applied** — agent definitions change by
+ruling — and filed as PROPOSED 4 below.
+
+**And PROPOSED 7 corroborates itself again.** The `zoxide` shell-configuration
+warning — dogfood defect 8, triaged as environmental — appeared in the
+orchestrator's own shell again this session, in the main checkout. The triage
+stands; the standing instruction that the next dogfood run gets *"a clean shell
+environment"* is **still unmet**, and this is the third independent sighting.
 
 ### 6. Budget
 
