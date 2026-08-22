@@ -12,10 +12,19 @@ read it, whatever the URL says today.
 
 ## The rules
 
-1. **A snapshot is never edited after it is taken.** Not to fix a typo, not to
-   tidy formatting, not to correct the source's own errors. An edited snapshot is
-   not a snapshot — it is a summary wearing a snapshot's filename, and it can no
-   longer settle the question it exists to settle.
+1. **The reproduced body of a snapshot is never edited after it is taken.** Not
+   to fix a typo, not to tidy formatting, not to correct the source's own errors.
+   An edited snapshot is not a snapshot — it is a summary wearing a snapshot's
+   filename, and it can no longer settle the question it exists to settle.
+   *The one exception is narrow and points the same way:* an **integrity
+   constant in the header** — a digest, a byte count, a stated normalisation —
+   that is **demonstrably false** is corrected in place, with a note recording
+   the wrong value, the right one, and how it was found. That is not editing the
+   evidence; it is repairing the instrument that certifies it. A false digest
+   does not sit there harmlessly, it *fires*, and it accuses the artefact of
+   exactly the tampering the directory exists to rule out. The body's own
+   immutability is what makes the repair safe: the correction must be
+   accompanied by the `diff` showing the body did not move.
 2. **A new retrieval is a new dated file, never an edit to an old one.** If the
    source changes, or a later retrieval is needed for any reason, add
    `<source>-<YYYY-MM-DD>.md` alongside the existing one and leave the old file
@@ -31,9 +40,16 @@ read it, whatever the URL says today.
    rendered badly, or was lost by the export format, the snapshot says which part
    and why. A snapshot with a declared hole is honest; one with a silent hole is
    worse than no snapshot at all.
-6. **Corrections go outside the file.** If a snapshot is later found to
-   misrepresent its source, the correction is recorded in the citing document or
-   the relevant task entry — never by touching the snapshot.
+6. **Corrections to the CONTENT go outside the file.** If a snapshot is later
+   found to misrepresent its source — a mis-transcription, a missing passage, a
+   comment mistaken for the author's text — the correction is recorded in the
+   citing document or the relevant task entry, never by touching the snapshot.
+   Only the header-metadata case in rule 1 is repaired in place.
+7. **A stated digest must be reproducible by a procedure the file itself
+   gives.** State the commands, not just the constant. A digest a reader cannot
+   regenerate is decoration; and an unrunnable procedure is how a stale constant
+   survives review — see the header-correction note in the Greenberg snapshot,
+   which is that failure caught at tick review.
 
 ## Naming
 
@@ -48,4 +64,4 @@ snapshot's header.
 | File | Source | Retrieved |
 |---|---|---|
 | `greenberg-schematic-checklist-2026-08-22.md` | Andrew Greenberg, "Checklist for Schematics v2026-02-15" (Google Doc) | 2026-08-22 |
-| `greenberg-schematic-checklist-2026-08-22.source.txt` | byte-exact plain-text export of the above (8,339 bytes) | 2026-08-22 |
+| `greenberg-schematic-checklist-2026-08-22.source.txt` | byte-exact plain-text export of the above (8,339 bytes), vendored so the snapshot's digests can be re-derived without a network fetch | 2026-08-22 |

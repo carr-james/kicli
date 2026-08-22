@@ -27,6 +27,7 @@ URL, so that the citation cannot drift.
 | HTTP status | **200** (after redirect to `doc-0g-64-docstext.googleusercontent.com`) |
 | Bytes | **8,339** |
 | MD5 | `e04ed36a3066374a7e02e4224adfc109` |
+| SHA-256 | `22aea9abbb7c460215d6d141ec90c877d6a18e9b034b6b141e080bc6e2d493c0` |
 | Encoding | UTF-8 **with BOM**, **CRLF** line terminators |
 | Vendored byte-for-byte as | `greenberg-schematic-checklist-2026-08-22.source.txt` |
 
@@ -129,12 +130,52 @@ three losses above. There are no images, tables or drawings in the source.
 
 # VERBATIM BODY — Andrew Greenberg's checklist
 
-Reproduced byte-for-byte from Retrieval 1. Three display normalisations, and no
+Reproduced byte-for-byte from Retrieval 1 under **three** normalisations, and no
 others: the UTF-8 BOM is stripped, CRLF line endings become LF, and a single
-trailing newline is added (the source file ends without one). With those three
-reversed, the text below hashes to `87d0784e22f4360e0654dfef71f6d42f`, identical
-to the retrieval. **Nothing below is paraphrased, summarised, reordered or
-corrected.**
+trailing newline is added (the source file ends without one). Applying those
+three to the vendored `.source.txt` reproduces exactly the text below.
+**Nothing below is paraphrased, summarised, reordered or corrected.**
+
+**Do not take that on trust — the procedure is runnable.** From the directory
+holding this file:
+
+```sh
+# apply the three normalisations to the vendored source
+perl -pe 's/^\x{ef}\x{bb}\x{bf}// if $.==1; s/\r$//' \
+    greenberg-schematic-checklist-2026-08-22.source.txt > /tmp/norm.txt
+printf '\n' >> /tmp/norm.txt
+
+# extract the two fenced blocks of this file, in document order
+awk '/^```text$/{f=1;next} /^```$/{f=0;next} f' \
+    greenberg-schematic-checklist-2026-08-22.md > /tmp/body.txt
+
+diff /tmp/norm.txt /tmp/body.txt && echo IDENTICAL
+md5 -q /tmp/body.txt
+shasum -a 256 /tmp/body.txt
+```
+
+Expected: `diff` exits 0, and the digests are
+
+| Digest of the normalised body | Value |
+|---|---|
+| MD5 | `bee18f2f87033aa936333dcd48f219cb` |
+| SHA-256 | `54514fc0e001ab063c40a72b2f112028204601fcd9f736f928da4e4faf99e3bf` |
+| Length | 8,219 bytes |
+
+> **Header correction, recorded rather than made quietly.** As first committed
+> (`22c2370`) this paragraph asserted the passing digest was
+> `87d0784e22f4360e0654dfef71f6d42f`. **That constant was wrong**: it is the
+> body under only *two* of the three normalisations — BOM strip and CRLF to LF,
+> with **no** trailing newline — while the file as committed does carry the
+> trailing newline. A reader running the three steps as written would have got
+> `bee18f2f…`, seen a mismatch, and had every reason to read it as tampering,
+> in the one file whose purpose is that a citation cannot drift. Found at tick
+> review by an independent reviewer reproducing across three toolchains, and
+> corrected before the tick. **The reproduced body was never affected** — the
+> `diff` above passed then and passes now; only the metadata beside it was
+> wrong. Per this directory's README the *body* of a snapshot is immutable;
+> a demonstrably false integrity constant in the header is corrected in place
+> with this note, because leaving it would defeat the file's whole purpose.
 
 ```text
 Checklist[a][b] for Schematics v2026-02-15

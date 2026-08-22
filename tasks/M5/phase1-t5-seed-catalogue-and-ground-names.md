@@ -1056,7 +1056,24 @@ re-reading of E4.
 |---|---|
 | `research/snapshots/greenberg-schematic-checklist-2026-08-22.md` | the snapshot: provenance header, verbatim body, comments fenced separately, stated rendering losses |
 | `research/snapshots/greenberg-schematic-checklist-2026-08-22.source.txt` | the byte-exact plain-text export, vendored unaltered |
-| `research/snapshots/README.md` | what the directory is; a snapshot is never edited, a new retrieval is a new dated file |
+| `research/snapshots/README.md` | what the directory is; a snapshot's body is never edited, a new retrieval is a new dated file |
+
+**Disclosed: the brief named two files and this lane wrote three.** The extra
+one is the vendored `.source.txt`. It is **inside** the declared IN scope, which
+is the glob `research/snapshots/**` (new files only), so this is a disclosure and
+not a scope excess — but the brief enumerated its two expected files, and a lane
+that adds a third says so **in the record**. It was added because a digest that
+can only be re-derived by re-fetching the URL is not much of a defence against
+the URL changing; with the raw export vendored, every integrity claim in the
+snapshot is checkable offline, forever, from inside the repository.
+
+*Recorded on the tick reviewer's REJECT, and the reason it needed recording is
+itself worth keeping: this disclosure was made in the lane's final message to the
+orchestrator and nowhere else. That message is not the record. The reviewer went
+looking for it in the entry, the README and the commit message, and found none of
+the three — the E7.1 table above simply listed three files as though three had
+always been the plan. A deviation disclosed only in a context that dies is not
+disclosed.*
 
 Retrieval 1, the primary artefact:
 
@@ -1075,23 +1092,105 @@ artefact here is the published text checklist, which is what §8 Q2 named.
 
 ### E7.1.1 Falsification of the snapshot's fidelity claim
 
-The snapshot asserts its body is byte-identical to the retrieval. That assertion
-is checked by extracting the fenced blocks back out of the `.md` and hashing
-them, and the check is **shown capable of failing twice over**:
+**This section was rejected at tick review and rewritten. The defect and its
+correction are recorded here rather than patched over, because the defect is a
+better worked example than the fix.**
 
-- **It failed naturally on the first build.** The source's last line has no
-  trailing newline, so the closing fence glued onto it, the fence broke, and the
-  extraction swallowed the document tail. Caught by the probe, not by eye, and
-  repaired.
-- **It was then failed deliberately.** One word in the snapshot body was mutated
-  (`descriptively named.` -> `descriptively NAMED.`) and the probe's digest
-  changed from `87d0784e22f4360e0654dfef71f6d42f` to
-  `182c780b1e1b53a674f0a6291a4baf69`.
+The snapshot asserts its body is byte-identical to the retrieval under three
+declared normalisations: BOM stripped, CRLF to LF, one trailing newline added.
 
-Passing state: extracted body hashes to `87d0784e22f4360e0654dfef71f6d42f`,
-equal to the retrieval under exactly three declared normalisations (BOM stripped,
-CRLF to LF, one trailing newline added). Those three are named in the snapshot
-itself rather than left silent.
+**PROVENANCE: tick-review REJECT, 2026-08-22, reproduced by this lane.** As first
+committed (`22c2370`) both this entry and the snapshot stated the passing digest
+as `87d0784e22f4360e0654dfef71f6d42f`. **That constant was wrong.** It is the
+body under only **two** of the three steps — BOM strip and CRLF to LF, with **no
+trailing newline** — because the harness that produced it stripped the trailing
+newline from *both* sides (`perl -0777 -pe 's/\n\z//'`) before hashing, while
+the committed file carries it. The harness silently omitted the third
+normalisation it claimed to apply. Re-derived here, from the committed source:
+
+| Normalisation applied | MD5 | Bytes |
+|---|---|---|
+| 3 steps, as documented (**the contract**) | `bee18f2f87033aa936333dcd48f219cb` | 8,219 |
+| 2 steps, what the old harness hashed | `87d0784e22f4360e0654dfef71f6d42f` | 8,218 |
+
+**The three-step form is adopted as the contract**, because it is what the
+committed file actually contains and what the natural extraction produces. The
+digest is corrected in **both** places — here and, more importantly, in the
+snapshot itself, where a `Header correction` note records the wrong value beside
+the right one.
+
+**Why this was a REJECT and not a note.** The whole point of the snapshot is that
+a Google Doc is not an archival citation. A future reader running the stated
+procedure correctly would have got `bee18f2f…`, compared it against the asserted
+`87d0784e…`, and had every reason to conclude the artefact had been tampered
+with — in the one file in the repository whose sole purpose is that a citation
+cannot drift. **A wrong digest on a fidelity control is worse than no digest,
+because it will fire.**
+
+**The lesson, and it is a `falsification-control` lesson the skill does not yet
+carry.** The two failures recorded in the first version were real and did fire —
+the glued fence, the one-word mutation. Both genuinely demonstrated the harness
+was *alive*. **But a falsification pair proves the harness can detect change; it
+says nothing about whether the constant the harness compares against is
+correct.** The pair passed and the constant was stale. A live probe contrasted
+with a wrong passing state is a control that certifies the wrong thing with full
+confidence. **Falsifying the probe is not sufficient; the passing state needs
+deriving too, by a route that does not share the probe's assumptions** — here,
+by running the documented procedure literally rather than the harness that was
+supposed to implement it.
+
+**The content was never affected**, which is worth stating plainly: the reviewer
+confirmed by `diff` (exit 0) that the fenced blocks concatenated in document
+order are byte-identical to the 3-step-normalised source, and that `diff` passes
+here too. The artefact was faithful throughout; only the number printed beside it
+was wrong.
+
+#### The corrected harness, re-run rather than remembered
+
+Every number below comes from a run made *after* the correction, executing the
+procedure exactly as the snapshot now documents it:
+
+```
+$ perl -pe 's/^\x{ef}\x{bb}\x{bf}// if $.==1; s/\r$//' \
+      research/snapshots/greenberg-schematic-checklist-2026-08-22.source.txt > /tmp/norm.txt
+$ printf '\n' >> /tmp/norm.txt
+$ awk '/^```text$/{f=1;next} /^```$/{f=0;next} f' \
+      research/snapshots/greenberg-schematic-checklist-2026-08-22.md > /tmp/body.txt
+$ diff /tmp/norm.txt /tmp/body.txt && echo IDENTICAL
+IDENTICAL
+$ md5 -q /tmp/body.txt
+bee18f2f87033aa936333dcd48f219cb
+$ shasum -a 256 /tmp/body.txt
+54514fc0e001ab063c40a72b2f112028204601fcd9f736f928da4e4faf99e3bf
+```
+
+Cross-checked across three independent toolchains, all agreeing on
+`bee18f2f87033aa936333dcd48f219cb`: shell `md5`, `openssl md5 -r`, and Python
+`hashlib.md5`. That the digest is now reproduced by **the documented commands
+themselves** rather than by a separate script is the structural fix — the earlier
+defect was possible only because the harness and the prose were two different
+things, and only the prose was read.
+
+**Both falsifications re-run under the corrected contract**, since a mutation
+digest derived under the old one is as stale as the constant it was compared to:
+
+| Falsification | Resulting MD5 | Detected? |
+|---|---|---|
+| passing state (no mutation) | `bee18f2f87033aa936333dcd48f219cb` | — |
+| one word changed: `descriptively named.` -> `descriptively NAMED.` | `0922563ce497d97ae8c604519ac6695c` | **yes** |
+| the original glued-fence defect reintroduced (newline before closing fence deleted) | `64fdc0fd13218894fc39919a70417f29`, 8,344 bytes | **yes** |
+
+The second row is the defect that occurred naturally on the first build: the
+source's last line has no trailing newline, so the closing fence glued onto it,
+the fence broke, and the extraction swallowed the document tail. It is
+reintroduced deliberately here so that the probe's sensitivity to it is shown by
+a run rather than by a story about an earlier run.
+
+One further check was made that the first version did not make. The corrected
+snapshot adds a fenced `sh` block **containing the extractor's own pattern**,
+which could plausibly have broken the extractor. It does not — `/^```text$/` is
+anchored and the documented command line does not match it — but that was
+**verified by re-running the extraction after the patch**, not reasoned about.
 
 The absence findings in E7.3 rest on greps whose harness is likewise shown live:
 the same loop that returned zero for `junction`, `PDF`, `mono`, `one page`,
