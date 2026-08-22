@@ -123,3 +123,152 @@ cargo xtask check
 
 plus both direction checks by name, each shown failing under its own injected
 break, and the fixture committed with its measured score recorded in this entry.
+
+---
+
+# AMENDMENT — the two items the checkpoint added, and one of them is a ruling
+
+**Provenance: James's rulings (BLOCKED 1, 2, 3; seam; Q1/Q5) and advisor
+rulings, checkpoint 1 review.** Recorded before dispatch, per the orchestrator
+definition's session-start rule.
+
+The Phase 1 state table in `PLAN.md` said two items go into this brief when it
+is dispatched. Both are below. The first is a **ruling** and it enlarges the
+task; the second is a **promoted PROPOSED item** and it moves a function.
+
+## A. BLOCKED 3 is ruled: a saturating rule becomes a BLOCKING finding
+
+**RULED — option 2, verbatim from the checkpoint:**
+
+> a rule that saturates (fires at or above the saturation fraction of the
+> objects it counts) becomes a BLOCKING finding, using §11.5's existing tier
+> mechanism. No weight moves; no formula changes. T4 builds saturation as a
+> first-class rule property every Tier 1 author declares; the saturation
+> fraction gets a provisional value recorded as provisional, with Phase 4
+> explicitly authorised to move it on measurement. Provenance: the north star's
+> own sentence — a drawing that fails the gate is not rewarded whatever it
+> scores.
+
+**What it is answering** is `lane-t3`'s measurement, made with the shipped
+implementation and reproduced in the checkpoint 1 report:
+
+| Drawing | Raw penalty | Score |
+|---|---|---|
+| 10 wires, **every wire crosses another** | 10.0 | **67** |
+| 200 wires, every wire crosses another | 10.0 | **67** |
+| 10 000 wires, every wire crosses another | 10.0 | **67** |
+
+A normalised rule that can fire at most once per object it counts has `n ≤ N`,
+so its contribution is capped at `w · reference` **whatever `N` is** — and the
+cap does not fall as the drawing grows. A sheet on which every wire crosses
+another scores 67 at ten wires and at ten thousand. **67 is not a punishment,
+and that sheet is not readable.** The north star forbids exactly this.
+
+### What this adds to T4, precisely
+
+T4 was "Tier 1 does not reduce the score". It is now **that, plus the other
+half of the same question: what else makes a drawing fail the gate.** The ruling
+puts both on one mechanism, which is why it lands here rather than in a rule.
+
+**1. `Rule::saturation()` — a first-class property, declared, not inferred.**
+
+A rule declares two things the scorer cannot work out for itself:
+
+- **what it counts** — the denominator: wires, non-power symbols, sheets, or
+  nothing;
+- **the fraction of that denominator at which it saturates.**
+
+Both belong on the rule for the same reason the normaliser does (item B below,
+and T1's generated registry before it): **the knowledge is the rule's and the
+scorer does not have it.** `KI-DNP-001` is the standing proof — it counts
+symbols and is still right at `per_sheet`, because *its own detection already
+divides by symbol count*.
+
+**2. The provisional fraction is `1/2`, and it is recorded AS provisional.**
+
+Directed by the orchestrator so a lane does not make a value call the ruling
+already reserved for Phase 4. The reasoning, so Phase 4 can argue with it:
+at `n = N/2` a normalised rule is already within a factor of two of a ceiling it
+can never exceed, so half is the coarsest line that is defensible without a
+measurement — and the ruling explicitly authorises Phase 4 to move it.
+
+**Obligation: record what the score would be at the provisional fraction** on
+the three measured rows above, so Phase 4 inherits numbers rather than a
+threshold with no context. A provisional value with no measured consequence is
+indistinguishable from a guess, and this project has an entry about that.
+
+**3. Every rule author declares it, starting with Phase 2's six.**
+
+This is the ruling's stated reason for putting the property in T4 and not later:
+*"Building T4 first turns a property into a retrofit across every Tier 1 rule."*
+Phase 2's six Tier 1 rules are the first authors after this task, and they will
+declare it.
+
+> **NOTE, orchestrator, recorded rather than resolved.** The ruling says *"every
+> Tier 1 author declares"*, and **the mechanism only changes an outcome for
+> Tier 2**: a Tier 1 finding already fails the gate on its first occurrence, so
+> saturating cannot make it block any harder. Two readings are available — the
+> property is uniform on the trait and Tier 1 authors declare it so Phase 3
+> inherits a trait that already has it (which is what this brief implements), or
+> the declaration is meant only where it changes an outcome. **Implement the
+> first**; it is the reading that matches the ruling's own stated reason, and
+> the difference between them is one default. **Say in the entry which arm your
+> implementation would need if the second reading were meant.**
+
+**4. Both new directions are checked, and both are shown failing.**
+
+Beyond the two direction checks this entry already names:
+
+- a Tier 2 rule firing **at or above** its saturation fraction **sets
+  `gate: fail`**;
+- a Tier 2 rule firing **below** it does **not** — and still scores normally.
+
+The second is the one that matters, in the same way the existing pair matters:
+one check over a fixture carrying both passes if the implementation swaps them.
+
+**5. The output shows WHY the gate failed, and saturation is a different why.**
+
+Item 4 of the goal state above governs. A gate failure that reads identically
+whether it came from a Tier 1 finding or from a saturating Tier 2 rule sends an
+agent to the wrong place. **The saturating case names the rule, the count, the
+denominator and the fraction** — `n of N` is the whole explanation and it costs
+one line.
+
+## B. PROPOSED 11, promoted: the normaliser moves onto the rule
+
+**`Rule::normaliser()`, with a default, stamped onto the finding by
+`Findings::of` exactly as tier, severity and weight already are.**
+
+`Normaliser::of(RuleId)` reads the family out of the rule code, which works only
+because §11.5's published table is written in the same vocabulary the codes use.
+**It is already wrong for two catalogue rules whose nature disagrees with their
+family:**
+
+| Rule | Its own definition | Family gives it | Nature suggests |
+|---|---|---|---|
+| `KI-LAY-003` | *"W 1 per unaligned **symbol**"* | `per_sheet` | `per_object` |
+| `KI-JCT-001` | four-way junction, a **wire** feature | `per_sheet` | `per_wire` |
+
+`KI-LAY-003` un-normalised costs one point per unaligned symbol **with no
+ceiling**, so a 200-symbol sheet with every symbol unaligned reaches 200 raw
+points and **scores 0**, while every other symbol-shaped rule on that sheet is
+divided by ten.
+
+**T3 correctly did not take this** — it changes `rule.rs` and `finding.rs`,
+which are T1's files and this task's. T3 pinned current behaviour with
+`each_family_takes_the_normaliser_the_catalogue_gives_it` **so the change is
+visible when made**; expect that check to need updating and say what you changed
+it to and why.
+
+**Do not silently re-family `KI-LAY-003` or `KI-JCT-001`.** Those two rules are
+Phase 3's and neither exists yet. Move the *mechanism*; leave the two values as
+the family table gives them today, and record that the mechanism now makes the
+correction a one-line change in the rule's own file when its author writes it.
+Changing a published normaliser is a §11.5 matter and §11.5 is a merge hotspot.
+
+## C. What did not change
+
+Scope, completion check, and the falsification obligation above stand as
+written, with the additions in A.4 and A.2. **The degenerate-fixture warning is
+now doubly live**: a saturation check on a Phase 1 tree has no Tier 2 rule to
+saturate, so say plainly what you constructed and what it is worth today.
