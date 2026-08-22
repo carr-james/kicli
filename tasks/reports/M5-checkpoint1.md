@@ -100,6 +100,58 @@ Four of the ten (3, 5, 9, 10) are the orchestrator's own defects, self-filed.
 
 ## 2. Findings, attributed
 
+### Two blind instruments in the existing suite, found by breaking things — `lane-o1b`
+
+**Pending its tick review at the time of writing.** Both are claims about checks
+that were already in the repository and already green.
+
+**1. `wire connect --auto-labels` had no behavioural check at all.** Break B8 —
+deleting the assignment in `perform` — left **every check in the repository
+green**. The lane added `a_performed_proposal_reports_the_net_its_labels_made`
+in `edit_wire_connect.rs`, which is now the only thing that catches it.
+
+That arm is not obscure: it is the path where kicli invents label names and
+reports the net they made. It has been shipping unmeasured.
+
+**2. `the_status_word_starts_the_first_line_of_every_form` was asserting
+something already false, and could not see it.** The joined line was **prepended
+by the command layer, above the renderer the test drives** — so the test's claim
+about "every form" was true of everything it could reach and false of `wire
+connect` output as an agent actually receives it. Now stated and measured by
+`only_the_joined_net_may_come_before_the_status_word`.
+
+**This is the four-kinds-of-blindness idea in the `falsification-control` skill,
+arriving as a *layer* mismatch**: the instrument was pointed one level below the
+thing it named. A test that drives a renderer cannot make a claim about a
+command's output, and nothing in its name said so.
+
+### The degenerate-equality trap the entry predicted in advance actually fired — `lane-o1b`
+
+**This is the falsification discipline working exactly as designed, and it is
+worth recording as such**, because most entries in this report are cases where
+the discipline caught something *after* the fact.
+
+The `opening-1` entry, written **before the work**, warned:
+
+> *"A check asserting that the reported net **equals** the extractor's net is a
+> **degenerate-equality** candidate: ask what else would make the two sides
+> equal. If both are computed by the same call on the same seam, a break moves
+> them together and the check cannot see it."*
+
+**It fired.** Under break B3 — replacing the net with a constant `"SIG_A"` —
+`a_route_joins_the_two_pins_it_names` stayed **green**, because the constant is
+that fixture's own answer.
+
+The lane's defence is that the equality is sound anyway, *because three literals
+on three other drawings stand beside it*, and it classifies the result as the
+skill's case 2 rather than case 1. **That defence is the load-bearing claim of
+the whole task and the tick reviewer was briefed to attack it specifically** —
+if those three checks share a fixture family or a generator, the suite is blind
+to a constant and the defence is a rationalisation.
+
+**Either way the prediction paid.** An entry that names the trap in advance turns
+a review from a search into a test.
+
 ### The rule catalogue's provenance is much thinner than the catalogue looks — `lane-t5`
 
 **Pending its tick review at the time of writing.** The measurements, as the
@@ -233,6 +285,24 @@ unrelated commit, not through the check.
 
 *Recommendation: accept, together with item 1 — one section, both effects.*
 **Not applied.**
+
+**8. A brief that lists the guards says where there are none.** `lane-o1b`'s
+brief named `command_surface.rs:403` as the guard that would catch a mistake on
+one arm, and was silent about the `--auto-labels` arm having no behavioural
+check at all — while the change put a live decision on that arm. The lane found
+it by breaking the code (B8) and watching the whole repository stay green.
+*Recommendation: accept, as a line in `orchestrator.md` beside the
+completion-check rule — when a brief enumerates the checks that protect a
+change, it names the parts of the change nothing protects.* **Not applied.**
+
+**7. `.claude/skills/falsification-control/SKILL.md` should say
+`cargo test --no-fail-fast`.** Full measurement in Verification integrity,
+above. Cargo stops after the first failing target, so a break's caught-by list
+silently truncates — B1 read as 2 checks instead of 15. The skill mandates
+recording which assertion caught a break and never says how to run the suite to
+see all of them. The error is conservative, which is why it has never failed
+loudly. *Recommendation: accept — one line in the skill's Procedure, step 3.*
+**Not applied**, skills change by ruling.
 
 **6. A tick reviewer's scratchpad is not private, and it contained the
 implementer's own downloaded sources.** Full measurement in Verification
@@ -616,6 +686,45 @@ is the only tool hook; further hooks require a triggering incident."* This is a
 triggering incident, but the cheaper fix (b) is available and untried, and a
 second hook should not be spent on a problem a brief pattern solves. If (b) is
 applied and the failure recurs, *that* is the incident that earns the hook.
+
+### A falsification table built with plain `cargo test` under-counts, and the skill does not say so
+
+**WORKFLOW NOTE, `lane-o1b`, verbatim:**
+
+> *"The brief's completion check says `cargo test`, but a falsification table needs `cargo test --no-fail-fast` — cargo stops after the first failing target, so a break's caught-by list silently under-counts (B1 read as 2 checks instead of 15 on the first attempt). Second: the brief named `command_surface.rs:403` as a guard to confirm, but did not say that `wire connect --auto-labels` has no behavioural check whatsoever — the migration puts a live decision on that arm, and a brief that lists the guards should say where there are none."*
+
+**Both halves accepted, and the first is the more valuable finding of the two.**
+
+**`cargo test` stops after the first failing target.** So when a lane breaks
+something and records *which checks caught it*, the list it can see is truncated
+at the first failing binary — and the truncation is silent. **B1 read as 2
+checks instead of 15.**
+
+**This is not a brief defect, it is a skill defect.**
+`.claude/skills/falsification-control/SKILL.md` tells every lane in this project
+to record "WHAT was broken and WHICH assertion caught it", and the caught-by
+list is the evidence a reviewer checks. **The skill never says how to run the
+suite to get a complete one.** Every falsification table in this project's
+history was potentially built through this instrument, and an under-counted
+caught-by list is *conservative* — it under-claims coverage rather than
+over-claiming it — which is why nothing ever failed because of it and why nobody
+noticed.
+
+**It still matters**, because the table is also how a reviewer judges whether a
+check is the *only* thing watching a behaviour. "Caught by 2 checks" and "caught
+by 15" support very different conclusions about what is safe to change.
+
+*Filed as PROPOSED 7 — one line in the `falsification-control` skill's
+Procedure.* **Not applied**, skills change by ruling.
+
+**The second half is the orchestrator's own defect and generalises**: the brief
+listed the guards that would catch a mistake on the `wire draw` arm, and said
+nothing about the `--auto-labels` arm having **no** guard at all — while the
+change put a live decision on exactly that arm. *A brief that lists the guards
+says where there are none.* That is the same family as the two-verdict brief and
+the scope-versus-completion-check defect: **the brief's silence read as
+coverage.** Applied to future briefs immediately; filed as PROPOSED 8 for the
+orchestrator definition.
 
 ### A reviewer's "private" scratchpad already held the implementer's artefacts
 
