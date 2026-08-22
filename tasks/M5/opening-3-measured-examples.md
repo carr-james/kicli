@@ -90,10 +90,19 @@ Say so in your first paragraph, name what you touched and why.
 
 ## Sequencing
 
-**This task runs after the joined net's contract field
-(`opening-1-joined-net-contract.md`) has merged**, because that change may
-regenerate `AGENT.md` blocks of its own and `AGENT.md` is held by one lane at a
-time. Your brief names the base commit; verify it as your first action.
+**Originally: after the joined net's contract field
+(`opening-1-joined-net-contract.md`) merged**, because that change regenerates
+`AGENT.md` blocks of its own and `AGENT.md` is held by one lane at a time.
+
+**Amended at the M5 opening, when opening-1 was PARKED** on the freeze-lift
+mechanism BLOCKED item. `AGENT.md` has no other holder, so this task runs now,
+and the order is the better one: **the check exists before the change that must
+satisfy it.** When opening-1 is re-dispatched it inherits a live check over the
+`W` examples — including the `wire draw` JSON block at `AGENT.md` lines 570–579,
+which opening-1's reconnaissance identifies as a second block that change
+invalidates.
+
+Your brief names the base commit; verify it as your first action.
 
 ## Completion check
 
