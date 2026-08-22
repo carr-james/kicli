@@ -3,7 +3,44 @@
 **Session: the checkpoint's rulings are applied and Phase 2 runs.**
 Per `.claude/skills/consolidated-report/SKILL.md`. Maintained per tick.
 
-**Status: IN PROGRESS.**
+**Status: INTERRUPTED — session stopped on a usage limit, not at the `/goal`.**
+
+**Phase 2 is NOT complete.** Two of the six Tier 1 rules are written; one is
+merged-pending. The wind-down below is per the orchestrator definition: lanes
+whose own check passes are recorded with their commits, the rest are parked with
+state in their entries, and every touched entry is true-stated.
+
+### State at the stop
+
+| Lane | Task | State |
+|---|---|---|
+| `lane-t4` | tier separation + saturation | ✅ **MERGED** `e7d3a76`, tick APPROVE |
+| `lane-snap` | the vendored checklist snapshot | ✅ **MERGED** `18ab930`, REJECT → APPROVE |
+| `lane-gate` | `chore-9`, the gate's arms | ⏸ **APPROVED, AWAITING MERGE.** Head `d083f9e`, base `047783b`. Scope verified: 4 files, nothing under `crates/` |
+| `lane-b` | `KI-CONN-001` | ⏸ **APPROVED, AWAITING MERGE.** Head `0968365`, base `18ab930`. Scope verified: 4 files, one disclosed additive edit to `lint/drawing.rs` |
+| `lane-a` | `KI-GRID-001` | ⏸ **PARKED, UNREVIEWED.** Head `0351d00`. The lane committed but had not reported at the stop |
+| `lane-t2` | ERC consumption + canary | ⏸ **PARKED, UNREVIEWED.** Head `cd5810e`. The lane committed but had not reported at the stop |
+
+**Not dispatched:** `KI-OVL-001`, `KI-WIRE-001`, `KI-TXT-001` (lane A's remaining
+three), `KI-HIER-001` (blocked on T2's merge), `carried-3` reader strictness, and
+the `sch score` command surface. **All six have written entries**, so the next
+session briefs from entries rather than from a plan table.
+
+**Nothing is lost.** Every lane's work is committed on its own branch and every
+entry carries its evidence section.
+
+### Gates at the stop — `6954fb6`, quiescent tree
+
+| Run | Result |
+|---|---|
+| `cargo xtask check` | **6 of 6 pass** — fmt, clippy, test, doc, deny, clean |
+| corpus arm, `KICLI_TEST_KICAD_CLI=1` | **84 binaries, 635 passed, 0 failed, 2 ignored** |
+| netlist oracle | **`hierarchies matched: 35/35`**, 5 passed, 0 ignored, 16.77s |
+
+The two ignored are the same self-documenting child-process helper as at
+checkpoint 1 — *"run by the process-boundary arm, in a child process"* — not
+skipped checks. The suite grew **83 → 84 binaries and 618 → 635 tests** across
+the two merges.
 
 The `/goal`: Phase 2 complete — the six Tier 1 blocking rules, T2, and T4
 carrying the saturating-rule-blocks property, each ticked with recorded reviewer
@@ -97,6 +134,8 @@ a design decision and `chore-runner.md` says *never design work*.
 | Task | Lane | What landed | Evidence | Verdict |
 |---|---|---|---|---|
 | **tier separation, and the saturating rule** (`phase1-t4-tier-separation.md`) | `lane-t4` | `lint/gate.rs` — `Counted`, `Saturation`, `Blocker`, `Gate`, `Report`. A rule declares what it counts and the share that fails the gate; `Findings::of` stamps it beside tier, severity and weight. **Twelve breaks, none left a check green.** Plus `Rule::normaliser()`, mechanism only | entry "Tick — APPROVE"; lane `c41edd4`; merge `e7d3a76` | **APPROVE** |
+| **`KI-CONN-001`, the pin that touches a wire it is not connected to** (`phase2-ki-conn-001-pin-on-wire.md`) | `lane-b` | the rule, four unit + seven end-to-end checks, and **the capability seam** — no rule could ask a connectivity question before this. Fix hint verified by KiCad's own netlist collapsing two nets into one | lane `0968365`; **awaiting merge** | **APPROVE** |
+| **the gate says what it did NOT run** (`chore-9-gate-enumerates-its-arms.md`) | `lane-gate` | eight named arms, three verdicts, and a headline that cannot lie: `INCOMPLETE: 2 of 8 arms did not run` | lane `d083f9e`; **awaiting merge** | **APPROVE** |
 | the vendored checklist snapshot (ruling 3) | `lane-snap` | `research/snapshots/` — the snapshot, the byte-exact source, and the convention. **A second independent reading corrected `lane-t5`'s count and broadened `KI-DOC-004`'s support** | entry `# E7`; lane `326775d`; merge `18ab930` | **REJECT → APPROVE** |
 
 ---

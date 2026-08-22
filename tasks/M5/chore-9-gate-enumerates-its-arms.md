@@ -155,3 +155,27 @@ cargo xtask check --corpus # summary with it run
 ```
 
 both summaries, verbatim, plus the falsification results above.
+
+## Tick — APPROVE (awaiting merge at the checkpoint-2 stop)
+
+Lane `d083f9e`, base `047783b`. **Merged: no** — session stopped on a usage limit.
+Scope verified: 4 files, nothing under `crates/`.
+
+The reviewer reproduced seven falsification rows including break 6, the named
+degenerate one, and confirmed **only `each_arm_reports_its_own_verdict`** catches
+it. It confirmed the entry's correction of the orchestrator's own number: the
+corpus arm adds **11** checks workspace-wide, not 6, because `kicli-sexpr`
+carries its own `corpus` feature — and `ignored` is **2 in both runs**, so that
+column still cannot tell a reader what did not run.
+
+**Two under-claims found, both in the safe direction**: the entry says nineteen
+checks where the binary has **21**, and its "verbatim" bare-run transcript
+**dropped the `clean` arm's pass line**. A transcript labelled verbatim that is
+not one is worth fixing in a task whose whole subject is a summary that said
+something untrue about itself.
+
+**Documentation owed, the orchestrator's:** `ENGINEERING.md`'s gate fence
+(missing `clean`, `corpus`, `kicad-cli` — **and it is now an INPUT to
+`every_documented_gate_is_an_arm`, compared line-for-line, so an innocuous doc
+edit can break the build**), `.githooks/pre-commit` line 2, `CLAUDE.md`'s
+*"corpus included"*, and `RULES.md`'s copy of it.

@@ -138,3 +138,35 @@ task owes, and say which arms ran with what:
 ```sh
 cargo test -p kicli --features corpus --test net_oracle -- --nocapture
 ```
+
+## Tick — APPROVE (awaiting merge at the checkpoint-2 stop)
+
+Lane `0968365`, base `18ab930`. **Merged: no** — the session stopped on a usage
+limit before the merge's full corpus check could run. The branch is intact.
+
+**The reviewer refuted the lane's reasoning and upheld its verdict**, which is
+the most useful outcome a review can have. The lane defended its
+degenerate-equality risk with *"the signal is their difference, and no break
+moves a difference the way it moves an equality."* **That is false**, and the
+reviewer showed it: `chain_nets` derives the wire's net from the same
+`Located.net` field the pin side reads, so the `opening-1` break collapses
+**both** sides. It is caught anyway — **because the checks' expectations come
+from an independent oracle (KiCad's own netlist via `Probe::partition`), not
+from a second reading of kicli's union-find.** That is the real defence and it
+is stronger than the one it replaces.
+
+Reproduced by the reviewer: `opening-1` break **6 of 7** red; B2 **5 of 7**; B1
+(endpoint exclusion deleted) **0 of 7** integration and **2 of 4** unit; B7
+(hazard) **6 of 7** including the hazard check itself. Fix hint round-tripped
+end to end against `kicad-cli`.
+
+**Owed, and NOT closed by this tick:**
+1. **Sheet pins are not covered** — `NodeKind::SheetPin` is a name driver only
+   and never produces a `NetPin`. The catalogue says *"sheet pins are covered
+   the same way"*; they are not. **The rule's rustdoc states the gap rather than
+   claiming coverage**, which is why this is follow-up rather than a rejection.
+2. **`Nets::net_at(sheet, point)`** — buildable from `Node.points` alone.
+3. **`Counted` has no denominator for pin connection points.**
+4. **The `sch score` lane must attach the partition to every `Drawing`**, or
+   this rule is silent and `--gate` passes on a check that never ran. The hazard
+   is executable.
