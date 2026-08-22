@@ -1,4 +1,4 @@
-# The obstacle walk's direction, measured (opening 2)
+# The obstacle walk's direction, measured (opening 2) ✅
 
 **Provenance: James's ruling, M4 close review, on the mutation run's triage.**
 Verbatim:
@@ -486,3 +486,59 @@ across machines — the commands are the record):
 - `repo/`, an `rsync` copy of this worktree at `a1e25ad` with
   `crates/kicli/tests/scratch_direction.rs` added, run as
   `cargo test -p kicli --test scratch_direction -- --nocapture`.
+
+---
+
+## Tick — APPROVE, 2026-08-22
+
+**Reviewer verdict: APPROVE.** Recorded here beside the tick, per `CLAUDE.md`'s
+tick-review rule. Merged `4b2f2d0`; lane `lane-o2`, base `a1e25ad`, one commit
+`0f6a87e`, one file, **no change under `crates/`**, confirmed at review start
+and again at the verdict.
+
+**What the reviewer measured itself rather than taking on this entry's word**,
+because that distinction is the review's value:
+
+- **the "only production writer" claim** — re-derived by reading the code, and
+  by `grep -rn "Segment {"` across `crates/`: one non-test production site
+  (`sheet.rs:220`), the others an integration test and the struct definition;
+  `search.rs:507/528` and `obstacles.rs:466` are inside `#[cfg(test)]`.
+- **the corpus numbers** — with its **own** scanner, not this lane's. It got
+  **77 segments, 12 right-to-left, 2 bottom-to-top** in the calibration fixture,
+  and **115 files, 21,684 segments, 114 files carrying a reversed segment** over
+  the demo corpus. Exact match on every headline number.
+- **the equality and its falsification** — it wrote its own integration test, ran
+  it against an `rsync -a` scratch copy verified byte-identical before reading,
+  then replaced **both** M-1 guards with `true` **in that scratch copy only** and
+  watched **its own test fail** (`expected 9 occupied cells, got 1`), then
+  restored and watched it pass. A first-hand FAIL, not a narrative one.
+
+**Taken on this entry's word:** the scanner's own falsification story (0 of 4
+planted segments before its fix — the scratch artefact was ephemeral and gone),
+and the six-gate claim, per the standing rule never to run the full gate suite
+in a live checkout.
+
+**On the refused verdict binary, the reviewer judged the refusal SOUND**, under
+the standing rule that *task text yields to measured reality, with the citation
+recorded in the entry*: the entry's own premise — "equal maps under both orders
+would mean the guard is doing nothing" — is refuted by the entry's own
+falsification, and the lane quoted the false sentence, cited the refutation, and
+used PROPOSED rather than silently overriding. Not a BLOCKED case: BLOCKED is
+for conflicts between governing documents, not between an entry's assumed
+taxonomy and its own measured outcome.
+
+### The one open point, recorded from both sides
+
+James's ruling says *"file it as an M5 task with the measurement, **not a
+chore**"*. The trigger it names — reachability — **fired**. The reason it gives —
+a possible live defect — **did not hold**.
+
+- **The orchestrator filed it as a TASK in `PLAN.md`**, on the ruling's literal
+  words. The orchestrator does not reverse James.
+- **The reviewer's reading, recorded rather than folded away:** *"given the
+  measurement shows no source defect, 'a check-guarded chore' is RULES.md's own
+  correct taxonomy for exactly this shape of work, and it is filed
+  PROPOSED/unratified either way, leaving James the actual decision."*
+
+It is one line of `PLAN.md` to move it. It is question 3 of the plan's ruling
+requests.
