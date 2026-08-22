@@ -59,10 +59,23 @@ CLI tool giving LLM agents eyes and hands in KiCad 10 projects. Rust.
   - **scope verification is a standing step at every merge**, not a spot check:
     `git diff --stat` of the lane branch against its declared scope, and the
     main checkout clean before the merge begins;
-  - **the reversal trigger is recorded**: a lane found to have written outside
-    its declared scope returns dispatch to the auto flow, pending a ruling.
-    The manual flow trades enforcement for control, and that trade is only
-    sound while lanes stay inside their briefs.
+  - **the reversal trigger is recorded, and it governs UNDISCLOSED scope
+    excess**: a lane found to have written outside its declared scope *without
+    saying so* returns dispatch to the auto flow, pending a ruling. The manual
+    flow trades enforcement for control, and that trade is only sound while
+    lanes stay inside their briefs **or say when they did not**.
+
+    *Re-worded by James's ruling at the M4 close, on the trigger's first
+    opportunity to fire.* The handle chore (C1) wrote to a file that was not on
+    its brief's IN list — because the brief's scope list had been derived from
+    an enumeration that undercounted, so the brief set a goal state its own list
+    made unreachable. The lane took the named check over the derived list, wrote
+    four lines, **reported the deviation in its first paragraph, and filed it in
+    the entry as PROPOSED**. That is the control working, and reversing on it
+    would have punished the behaviour the rule wants. The defect was the
+    orchestrator's brief, and its fix is in the orchestrator definition: a brief
+    that derives scope from an enumeration says which wins when the enumeration
+    proves wrong.
 - *Superseded, and recorded rather than deleted: "a lane worktree is created at,
   or reset to, the base as part of dispatch" was rescinded as **never
   executable** — the auto dispatch mechanism created the worktree itself, at a
@@ -92,8 +105,9 @@ Adopted on advisor recommendation, M4 Phase 2 open.
 
 ## Dogfood gate
 
-Adopted on advisor recommendation, M4 Phase 2 open. Standing from M5; a dry run
-in M4, where it gates nothing.
+Adopted on advisor recommendation, M4 Phase 2 open, as a dry run that gated
+nothing. **Standing from M5 as a milestone-exit gate** — advisor
+recommendation, James-approved at the M4 close.
 
 - kicli's end user is an LLM agent, so an LLM agent tests it. A dogfood subagent
   gets AGENT.md, the built binary and a short design brief — no source, no task
@@ -102,6 +116,16 @@ in M4, where it gates nothing.
   output that overflows or confuses its context. Defects are recorded verbatim
   in tasks/dogfood.md, then triaged like any finding — fixed, PROPOSED, or
   recorded with the reason it stands.
+- **A milestone that ships agent-facing commands is not done until a run has
+  attempted them cold and its defect list is triaged.** One run per milestone
+  minimum. The first run found nine defects, one of which (no read-only way to
+  ask where a pin is) is a design item no gate this project already had would
+  have surfaced — which is the argument for the gate.
+- An occasional **haiku-model run is permitted as a stress variant**: a weaker
+  reader finds documentation that only works for a strong one.
+- **The brief-writer owns brief ambiguity.** An ambiguous brief spends the run
+  on the brief rather than on the tool; run 1's defect 7 is that lesson and it
+  cost a ninth of the run.
 
 ## The agentic layer
 

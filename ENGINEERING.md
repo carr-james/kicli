@@ -28,6 +28,37 @@ No `#[allow(...)]` without an adjacent comment justifying it. No `unwrap()` or
 (`thiserror`), the CLI layer renders them (`anyhow` acceptable there only).
 `panic!` is a bug.
 
+## The gate and the lane branch
+
+**Ruled by James at the M4 close, on BLOCKED 1** — the second reading, written
+down, because two lanes had by then invented the same deviation independently
+and a conflict re-decided by each implementer is not a rule.
+
+**The gate governs every commit that reaches `main`. A lane branch may be
+transiently red only under a written sanction stating its cause and its end
+condition; the merge must be green.**
+
+The sanction's form is fixed, and both clauses were paid for:
+
+- **A sanction is stated by cause, never by test name.** "The only permitted
+  failure is `agent_doc_covers_every_command`" went stale the moment the task
+  added a CLI flag and `agent_doc_covers_every_verb_flag` failed for the
+  identical cause. Write the cause: "any `agent_doc` failure naming an
+  undocumented `kicli wire` verb or flag."
+- **Every sanction carries its exit procedure.** When the ending condition is
+  met — the blocking lane merges, the documentation lands — **say in the entry
+  which commits fell either side of it.** A sanction that ends mid-lane, with
+  nothing telling the lane to notice, leaves a branch whose commits were checked
+  under two different regimes and no record of where the line was.
+
+The conflict this resolves was real, not pedantic: `AGENT.md` belongs to one
+lane at a time, and `agent_doc_covers_every_command` fails the moment a verb
+exists and is undocumented, so under the other reading the lane implementing the
+verb could not make a single commit. The other reading is not absurd — it
+forbids something else instead, namely documentation that describes a verb the
+binary does not have — and that is why this needed a ruling rather than a
+judgement.
+
 ## Rules earn their place
 
 A rule that matters wants an executable twin: a gate, a lint, or a
@@ -106,6 +137,13 @@ plain function can remove.
   kicad-cli is absent.
 - **Doctests**: every public API example in rustdoc compiles and runs — free
   integration of docs and tests.
+- **Worked examples in agent-facing documentation are measured output.** Every
+  example block a change touches is regenerated from a real run of the built
+  binary, never hand-edited into agreement with what the code is believed to
+  print. This is the golden-file rule applied to prose, and for the same reason:
+  an example written from the same assumption as the code demonstrates nothing.
+  Provenance: the first dogfood run's defect 3, where `AGENT.md` showed a wire
+  record in a format the tool had stopped writing and the reader misparsed it.
 
 Write the test before the implementation for each task. A bug fix starts with
 a failing test reproducing it.

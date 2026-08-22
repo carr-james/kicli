@@ -29,7 +29,12 @@ These are mechanics, and each one has cost a review an hour or a verdict.
   `/tmp/review`. Two reviews running at once against one guessable name is a
   review reading another review's broken tree and reporting it as a finding.
   **You never write into a path you did not create**, inside the repository or
-  outside it.
+  outside it. **The same collision reaches your bookkeeping: the session
+  scratchpad is shared between concurrent subagents.** Never write scratch notes,
+  intermediate diffs or checklists to a shared file. Keep them in a shell
+  variable inside one tool call, or derive the filename from a value only you
+  hold. Promoted from PROPOSED 21 at the M4 close — the `mktemp -d` rule above
+  exists for exactly this reason and covered only half the surface.
 - **Verify the tree before you read it.** Checksum the copy against its source —
   a `find | sort | xargs shasum`-style digest of both, or `rsync -n -ci` showing
   no differences — and do it BEFORE any reading, not after a surprise. A review

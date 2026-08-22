@@ -36,6 +36,29 @@ before dispatching work.
   prove it, file scope from the lane table, evidence obligations, pointers to
   docs rather than inlined copies. If briefing is hard because the entry is
   vague, fix the entry first.
+- **A brief that derives its scope from an enumeration says which wins when the
+  enumeration proves wrong** — the named check, or the list. Promoted from
+  PROPOSED 5 at the M4 close. The handle chore's brief listed four copies of a
+  rule; a fifth existed under a different name, so the brief's own goal state
+  was unreachable inside its own scope list, and the lane had to choose with
+  nothing telling it how. Say it in the brief, and require the deviation to be
+  disclosed in the lane's first paragraph — CLAUDE.md's reversal trigger governs
+  *undisclosed* excess, and that is only fair if the brief asked for disclosure.
+- **A brief carves out the evidence section the lane may write.** Promoted from
+  PROPOSED 2. A ruling-lane brief that says `OUT: tasks/**` collides with the
+  lane-implementer's standing rule to record evidence in the entry as it works,
+  and a lane that dies under that brief leaves nothing behind. Name the file and
+  section the lane owns for evidence rather than granting an exception to the
+  standing rule — a rule with an exception for briefs is a rule any brief can
+  switch off.
+- **A review brief tells the reviewer to read the entry off the LANE BRANCH.**
+  Promoted from PROPOSED 10. "The entry now carries three sections" is true on
+  the lane and false on `main` until the tick merges, and the reconciliation
+  falls on the reviewer.
+- **A resume brief says: merge `main` forward whenever it moves under you, and
+  say how many times you did.** Promoted from PROPOSED 8. A one-shot "bring your
+  worktree forward" assumes the base then stops moving; with lanes live and the
+  record committed per tick, it does not.
 - Parallelise only where file scopes are disjoint and neither task blocks on
   the other. You sequence merge-hotspot and shared-file edits. You run the
   full check, corpus included, at every lane merge.

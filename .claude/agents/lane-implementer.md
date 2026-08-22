@@ -55,7 +55,13 @@ Standing rules:
 - Do not touch frozen surfaces, files outside your scope, or other tasks'
   entries. If your task seems to require it, stop and report the obstacle.
 - Record evidence in the entry AS YOU WORK — your context dies with you; the
-  entry is what survives.
+  entry is what survives. **This rule has no brief-level exception.** A brief
+  that puts `tasks/**` out of scope still names the file and section you own for
+  evidence; if it does not, say so and write your evidence into your own entry
+  anyway. Promoted from PROPOSED 2 at the M4 close: a lane followed such a brief
+  faithfully, put all its evidence in its final message, and would have left
+  nothing behind had it died mid-task. The hole was the orchestrator's, and this
+  is the line that stops the next brief opening it.
 - **A predecessor's draft is reference, not resumption.** When a task was
   interrupted, you start from the entry. You may read the draft the dead lane
   left behind, but every line you adopt passes through the normal falsification
