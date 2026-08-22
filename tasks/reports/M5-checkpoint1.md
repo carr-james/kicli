@@ -857,6 +857,22 @@ the run, per the other rule promoted this morning):
 | `cargo test -p kicli --features corpus`, `KICLI_TEST_KICAD_CLI=1` | **71 binaries, 535 passed, 0 failed, 0 ignored, 0 skip markers** |
 | netlist oracle, `--nocapture` | **`hierarchies matched: 35/35`**, 5 tests, 16.09s |
 
+**FINAL, at the stop, on `85678af` with a clean quiescent tree:**
+
+| Run | Result |
+|---|---|
+| `cargo xtask check` | **6 of 6 pass** — fmt, clippy, test, doc, deny, clean |
+| corpus arm, `KICLI_TEST_KICAD_CLI=1` | **83 binaries, 618 passed, 0 failed, 2 ignored** |
+| netlist oracle | **`hierarchies matched: 35/35`**, 5 passed, 0 ignored, 15.68s |
+
+**Both ignored tests are the same self-documenting helper** —
+`the_report_a_child_process_prints`, *"run by the process-boundary arm, in a
+child process"* — now appearing twice because T1 and T3 each built a
+determinism check that crosses a process boundary. **Neither is a skipped
+check**; each is the child half of one that ran.
+
+**The suite over this session: 71 → 83 binaries, 529 → 618 tests.**
+
 **At the `lane-pin` merge (`d031bed`)**, on a quiescent tree after record
 commit `a8bd552`: `cargo xtask check` **6 of 6**; corpus arm **80 binaries, 587
 passed, 0 failed, 1 ignored** (the same self-documenting child-process helper).
@@ -1396,7 +1412,9 @@ ratifies both"* the seam verdict and the research proposals. Both are ready.
 
 ### What is on `main`
 
-`327c033`, six of six gates green, corpus arm clean, tree quiescent.
+**`85678af`.** Six of six gates green; corpus arm **83 binaries, 618 passed, 0
+failed**; netlist oracle **35 of 35 with zero skips**. Tree clean and
+quiescent — the record commit preceded the check, as the rule requires.
 
 Six lanes merged, six ticks, **six APPROVEs, zero rejections**. The suite grew
 **71 → 80 binaries and 529 → 587 tests**. New agent-facing surface: `kicli sch
