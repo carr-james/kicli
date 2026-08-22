@@ -189,6 +189,22 @@ in**. Confirmed by the reviewer against the built binary, byte for byte.
 
 ## Phase 1 — the engine's spine (sequential, orchestrator, no parallel lanes)
 
+### State at M5 checkpoint 1
+
+| # | State |
+|---|---|
+| **T1** the seam | ✅ **PASS**, ticked APPROVE, merged `ee08396`. See the verdict above. |
+| **T2** ERC and the canary | **NOT DISPATCHED.** Held by sequencing only — it and T4 both edit `lint.rs`, and running it before a checkpoint that may change T4 would mean running it twice. **No finding blocks it.** |
+| **T3** the formula | ✅ ticked APPROVE, merged `327c033`. **No floating point at all**, not even the `exp` the Constitution permits. Filed BLOCKED 3. |
+| **T4** tier separation | **HELD on BLOCKED 3**, deliberately. BLOCKED 3's recommended resolution — a saturating rule becomes blocking — **is a tier decision, which is T4's subject.** Building T4 first turns a property into a retrofit across every Tier 1 rule. |
+| **T5** the research | ✅ ticked APPROVE, merged `0333151`. Two PROPOSED answers awaiting James. |
+| **carried-2** where a pin is | ✅ ticked APPROVE, merged `d031bed`. `kicli sch pins` ships. |
+
+**Two items go into T4's brief when it is dispatched**, both from T3 and both
+recorded in its entry: **`Rule::normaliser()`** rather than a table in the
+scorer (it changes `rule.rs` and `finding.rs`, which is why T3 correctly did not
+take it), and whatever James rules on BLOCKED 3.
+
 Nothing here is a rule; everything here is what every rule stands on. Sequential
 because each task fixes a shape the next is written against, and because getting
 these wrong is the expensive kind of wrong.

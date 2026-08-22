@@ -93,6 +93,7 @@ Four of the ten (3, 5, 9, 10) are the orchestrator's own defects, self-filed.
 
 | Task | Lane | What landed | Evidence | Verdict |
 |---|---|---|---|---|
+| the score formula and the normalisers (`phase1-t3-score-formula-and-normalisers.md`) | `lane-t3` | `score.rs` with **no floating point at all**, the density normalisers, and three checks. **Filed the north-star exposure with measured numbers** | entry "Tick — APPROVE"; lane `3e469e6`; merge `327c033` | **APPROVE** |
 | where a pin is, read-only (`carried-2-pin-location.md`) | `lane-pin` | `kicli sch pins` — D2's answer plus **D6's**: heading, escape point in the exact token `--to-at` parses, and the three refusal states. Red on `agent_doc` under a written sanction; paid at merge | entry "Tick — APPROVE"; lane `ac23bbf`; merge `d031bed` | **APPROVE** |
 | the joined net's contract field (`opening-1-joined-net-contract.md`) | `lane-o1b` | the field moved into the frozen route contract, `with_net` removed, `research/wire-routing.md` §8 amended, five goldens migrated; **two blind instruments found by breaking things** | entry "Tick — APPROVE"; lane `6a9e6a4`; merge `e4449ed`; freeze restored next commit | **APPROVE** |
 | **the rule identity and registration seam** (`phase1-t1-rule-identity-and-registration.md`) | `lane-t1` | **the seam, and its verdict: PASS.** A `build.rs` generates the module list and registry from the rules directory — no new dependency, `Cargo.toml` untouched. Plus five new checks and a measured `fmt` gate loss with its repair | entry "Tick — APPROVE"; lane `749eaae`; merge `ee08396` | **APPROVE** |
@@ -404,6 +405,27 @@ which trades an unbounded risk for a bounded one.
 
 ## 3. Reviewer rejections
 
+**None. Six ticks, six APPROVEs, first time.**
+
+Recorded as a number rather than a boast, because a zero here is exactly the
+kind of figure that is indistinguishable from a figure nobody computed — and
+because **the reviews were not cheap.** Every one re-derived rather than
+re-read, and the evidence of that is in each entry's tick section:
+
+| Tick | What the reviewer did instead of reading the entry |
+|---|---|
+| chore 7 | verified-identical scratch copy, broke both guards, got the entry's pre-measured 8-of-9-cells result |
+| T5 | **parsed `power.kicad_sym` itself** (101 symbols, 89 up / 12 down), parsed all 19 templates, re-fetched Lathrop and Greenberg |
+| T1 | `git archive` scratch verified by file count (330), reproduced both seam arms and the `fmt` blind spot |
+| opening-1 | reproduced three breaks exactly (15 / 15 / 1 failing tests), built **both** binaries and used **its own** probe drawing |
+| carried-2 | removed the new check and re-ran with the break still applied, proving the hole was real |
+| T3 | **176,200 points against a 60-digit oracle**, zero disagreements |
+
+**The one that generalises is `carried-2`'s.** Showing a new check fails proves
+the check works. Showing the suite passes *without* it proves the **hole** was
+real. Those are different claims and only the second justifies the check's
+existence — and no brief asked for it.
+
 ---
 
 ## 4. Dogfood
@@ -706,45 +728,6 @@ KiCad.
 **Cost of leaving it open:** Phase 3's flow-and-direction rules cannot be written.
 Phase 2 is unaffected.
 
-### BLOCKED 3 — a drawing that is impossible to read can score 67, and the north star forbids exactly that
-
-**Raised by `lane-t3`, measured with the shipped implementation, escalated by
-the orchestrator.** Full numbers in Findings, above.
-
-**Why this is BLOCKED and not PROPOSED.** It is a value-level scoring call, and
-`RULES.md`'s north-star rule says those are *parked against that sentence, not
-guessed*. It is also not cheap to reverse: option 3 changes the published
-formula in `spec/SPEC.md` §11.5, and options 1 and 2 send Phase 2 and Phase 3
-down different roads — option 2 makes "saturating" a **tier** property, which
-changes what T4 builds and what every Tier 1 rule author must know.
-
-**The one-line version:** a sheet where *every* wire crosses another scores
-**67**, at any size; and a missing title block is scored at **twice** the cost of
-twenty wires crossing without junctions.
-
-**Options, with the lane's recommendation and the orchestrator's agreement on
-option 2:**
-
-1. **Leave it; Phase 4 measures it.** Cheapest now. The risk is that set B's
-   programmatic degradations may never saturate a rule, so **the property would
-   pass calibration and still be false** — which is the failure mode M4's
-   calibration row already taught this project once.
-2. **A saturating rule becomes a blocking finding.** ★ *Recommended.* Needs no
-   weight to move and no formula to change; it is a tier decision using a
-   mechanism §11.5 already has. The north star's second sentence forbids
-   *rewarding* an unreadable drawing, and **a drawing that fails the gate is not
-   rewarded whatever it scores.** Cost: it makes "saturating" a rule property
-   that T4 must carry and every Tier 1 rule author must understand, and the
-   fraction that counts as saturation is itself a value call.
-3. **Floor the normaliser.** Changes `spec/SPEC.md` §11.5, which is the
-   published contract, and should not be done without the measurement Phase 4
-   would provide.
-
-**Cost of leaving it open:** **T4 is the task that would implement option 2**,
-and T4 is Phase 1. Left open, T4 ships tier separation without the saturation
-concept and option 2 becomes a retrofit across every Tier 1 rule rather than a
-property built in. **This is the item with the shortest fuse in this report.**
-
 ### BLOCKED 2 — Q2's closing condition has been met, and the ruling that closed it named that condition
 
 **Raised by `lane-t5` as an incidental find; escalated by the orchestrator,
@@ -796,6 +779,45 @@ retrieval snapshot, not a bare URL.
 Phase 2.
 
 ---
+
+### BLOCKED 3 — a drawing that is impossible to read can score 67, and the north star forbids exactly that
+
+**Raised by `lane-t3`, measured with the shipped implementation, escalated by
+the orchestrator.** Full numbers in Findings, above.
+
+**Why this is BLOCKED and not PROPOSED.** It is a value-level scoring call, and
+`RULES.md`'s north-star rule says those are *parked against that sentence, not
+guessed*. It is also not cheap to reverse: option 3 changes the published
+formula in `spec/SPEC.md` §11.5, and options 1 and 2 send Phase 2 and Phase 3
+down different roads — option 2 makes "saturating" a **tier** property, which
+changes what T4 builds and what every Tier 1 rule author must know.
+
+**The one-line version:** a sheet where *every* wire crosses another scores
+**67**, at any size; and a missing title block is scored at **twice** the cost of
+twenty wires crossing without junctions.
+
+**Options, with the lane's recommendation and the orchestrator's agreement on
+option 2:**
+
+1. **Leave it; Phase 4 measures it.** Cheapest now. The risk is that set B's
+   programmatic degradations may never saturate a rule, so **the property would
+   pass calibration and still be false** — which is the failure mode M4's
+   calibration row already taught this project once.
+2. **A saturating rule becomes a blocking finding.** ★ *Recommended.* Needs no
+   weight to move and no formula to change; it is a tier decision using a
+   mechanism §11.5 already has. The north star's second sentence forbids
+   *rewarding* an unreadable drawing, and **a drawing that fails the gate is not
+   rewarded whatever it scores.** Cost: it makes "saturating" a rule property
+   that T4 must carry and every Tier 1 rule author must understand, and the
+   fraction that counts as saturation is itself a value call.
+3. **Floor the normaliser.** Changes `spec/SPEC.md` §11.5, which is the
+   published contract, and should not be done without the measurement Phase 4
+   would provide.
+
+**Cost of leaving it open:** **T4 is the task that would implement option 2**,
+and T4 is Phase 1. Left open, T4 ships tier separation without the saturation
+concept and option 2 becomes a retrofit across every Tier 1 rule rather than a
+property built in. **This is the item with the shortest fuse in this report.**
 
 ## 7. Workflow retrospective
 
@@ -961,6 +983,39 @@ what `xtask check` reports whether or not corpus ran.
 *Filed as PROPOSED 5, below.*
 
 ### 3. Record quality
+
+**Could a ruling be made from the record alone? For all three BLOCKED items,
+yes** — each carries its measurement, both readings, options and a
+recommendation, and none needs the session's context to be decidable.
+
+**The entries that were hard to brief from, and both were the orchestrator's
+own:**
+
+- **`carried-2-pin-location.md`** arrived as a paragraph of M4 record with no
+  goal state, no scope and no checks. It had to be written before it could be
+  briefed, which is the orchestrator definition's rule (*"if briefing is hard
+  because the entry is vague, fix the entry first"*) working as intended — but
+  it is worth noting that **every `carried-*` entry in this milestone is in that
+  state**, because they were migrated verbatim from `tasks/M4.md` and never
+  re-cut as tasks. `carried-1`, `carried-3` and `carried-5` will each need the
+  same work before dispatch.
+- **`phase1-t3-…`'s brief repeated a false sentence from `spec/SPEC.md` §11.5**
+  and demanded it as a literal check. See PROPOSED 13. The record was faithful
+  to the spec and the spec was wrong.
+
+**Provenance labels were written at the moment of the claim throughout.** The
+one place this was tested: the freeze-lift ruling's supersession of an earlier
+ruling was recorded in three places **at the time**, not reconstructed at the
+stop.
+
+**One claim went stale between writing and reading, and it was caught.**
+`lane-t3` observed that *"T4 is in `rule.rs`/`finding.rs` this dispatch"* while
+declining to make a change there. **T4 was never dispatched.** The lane's
+conclusion was right for a different reason than the one it gave — the files
+belong to a task the orchestrator intended to dispatch and then held for
+BLOCKED 3. No harm; recorded because a lane reasoning about another lane's
+scope is reasoning from a brief rather than from the world, and the brief was
+the orchestrator's.
 
 ### 4. Coordination
 
@@ -1153,6 +1208,45 @@ environment"* is **still unmet**, and this is the third independent sighting.
 
 ### 6. Budget
 
+**Six lanes, six tick reviews, twelve subagent dispatches.** Wall-clock was
+dominated by two things, and only one of them was work:
+
+- **The suite grew 71 → 80 test binaries and 529 → 587 tests in one session.**
+  The pre-commit gate now exceeds the two-minute foreground tool timeout, so
+  **every orchestrator commit from the T1 merge onward ran in the background.**
+  That is a permanent change in how this role operates and it had a side effect
+  worth naming — see Verification integrity, where backgrounding removed the
+  natural block that used to stop the orchestrator editing during a gate.
+- **The corpus arm is ~16 minutes** and was run at **four** merges. Three of
+  those were code merges and earned it. **One (`lane-t5`) changed a single
+  markdown file**, and the run was made anyway because `CLAUDE.md` says *every
+  lane merge* and *never skipped*. Recorded rather than quietly optimised: the
+  judgement is visible, and if James wants a documentation-only exemption that
+  is his to grant.
+
+**What was expensive and what it bought.** T3 was the longest lane of the
+session by a wide margin (~90 minutes) and produced the finding that matters
+most — BLOCKED 3 — **because its brief asked it to state an exposure rather than
+just implement a formula.** That instruction cost the lane real time and bought
+the milestone its most important open question two phases before the plan
+expected one.
+
+**What was truncated, sampled or capped — and therefore NOT covered:**
+
+- **T2 (ERC consumption and the 100× canary) and T4 (tier separation) were not
+  dispatched.** T4 is held deliberately on BLOCKED 3; **T2 is held only by
+  sequencing** — it and T4 would collide in `lint.rs`, and there was no reason
+  to run T2 before the checkpoint that would also have to be re-run after it.
+  **Phase 1 is therefore incomplete**, and this is stated plainly rather than
+  folded into a summary.
+- **The mutation run has not happened** and is not owed until the milestone
+  close.
+- **No dogfood run this stop.** The gate is milestone-exit and `sch score` does
+  not exist yet — but note that **`sch pins` shipped this session and is
+  agent-facing**, so the next run has a new surface to attempt cold.
+- **The orchestrator truncated one corpus run's evidence with `tail -30`** and
+  had to re-run 16 minutes to recover it. Recorded below.
+
 **The `clean` gate failed on the orchestrator's own commit, for the third
 repeat of a rule promoted this morning.** PROPOSED 5 was promoted into
 `orchestrator.md` at the start of this session: *"The merged check runs on a
@@ -1214,6 +1308,130 @@ usual price of a truncated instrument and it is why the rule exists.
 
 ### 7. User signal
 
+**James's seven ratifications and rulings all landed, and all were applied to
+the record before a single lane was briefed** — commit `1112a87`, per the
+orchestrator definition's session-start rule. Section 0 above is the accounting,
+item by item.
+
+**What the rulings covered well.** Question 2 (the freeze owner) and question 3
+(task-or-chore) were both answered in a form that could be *executed* rather
+than interpreted: they named an owner and a verdict. Question 5's four reasons
+for cutting `carried-4` did more work than the decision itself — the fourth
+reason, *"no contribution to schematic readability, which is the milestone's
+goal"*, became the test the orchestrator applied to two later judgement calls.
+
+**The north star was the highest-leverage thing in the batch.** It was requested
+as a tie-breaker for value calls and it did that job three times in one session:
+it decided `carried-4`'s cut, it is the reason T5's false-finding analysis
+reordered Q5's priorities, and it is the sentence BLOCKED 3 is measured against.
+**A single sentence, recorded verbatim, outperformed several paragraphs of
+plan.**
+
+**What the rulings did not cover, and what it cost:**
+
+- **Ruling 2 contradicted a standing M4-close ruling** and neither said so.
+  Treated as supersession and flagged — see section 0. Cost: one paragraph of
+  reasoning and a permanent note in three files. Cheap, but only because it was
+  noticed.
+- **Nothing in the batch anticipated that Phase 1 would produce a value-level
+  finding.** BLOCKED 3 is the milestone's own goal being measurably violable,
+  discovered by the task that built the formula. The plan placed all value calls
+  in Phase 4 (calibration) and all of Phase 1 in "the engine's spine" — **the
+  finding arrived two phases early.** No ruling was wrong; the plan's shape
+  simply did not have a slot for it.
+
+**Going back to James, and what each costs to leave open** — this is the section
+he should read first:
+
+| Item | Cost of leaving it open |
+|---|---|
+| **BLOCKED 3** — an unreadable drawing can score 67 | **Highest. T4 is the task that would fix it and T4 is Phase 1.** Left open, T4 ships tier separation without the saturation concept and option 2 becomes a retrofit across every Tier 1 rule. |
+| **BLOCKED 1** — spec and research doc carry different ground lists | Phase 3's flow rules cannot be written. **Clears for free** if the T5 list is ratified, which he is being asked to do anyway. |
+| **BLOCKED 2** — Q2's closing condition has been met | Nothing until Phase 3. But the four `KI-DOC-*` rules are among those T5 measured as weakest-sourced, so it compounds with Q1. |
+| **The T5 proposals** (Q1, Q5) | Phase 2 can start; **Phase 3 cannot.** Every unsourced rule and all 22 invented weights live there. |
+| **The seam verdict** (PASS) | Phase 2 is gated on ratification by the `/goal` itself. |
+| **14 PROPOSED items** | Nine touch agent definitions, skills or hooks, which change only by ruling. The three sharpest are 5 (the corpus arm is invisible), 6 (a reviewer's scratchpad is not private) and 14 (a probe-name flake no isolated run can show). |
+
+**One thing the orchestrator asks for explicitly**: **PROPOSED 4 is not applied
+and is the advisor's**, per its own recommendation at the M5 opening — which
+worked examples in `falsification-control` earn their place. That skill grew
+198 → 336 lines and this session found **two more** things that belong in it
+(`--no-fail-fast`, and the probe-name flake). **It will keep growing until
+somebody decides what comes out**, and the orchestrator should not be the one to
+choose, because every example in it was paid for by an incident.
+
 ---
 
 ## 8. The stop
+
+**M5 checkpoint 1. Phase 0 is CLOSED. Phase 1 is INCOMPLETE and deliberately
+so.** `main` is green and quiescent.
+
+### What the `/goal` asked for, answered honestly
+
+| Clause | State |
+|---|---|
+| Phase 0 closed — opening-1 under its ruled owner | ✅ merged `e4449ed`; freeze lifted `d4c0eb8`, restored `a8f2057` |
+| the obstacle-walk chore's check landed | ✅ merged `5fede1b` |
+| opening-3 done | ✅ was already done, merged `f69bad6` before this session |
+| **the seam built, its mechanical check answered** | ✅ **PASS**, merged `ee08396`. **Lane table confirmed** in `PLAN.md` |
+| the scoring engine's spine per the plan | ⚠️ **T1 and T3 done. T2 and T4 NOT dispatched.** |
+| Q1/Q5 recorded as PROPOSED awaiting James | ✅ merged `0333151` |
+| six gates green | ✅ at every merge, on a quiescent tree |
+| oracle 35/35 zero-skip | ✅ `hierarchies matched: 35/35`, and see Verification integrity for why the obvious way of asking returns a meaningless green |
+| report current per the seven areas | ✅ this document |
+
+**The spine clause is not met, and the two reasons are different:**
+
+- **T4 is held on BLOCKED 3**, deliberately. T4 is tier separation, and BLOCKED
+  3's recommended resolution *is a tier decision*. Building T4 now and ruling
+  afterwards turns a property into a retrofit across every Tier 1 rule.
+- **T2 is held only by sequencing.** T2 and T4 both edit `lint.rs`, and running
+  T2 before a checkpoint that might change T4 would have meant re-running it
+  after. No finding blocks it; it is one dispatch away.
+
+**The `/goal` also says to STOP here**, and its own words are the reason this is
+a stop rather than a shortfall: *"Phase 2 lanes are not dispatched until James
+ratifies both"* the seam verdict and the research proposals. Both are ready.
+
+### What is on `main`
+
+`327c033`, six of six gates green, corpus arm clean, tree quiescent.
+
+Six lanes merged, six ticks, **six APPROVEs, zero rejections**. The suite grew
+**71 → 80 binaries and 529 → 587 tests**. New agent-facing surface: `kicli sch
+pins`, documented in `AGENT.md` from measured output.
+
+### What James is asked for, in the order it costs to leave open
+
+1. **BLOCKED 3 — the north star is already violable.** A sheet where every wire
+   crosses another scores **67**, at any size; a missing title block costs
+   **twice** twenty unresolved crossings. Three options, recommendation is
+   option 2 (a saturating rule becomes blocking). **This one has a fuse: T4 is
+   Phase 1 and is waiting on it.**
+2. **The seam verdict — PASS.** Ratify and Phase 2 opens.
+3. **The T5 proposals, Q1 and Q5.** Phase 2 can start without them; **Phase 3
+   cannot.** Ratifying Q5's measured list also clears BLOCKED 1 for free.
+4. **BLOCKED 1** — spec and research doc carry different ground lists while the
+   spec declares the research doc canonical.
+5. **BLOCKED 2** — Q2's closing condition has been met; Greenberg's checklist is
+   published as citable text. The video stays unconsulted either way.
+6. **14 PROPOSED items.** Nine change agent definitions, skills or hooks and so
+   need a ruling. The three sharpest are **5** (the corpus arm is invisible to
+   the gate summary), **6** (a reviewer's scratchpad is not private and held the
+   implementer's own sources), and **14** (a probe-name flake no isolated run
+   can reveal).
+
+### The thing worth saying plainly
+
+**Four of this session's defects were the orchestrator's, and three of those
+were repeats of rules promoted at the start of this very session** — the `cd`
+into a lane worktree, the live tree under a running gate, and a brief whose
+completion check contradicted its own scope. Each is recorded with the
+rewording that would have caught it.
+
+That pattern is itself the finding: **a rule written from one incident describes
+that incident, and the next instance arrives in a shape the wording does not
+cover.** All three rewordings above are generalisations rather than new rules,
+and the advisor's triage should weigh whether the project has more rules than it
+needs and fewer general ones than it needs.

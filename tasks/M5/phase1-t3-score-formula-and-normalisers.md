@@ -1,4 +1,4 @@
-# The score formula and the normalisers (Phase 1, T3)
+# The score formula and the normalisers (Phase 1, T3) ✅
 
 **Provenance: `tasks/M5/PLAN.md` Phase 1, RATIFIED by James's ratification and
 advisor rulings, M5 plan review.**
@@ -607,3 +607,94 @@ name and once through a literal that names no type (B1, B1b above).
   divides.
 - The scorer reads a `Drawing` for the density and a `&[Finding]` for the rest.
   It does not run the engine, so a caller decides which rules ran.
+
+
+---
+
+## Tick — APPROVE, 2026-08-22
+
+**Reviewer verdict: APPROVE.** Lane `lane-t3`, commit `3e469e6`, base `a8f2057`,
+merged to `main` as `327c033`. Pinned at start and finish, unchanged.
+
+### The arithmetic, verified against an independent oracle at 176,200 points
+
+**This entry ships no floating point at all — not even in the final `exp`, which
+Constitution §4 would have permitted.** That made the arithmetic the review's
+entire burden, because a hand-rolled fixed-point exponential that is subtly
+wrong produces plausible scores that are simply not `100·exp(−raw/25)`.
+
+The reviewer built a **60-digit-precision `mpmath` oracle** of
+`round(100·exp(−raw/25))`, half-away-from-zero, and a faithful re-implementation
+of the shipped `score_of` / `grown_by` / `rounded`, and compared them over:
+
+- every integer raw penalty **0–199**;
+- a **0.001-point sweep across 0–150**;
+- **20,000 random fractional points** across 0–200;
+- **near-zero billionths** (0–2000);
+- a window either side of the `EXHAUSTED` cutoff at 150.0.
+
+**Zero disagreements.**
+
+**Overflow was checked rather than assumed**: worst case in `grown_by` is
+`term × exponent ≈ 6×10³⁴` against `u128::MAX ≈ 3.4×10³⁸`, and `RawPenalty::of`
+would need **~2.6×10²⁶ findings** to overflow.
+
+### The gate has zero exemptions, confirmed by reading it
+
+The reviewer read `the_linter_holds_no_floating_point.rs` in full: **no
+`#[allow]`, no file carve-out, no name carve-out** — a whole-word type-name
+sweep plus a grammar-complete float-literal sweep over every `.rs` file found by
+recursive walk of `src/lint`.
+
+**That matters in this repository specifically**, because another gate was found
+this same session classifying by spelling rather than by content
+(`probe_harness_has_one_home`). This one does not.
+
+### Four breaks reproduced by the reviewer in its own scratch copy
+
+| Break | Result |
+|---|---|
+| a float literal `let half = 0.5;` in `rounded` | `no_floating_point_appears_under_the_linter` **failed, naming the exact literal**; the other three in that binary stayed green |
+| **B10** — power-symbol guard removed | exactly one check failed (`a_power_symbol_does_not_make_a_sheet_look_crowded`); the other five stayed green |
+| **B11** — bundle-as-wire guard removed | exactly the five checks the entry names failed |
+| **B3** — the `Tier::Two` filter removed | both named checks failed, with the exact raw-penalty deltas |
+
+### The flake was checked for, not taken on trust
+
+The reviewer confirmed **every probe name in the new files is distinct** —
+`density-few-{check}`/`density-many-{check}` keyed by caller, `density-power`,
+`density-power-control`, `scored-first/second/sparse/crowded/repeated` — and
+**ran the density suite three times back to back, all green.**
+
+### Determinism, weights, and the project score
+
+- The determinism check **crosses a real process boundary**
+  (`Command::new(current_exe)` with distinct working directory, `TZ` and
+  `LC_ALL`, comparing child stdout bytes), with **both** anti-vacuity controls
+  present (`not vacuous`, `not blind`) and passing.
+- `cargo test --doc -p kicli` passes, including `project_score`'s doctest
+  asserting **40/95/92 weighted — not the unweighted 68.**
+- **No rule weight exists in this module at all**, and `K = 25` and the
+  reference counts are documented in code as starting points. `RULES.md`'s
+  weights discipline is held rather than merely respected.
+
+### Scope
+
+`crates/kicli/src/lint.rs` (module declaration and re-export, **5 lines**,
+confirmed by direct diff), `score.rs`, three new test files, and this entry.
+**No merge hotspot, no `rules/`, no `src/view/` or `src/cli/`** — the last
+mattering because a parallel lane owned those this dispatch. `RuleId::family()`,
+which `score.rs` uses, **pre-exists at base `a8f2057`**: T1's file was read, not
+written.
+
+> **WORKFLOW NOTE, T3's reviewer, verbatim:** *"The review brief quoted a
+> "WORKFLOW NOTE" (crossing-takes-per_wire-not-per_object) as if it should be
+> found in the entry; it is not there — it lives in
+> `tasks/reports/M5-checkpoint1.md` from a prior review pass and is already filed
+> as PROPOSED 13. Future T3-style briefs should say which document a quoted
+> WORKFLOW NOTE comes from, since the entry alone (correctly) only carries the
+> substance, not the verbatim quote."*
+
+**Accepted, and it is the orchestrator's defect** — a brief that quotes a note
+names the document the note lives in. The lane's entry was right to carry the
+substance without the quote; the report is where verbatim notes live.
