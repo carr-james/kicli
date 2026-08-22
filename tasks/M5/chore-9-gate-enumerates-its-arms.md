@@ -279,6 +279,41 @@ fingerprint, so the **first** `--corpus` run on any checkout pays a full rebuild
 of all 97 test targets before a single corpus check runs. A reader who types
 `--corpus` for the first time should expect the rebuild, not just the tests.
 
+### `cargo xtask check --corpus` with `kicad-cli` undiscoverable
+
+Goal state 3's third case, which neither of the two summaries above reaches.
+Run as `KICLI_KICAD_CLI=kicad-cli-that-is-not-installed cargo xtask check
+--corpus`, which is how the oracle's own discovery rule is defeated without
+uninstalling KiCad: `xtask` resolves the same variable the test oracle does, so
+naming a binary that is not there is exactly the state a machine without KiCad
+is in. Exit code 0.
+
+```
+=== summary ===
+  pass  fmt        cargo fmt --check
+  pass  clippy     cargo clippy --all-targets --all-features -- -D warnings
+  pass  test       cargo test
+  pass  doc        cargo doc --no-deps
+  pass  deny       cargo deny check
+  pass  corpus     cargo test --features corpus
+  skip  kicad-cli  KICLI_TEST_KICAD_CLI=1 cargo test --features corpus
+                   did not run: kicad-cli is not on PATH and KICLI_KICAD_CLI does not name it, so KICLI_TEST_KICAD_CLI stayed off
+                   runs with: cargo xtask check --corpus, with kicad-cli installed
+  pass  clean      git status --porcelain, before the arms and after them
+
+INCOMPLETE: 1 of 8 arms did not run. 7 passed, 0 failed.
+This was not a full run. The skip lines above say what runs each one.
+```
+
+Three things this shows that the entry asked for. **The corpus arm still ran**
+— it needs no KiCad, and holding it back would have been the wrong trade. **The
+oracle arm names the tool, not the flag** — the reader is told what to install,
+not what to type, because typing `--corpus` again would change nothing. And the
+headline is `INCOMPLETE` over an exit code of **0**: a missing KiCad install is
+not a failure, and pretending otherwise would make the gate un-runnable on any
+machine without it. The `skip` verdict exists precisely so those two facts can
+both be stated.
+
 ### An unplanned demonstration of the third headline
 
 The first `--corpus` attempt reported, verbatim:
@@ -335,16 +370,27 @@ documented contract fails too. Break 5 is that case.
 
 ## Falsification table
 
-Good state committed first, at `12943a8`, and anchored by content hash rather
-than by that SHA: `995db3b715ae24e84ff046600ba3d6c9401fc9f5  xtask/src/gate.rs`.
-Every break was applied to that state, and the file was restored and
-re-checksummed against that hash **before** each break and after the last.
+Good state committed before any break, and anchored by **content hash** rather
+than by a commit SHA, because this lane amended and committed twice while the
+table was being built:
 
-Every row is a whole-workspace `cargo test --workspace --no-fail-fast` run, so
-the caught-by lists are complete rather than truncated at the first failing
-target. **In every row only the `xtask` binary's checks fired**, which is the
-expected result — `gate.rs` compiles into no other target — recorded because
-"expected" is not the same as "measured".
+| State | `shasum xtask/src/gate.rs` | Commit at the time |
+|---|---|---|
+| first | `995db3b715ae24e84ff046600ba3d6c9401fc9f5` | `12943a8` |
+| final, and what rows 1-13 below were measured against | `f93c08894abf36e577708f4af75668391f1c71b9` | `87bafc4` |
+
+The file was restored and **re-checksummed against the hash before each break
+and after the last**, in both passes.
+
+**Rows 1-10 were run twice.** The first pass, against the first state, was a
+whole-workspace `cargo test --workspace --no-fail-fast` per row, and it
+established that **only the `xtask` binary's checks fire** for any of these
+breaks — the expected result, since `gate.rs` compiles into no other target,
+but measured rather than assumed. The second pass, after the selector was
+extracted, re-ran all ten plus three new rows at `cargo test -p xtask
+--no-fail-fast`, which the first pass had shown to be the whole catchment. Both
+passes agree on every row; the caught-by lists below are the second pass, which
+is the one that describes the code as it stands.
 
 | # | What was broken | Caught by |
 |---|---|---|
@@ -358,12 +404,27 @@ expected result — `gate.rs` compiles into no other target — recorded because
 | 8 | `no_kicad_cli` returns the same `why` text as `not_requested` | `a_skip_line_names_its_reason_and_the_command_that_runs_it` |
 | 9 | the `ENGINEERING.md` parser pointed at a heading that does not exist, so it reads nothing | `every_documented_gate_is_an_arm`, at its **presence control** rather than at a per-gate assertion |
 | 10 | the `runs with:` line dropped from every skip block | `a_skip_line_names_its_reason_and_the_command_that_runs_it` |
+| 11 | `skipped_before_running` blames the flag when `kicad-cli` is the thing that is missing | `an_opt_in_arm_runs_only_when_it_is_asked_for_and_its_tool_is_there` |
+| 12 | `skipped_before_running` lets the corpus arm run when nobody asked for it | `an_opt_in_arm_runs_only_when_it_is_asked_for_and_its_tool_is_there` |
+| 13 | `skipped_before_running` skips the six arms that always run | `an_arm_that_always_runs_is_never_skipped` |
 
 Rows 1 to 5 are the enumeration shown failing, which was the obligation. Rows 4
 and 5 also record two things worth naming: deleting the `clean` arm is caught by
 **two** checks and by neither of the two derived from repository files, which is
 the boundary above measured rather than asserted; and an arm can be present and
 still wrong, which row 5 is.
+
+Rows 11 to 13 exist because of what they replaced. The three-way choice — the
+arm runs, it skips for want of a flag, it skips for want of `kicad-cli` — was
+originally a set of guarded match arms inside the run loop, and **the only way
+to reach the third of them was a nine-minute end-to-end run**. A branch that
+expensive to reach is a branch nobody re-checks. It is now
+`gate::skipped_before_running`, a function of `(arm, requested, oracle)`, and
+`an_opt_in_arm_runs_only_when_it_is_asked_for_and_its_tool_is_there` asserts all
+**six** reachable combinations across the two opt-in arms in one place. Row 11
+is the case that matters most: the arm still skips, so a check that only asked
+*whether* it skipped stays green; only a check that reads the stated **reason**
+catches it.
 
 ## The degenerate check, named and avoided
 
@@ -509,3 +570,56 @@ other machine actually run.
 Recommendation: keep both. The cost is paid only by the person who typed
 `--corpus`, and collapsing them would mean the hermetic run is never measured
 on the machine that has KiCad installed.
+
+## The environment break class
+
+The falsification skill's fifth dimension applies here even though none of these
+checks holds a golden: three of them read **repository files by a path relative
+to `CARGO_MANIFEST_DIR`**, and two more create scratch directories under
+`target/`. Every break above was made in the source; none was made in the
+machine.
+
+So the second-directory run, per the skill's procedure — the commit taken out of
+git rather than a copy of the working tree, so an unrestored break cannot travel
+with it:
+
+```sh
+scratch="$(mktemp -d …)"
+git archive HEAD | tar -x -C "$scratch"
+( cd "$scratch" && cargo test -p xtask --no-fail-fast )
+```
+
+**21 passed, 0 failed, 0 ignored**, from `/tmp/…/second-dir.4ZVekh` — a
+different absolute path, a different `target/`, and a checkout with no
+`target/corpus` at all. The three sweeps found the same files and the two
+scratch-directory checks built their own.
+
+## Completion check
+
+`cargo xtask check` — **run as the pre-commit hook on every commit this lane
+made**, which is the strongest available form of it, since the command is partly
+the thing under test and the hook runs it without being asked. Its summary at
+commit `87bafc4` is the first block pasted above, exit code 0.
+
+The two runs the entry additionally required are both pasted above, verbatim,
+with the `kicad-cli`-absent variant as a third.
+
+## Goal state, against the four the entry set
+
+| Goal | Where it is shown |
+|---|---|
+| 1. three verdicts, a `skip` naming reason and un-skipping command | all three summaries; `a_skip_line_names_its_reason_and_the_command_that_runs_it`; falsification rows 8 and 10 |
+| 2. every arm enumerated with no flag | the first summary, 8 arms with 6 run; `every_documented_gate_is_an_arm`, `every_declared_feature_is_an_arm`, `every_test_environment_variable_is_an_arm`, `every_kind_of_arm_is_enumerated`; falsification rows 1-5 |
+| 3. `--corpus` runs them, oracle when discoverable, loud refusal on no corpus | the second and third summaries; the unfetched-corpus refusal; `an_opt_in_arm_runs_only_when_it_is_asked_for_and_its_tool_is_there`, `every_directory_the_tests_read_is_required`; falsification rows 11-13 |
+| 4. no "all gates passed" over a skipped arm | the phrase is deleted from the source; `a_full_run_is_the_only_run_called_complete`, `one_skipped_arm_makes_the_run_incomplete`, `one_failed_arm_makes_the_run_failed`; falsification row 7 |
+
+## Scope
+
+`xtask/src/gate.rs` (new), `xtask/src/main.rs`, `xtask/src/corpus.rs`, and this
+file. Nothing under `crates/**`, no other task entry, and none of
+`ENGINEERING.md`, `CLAUDE.md`, `AGENT.md` or `.githooks/`. The four documents
+that now owe a change are named above with the suggested wording, for the
+orchestrator to write.
+
+**Status: implemented, not ticked.** The tick is not the implementer's, per the
+tick-review rule.
