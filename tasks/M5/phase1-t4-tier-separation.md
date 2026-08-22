@@ -272,3 +272,35 @@ Scope, completion check, and the falsification obligation above stand as
 written, with the additions in A.4 and A.2. **The degenerate-fixture warning is
 now doubly live**: a saturation check on a Phase 1 tree has no Tier 2 rule to
 saturate, so say plainly what you constructed and what it is worth today.
+
+---
+
+# Evidence and deliverable (lane t4)
+
+*Written as the work happened. Everything above this heading is the brief and
+was not edited.*
+
+## Base verification (first action)
+
+```
+$ git -C .claude/worktrees/lane-t4 log --oneline -1
+78c4a21 tasks: BLOCKED 3 ruled into T4 — a saturating rule blocks (M5 checkpoint 2)
+$ git -C .claude/worktrees/lane-t4 status --porcelain
+(empty)
+```
+
+Matches the briefed base. No fast-forward was needed.
+
+## What the tree actually held when this lane opened
+
+Measured, not assumed, because the whole degenerate-fixture warning turns on it:
+
+- `crates/kicli/src/lint/rules/` **does not exist**. `kicli::lint::registry::all()`
+  is empty. **No lint rule ships.** The only rules that run anywhere are the three
+  specimens under `crates/kicli/tests/specimen_rules/`, which exist to measure the
+  registry seam.
+- There is **no `sch score` command**. `grep -rn score crates/kicli/src/cli/`
+  returns nothing but two lines of crate-level rustdoc in `lib.rs`.
+
+Both facts govern what this task could honestly deliver, and both are written up
+under "What the checks are worth today" below.
