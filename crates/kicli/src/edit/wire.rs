@@ -1205,7 +1205,15 @@ pub fn draw_plan(
 ///
 /// A bus is left out: a bundle carries several nets and joining one to a route
 /// is not this verb's decision.
-fn wires_through(schematic: &Schematic, points: &[Point]) -> Vec<Uuid> {
+///
+/// **Public because the pin view asks the same question.** A route owns the
+/// wires already at its own ends, so those wires end it rather than block it
+/// ([`Routed::wires`]); a view that says whether a pin can be reached has to
+/// own them the same way or it reports a pin as boxed in by its own net. One
+/// implementation, asked by the verb that draws and by the view that predicts
+/// what the verb will do.
+#[must_use]
+pub fn wires_through(schematic: &Schematic, points: &[Point]) -> Vec<Uuid> {
     schematic
         .lines()
         .filter(|line| line.kind == LineKind::Wire)

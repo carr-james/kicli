@@ -11,13 +11,15 @@ pub mod edit;
 mod exit;
 mod locate;
 mod output;
+mod pins;
 mod project;
 mod tools;
 mod view;
 
 pub use args::{
     Cli, Command, DrawArgs, FieldVerb, Global, JunctionVerb, LabelVerb, NetVerb, NoconnectVerb,
-    OutputFormat, PinArg, PointArg, ProjectVerb, SchVerb, SizeArg, SymVerb, TextVerb, WireVerb,
+    OutputFormat, PinArg, PinsArgs, PointArg, ProjectVerb, SchVerb, SizeArg, SymVerb, TextVerb,
+    ViewArgs, WireVerb,
 };
 pub use exit::ExitCode;
 pub use output::{Failure, Report, Reporter};
@@ -79,7 +81,12 @@ fn dispatch(parsed: &Cli, reporter: &Reporter) -> Result<Report, Failure> {
         Command::Project {
             verb: ProjectVerb::Check,
         } => check::check(global, reporter),
-        Command::Sch { verb } => view::view(global, verb, reporter),
+        Command::Sch {
+            verb: SchVerb::View(args),
+        } => view::view(global, args, reporter),
+        Command::Sch {
+            verb: SchVerb::Pins(args),
+        } => pins::pins(global, args, reporter),
         Command::Sym { verb } => edit::symbol::run(global, verb),
         Command::Field { verb } => edit::field::run(global, verb),
         Command::Text { verb } => edit::text::run(global, verb),
