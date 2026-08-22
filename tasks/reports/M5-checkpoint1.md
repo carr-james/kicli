@@ -113,6 +113,42 @@ shipped an agent-facing command yet; `sch score` is what it will be run against.
 
 ## 5. PROPOSED items
 
+**1. `chore-runner.md` has no worktree section, and chores are dispatched into
+worktrees.** The full measurement is in Coordination, above. `lane-implementer.md`
+devotes a section to the pinned path and ends *"do not write to the main
+checkout"*; `chore-runner.md` is eighteen lines and does not mention worktrees.
+A chore's relative paths therefore resolve to the session's default working
+directory — the main checkout — unless the brief's prose wins, and this stop is
+the evidence that prose does not reliably win.
+
+*Recommendation: accept — give `chore-runner.md` the same base-verification and
+pinned-path section `lane-implementer.md` has, worded for a chore.* **Not
+applied**, agent definitions change by ruling.
+
+**2. The base-verification first action is a lane rule that chores do not have,
+and it would have caught this in one command.** `lane-implementer.md` requires
+`git log --oneline -1` and `git status --porcelain` **in the pinned path** as the
+first action. Run in the wrong tree, that command answers about the wrong tree —
+but a chore made to run it *with an explicit `-C <pinned path>`* and to **paste
+the result** cannot silently be somewhere else, because the paste is the proof.
+
+CLAUDE.md already calls base verification *"load-bearing rather than defensive"*
+on three saves in three dispatches. **This is the fourth save, from a failure
+mode the rule was not written for**, and it is worth noting that the rule caught
+it *by accident* — the orchestrator found this through a failed gate on an
+unrelated commit, not through the check.
+
+*Recommendation: accept, together with item 1 — one section, both effects.*
+**Not applied.**
+
+**3. The orchestrator's briefs will carry absolute paths from now on, and that
+part is applied.** Brief prose is the orchestrator's own instrument and changes
+without a ruling. The lesson: **an instruction to stay somewhere is weaker than
+every command in the brief naming where.** The four briefs this session all said
+"your pinned path is your whole world"; the one whose *example commands* used
+bare relative paths is the one that went astray. Applied to the re-dispatch
+immediately.
+
 ---
 
 ## 6. BLOCKED items
@@ -128,6 +164,56 @@ shipped an agent-facing command yet; `sch score` is what it will be run against.
 ### 3. Record quality
 
 ### 4. Coordination
+
+**A chore lane wrote into the main checkout, and the root cause is a hole in the
+`chore-runner` definition.**
+
+Found by the orchestrator, in the act, at the cheapest possible moment: an
+unrelated record commit failed the main checkout's pre-commit gate on a file the
+orchestrator had not touched.
+
+The measurement, taken before anything was moved:
+
+| Tree | State |
+|---|---|
+| main checkout, `crates/kicli/tests/route_obstacles.rs` | **modified, +86 lines** — the chore's new test |
+| `.claude/worktrees/lane-c7` | **`git status --porcelain` empty**, still at `d4c0eb8` |
+
+The lane's assigned world was untouched and the lane had never entered it.
+
+**The root cause is the layer, not the lane.** `.claude/agents/lane-implementer.md`
+carries a whole section — *"Your base commit, before anything else"* — ending in
+*"Your brief's pinned path is your whole world: do not `cd` out of it, and do not
+write to the main checkout."* **`.claude/agents/chore-runner.md` is eighteen
+lines and does not mention worktrees at all.** Chores have been dispatched into
+pinned worktrees for two milestones under a definition that has never once said
+so, and the session's default working directory is the main checkout — so every
+relative path in a chore resolves there unless the brief's prose overrides it.
+The brief did say it. Prose in a brief lost to the default in the harness.
+
+**This is PROPOSED 10's sequel, from the other side.** That item was the
+orchestrator's own shell working directory persisting into a lane worktree; this
+is a lane's persisting into the orchestrator's. The same underlying fact — **the
+Bash tool's working directory persists and is nobody's declared intent** — bit
+twice in one session, in opposite directions, and the rule promoted this morning
+(*name the checkout explicitly, `git -C <root>`, every time*) was written for
+only one of them.
+
+**Resolution: relocation, not redo.** The lane was stopped mid-flight, told
+explicitly not to `git checkout`/`restore`/`stash` anything (which would have
+destroyed its own work), and given the copy-then-restore sequence. Confirmed
+after: main checkout's `crates/` is clean, `lane-c7` carries the work.
+**Nothing was lost and nothing was committed to the wrong branch.**
+
+**The reversal trigger did NOT fire, and the reason matters.** CLAUDE.md's
+manual-worktree-flow trigger governs *undisclosed scope excess*. This was not
+scope excess — the lane wrote exactly the file its brief named, in the wrong
+tree — and the lane was told to disclose it in its final message before it
+could have chosen not to. Recorded here rather than absorbed, because the
+trigger's boundary is only useful if the cases that fall *outside* it are
+written down too.
+
+*See PROPOSED, below, for the two fixes this is owed.*
 
 ### 5. Layer and tooling
 
