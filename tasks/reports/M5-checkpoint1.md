@@ -142,6 +142,41 @@ unrelated commit, not through the check.
 *Recommendation: accept, together with item 1 — one section, both effects.*
 **Not applied.**
 
+**5. `cargo xtask check` reports "all gates passed" without running the corpus
+arm.** Full measurement in Verification integrity, above. `CLAUDE.md` requires
+the orchestrator's merged check to be "corpus included"; the command that prints
+the summary is a bare `cargo test`, so the 35/35 netlist oracle and every other
+`#[cfg(feature = "corpus")]` check are compiled by clippy and never run.
+
+*Recommendation: accept — the `test` gate gains a **second arm**, `cargo test
+--features corpus`, reported as its own line in the summary, so the summary
+enumerates what ran.* Two sub-options on the environment half, and they differ
+in kind:
+
+- the corpus arm can be made unconditional, because `cargo xtask corpus`
+  fetches into `target/` and the fetch is already a documented step;
+- the `KICLI_TEST_KICAD_CLI` arm **cannot**, because `kicad-cli` genuinely may
+  be absent, and that is what `Kicad::found_or_skip` exists for. **What it can
+  do is say so in the summary** — a `skipped` line is not a `pass` line, and the
+  present output does not distinguish them.
+
+The second half is the more valuable one and generalises past this gate: **a
+summary can only report on what it was asked to run, and nothing here states
+what a full run would have been.** The corpus tests are not skipped — they are
+compiled out by `#[cfg(feature = "corpus")]`, so they are absent rather than
+ignored, and the `0 ignored` column is identical with and without them. This is
+adjacent to PROPOSED 3's two-verdict hole but is not the same: a two-verdict
+brief forces a false answer, whereas this one simply never asks the question.
+**Not applied** — `xtask` is a merge hotspot and this is a gate definition.
+
+**Measured cost of accepting it:** the corpus arm is ~16 minutes of wall clock
+against the bare gate's seconds, so making it unconditional in `xtask check`
+would change what "run the gates before committing" costs at every commit. That
+is a real trade and it is James's, not the orchestrator's. **A cheaper third
+option worth naming: leave `check` as it is and have it print one line saying
+which arms it did NOT run**, which costs nothing and closes the invisibility
+without changing the gate's runtime.
+
 **4. The `git -C` rule should be a prohibition on `cd`, not an instruction to
 name the checkout.** The orchestrator violated its own newly-promoted rule
 within the hour, obeying its letter — see Layer and tooling. An instruction to
@@ -169,7 +204,117 @@ immediately.
 
 ### 1. Score
 
+**Ticked:** 1 — chore 7, APPROVE first time, no rejections.
+
+**Merged:** 1 lane (`lane-c7` → `5fede1b`). Scope verified before the merge
+(`git diff --stat d4c0eb8..lane-c7`: exactly the two IN-list files), main
+checkout clean before it began, merge confirmed **by reading the merge commit's
+two parents** rather than `HEAD` — the rule promoted this morning, used the
+first time it applied.
+
+**Gates, at that merge, on a quiescent tree** (record commit `186672f` preceded
+the run, per the other rule promoted this morning):
+
+| Run | Result |
+|---|---|
+| `cargo xtask check` | **6 of 6 pass** — fmt, clippy, test, doc, deny, clean |
+| `cargo xtask corpus --verify` | 115 schematics, 36 library tables, **0 not at the pinned stamp**, verified |
+| `cargo test -p kicli --features corpus`, `KICLI_TEST_KICAD_CLI=1` | **71 binaries, 535 passed, 0 failed, 0 ignored, 0 skip markers** |
+| netlist oracle, `--nocapture` | **`hierarchies matched: 35/35`**, 5 tests, 16.09s |
+
+**The oracle is 35/35 with zero skips**, which is the `/goal`'s clause — and see
+Verification integrity for why the obvious way of asking that question returns a
+green that means nothing.
+
+**Rejections: none.** **Gate failures found after a tick: none.**
+
+**Parked:** nothing. **Lanes live at the time of writing:** `lane-o1b`
+(opening-1), `lane-t1` (the seam), `lane-t5` (the research), each at base
+`d4c0eb8`.
+
 ### 2. Verification integrity
+
+### `cargo xtask check` prints "all gates passed" without ever running the corpus arm
+
+**Found by the orchestrator this stop, while running the merged check for
+chore 7's merge. Measured, not inferred.**
+
+`CLAUDE.md` binds the orchestrator: *"The orchestrator runs the full check,
+**corpus included**, at every lane merge."* The command that reports on the
+gates does not include it.
+
+`xtask/src/main.rs`, the `GATES` table:
+
+| Gate | Args |
+|---|---|
+| `clippy` | `clippy --all-targets --all-features -- -D warnings` |
+| `test` | **`test`** — bare. No `--features corpus`, no `KICLI_TEST_KICAD_CLI` |
+
+So the corpus code is **compiled** by clippy's `--all-features` and **never
+run** by the test gate. The whole `mod corpus` block in `net_oracle.rs` sits
+behind `#[cfg(feature = "corpus")]` and is simply absent from the binary the
+`test` gate builds.
+
+**How close this came to being reported wrong, this stop:** the orchestrator ran
+`cargo test -p kicli --test net_oracle`, got `2 passed; 0 failed`, and **that is
+a green**. It was caught only because the run finished in **0.00s** — 35
+hierarchies including one with 2,353 nets cannot be checked in no time. Run
+correctly:
+
+```
+cargo test -p kicli --features corpus --test net_oracle   # + KICLI_TEST_KICAD_CLI=1
+hierarchies matched: 35/35
+test result: ok. 5 passed; 0 failed; 0 ignored — finished in 16.09s
+```
+
+**Five tests, not two, and sixteen seconds, not none.** The `/goal` for this
+session asks for "oracle 35/35 zero-skip"; the naive command answers that
+question `ok` while measuring nothing.
+
+**The size of the gap, measured both ways, because the honest number is smaller
+than the rhetoric wants:**
+
+| Command | Binaries | Tests passed | Ignored |
+|---|---|---|---|
+| `cargo test -p kicli` (what the gate runs) | 71 | **529** | 0 |
+| `cargo test -p kicli --features corpus` + `KICLI_TEST_KICAD_CLI=1` | 71 | **535** | 0 |
+
+**Six tests.** Not a chasm — and stating it as one would be the same overclaim
+this finding is about. But those six are the ones that check kicli's answers
+**against KiCad itself**, over 115 real schematics and 35 hierarchies, and they
+are the only checks in the suite that can catch the extractor drifting from the
+thing it models. `RULES.md` makes one of them a standing milestone gate in its
+own right.
+
+**And the sharper half is the "0 ignored" column, which is identical in both
+rows.** The six missing tests do not show up as skipped, or ignored, or filtered
+out. `#[cfg(feature = "corpus")]` removes them from the binary, so **they are
+invisible rather than skipped** — the bare run's summary is internally
+consistent and completely silent about them. A reader comparing the two rows
+cannot tell from either one that the other exists.
+
+*(Correcting a looser claim made earlier in this session: the orchestrator first
+described this as a summary "reporting a skip as a success". It is not — nothing
+is skipped. The tests are compiled out and the count is honest about what it
+ran. The defect is that **nothing anywhere states what a full run would have
+been**, which is a harder problem than a mislabelled skip and is why the
+recommendation below asks for a second reported arm rather than better wording.)*
+
+**This is the exact failure mode M4's calibration row taught** — *"a gate
+presented as measuring something it cannot fail on is worse than no gate, since
+it spends the credibility of a real one"* — with the twist that here the gate is
+real and the **summary line over it** is what overclaims. `all gates passed` is
+true of the gates that ran, and a reader has no way to see which did not.
+
+**The practice was not broken; only the instrument is.** The previous session's
+report records running the corpus and environment arms separately ("all corpus
+and environment arms green"), so the orchestrator role has been doing this by
+hand. **That is precisely why it is worth filing: the correctness depends on the
+orchestrator remembering, and nothing fails if one forgets.** The prior report's
+own title — *"six of six on a quiet tree"* — names six gates, and six gates is
+what `xtask check` reports whether or not corpus ran.
+
+*Filed as PROPOSED 5, below.*
 
 ### 3. Record quality
 
@@ -294,6 +439,25 @@ stands; the standing instruction that the next dogfood run gets *"a clean shell
 environment"* is **still unmet**, and this is the third independent sighting.
 
 ### 6. Budget
+
+**The orchestrator truncated its own evidence with `tail -30` and had to re-run
+a 16-minute suite.** The first full corpus-enabled run was piped through
+`grep … | tail -30`, so the file kept only the last thirty matching lines. The
+run **exited 0** — that fact survived — but the per-binary totals and the skip
+markers did not, and those are what the `/goal`'s "oracle 35/35 zero-skip"
+clause is answered from.
+
+**This is the report's own "silent cap" rule, broken by the person maintaining
+the report.** The rule: *a silent cap reads as full coverage*. A `tail -30` on a
+suite of eighty-odd test binaries is a cap, it was silent, and the only reason
+it did not become a false claim in this document is that the truncation was
+noticed before the sentence was written rather than after.
+
+*Recorded rather than quietly fixed, because the cost is the interesting part:*
+the re-run costs ~16 minutes of wall clock and buys nothing that the first run
+did not already establish — it buys only the **evidence** of it. That is the
+usual price of a truncated instrument and it is why the rule exists.
+
 
 ### 7. User signal
 
