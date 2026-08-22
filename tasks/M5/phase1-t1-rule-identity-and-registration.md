@@ -163,3 +163,151 @@ git status --porcelain
 **A FAIL on the mechanical check does not fail this task.** The task is done
 when the seam exists, the checks above pass, and the verdict is recorded with
 its evidence.
+
+---
+
+# Evidence (the implementing lane, `lane-t1`)
+
+## The mechanical check's verdict
+
+**PASS.** Adding a rule is one new file under `crates/kicli/src/lint/rules/`
+and no edit to any existing file. Both required arms hold: the file count, and
+the rule actually running.
+
+The check as run, on a clean tree at `c64852e`, verbatim.
+
+```
+########## 1. BASELINE: git status --porcelain on a clean tree
+[end of output]
+
+########## 2. ADD ONE NEW FILE: crates/kicli/src/lint/rules/throwaway.rs
+
+########## 3. git status --porcelain, with the rule file added and NOTHING else touched
+?? crates/kicli/src/lint/rules/
+[end of output]
+----- the same, listing untracked files rather than their directory
+?? crates/kicli/src/lint/rules/throwaway.rs
+[end of output]
+
+########## 4. does the rule RUN? (no other file edited, no rebuild forced)
+running 1 test
+registered files: ["throwaway"]
+registered rules: [RuleId("KI-TEMP-001")]
+finding: KI-TEMP-001 tier=2 warning /00000000-0000-4000-8000-999999999999 0,0 [] "the sheet /00000000-0000-4000-8000-999999999999 was examined" fix=None penalty=1.0
+finding: KI-TEMP-001 tier=2 warning /00000000-0000-4000-8000-999999999999/00000000-0000-4000-8000-cccccccccccc 0,0 [] "the sheet /00000000-0000-4000-8000-999999999999/00000000-0000-4000-8000-cccccccccccc was examined" fix=None penalty=1.0
+test the_crate_rules_are_listed_with_everything_they_report ... ok
+
+########## 5. the whole seam test binary, with the throwaway rule present
+running 6 tests
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+
+########## 6. REMOVE the file
+----- git status --porcelain
+[end of output]
+----- the output returns
+running 1 test
+registered files: []
+registered rules: []
+test the_crate_rules_are_listed_with_everything_they_report ... ok
+```
+
+The command in step 4 is the observation window and it is committed:
+
+```sh
+cargo test -p kicli --test lint_rules_register_from_their_own_files \
+    -- --nocapture the_crate_rules
+```
+
+**What each arm would miss without the other.** The file-count arm alone passes
+on a registry that compiles and never runs — a `mod` list generated correctly
+into a registry nothing reads reports zero findings and shows a clean
+`git status`. The output arm alone passes on a hand-edited registry — a rule
+whose findings appear because somebody added a line to `lint/rules.rs` runs
+perfectly and dirties one tracked file. Step 3 and step 4 are the two halves,
+and step 6 is what stops a check that only ever grows.
+
+**The rebuild is part of the answer and was measured, not assumed.** Step 4 ran
+`cargo test` with no other change and no `touch`; cargo re-ran the build script
+and recompiled. The build script emits `cargo:rerun-if-changed` for `src/lint`
+as well as for `src/lint/rules`, because the rules directory does not exist in a
+fresh checkout — git does not track an empty directory — and a watch on a path
+that is not there is not a watch on the thing that creates it.
+
+## The mechanism chosen, and the ones rejected
+
+**Chosen: a build script that reads the rule directory and writes the module
+list and the registry into `OUT_DIR`.** `crates/kicli/build.rs`. No new
+dependency, so no Constitution §9 licence question. One generator function, run
+over two directories: the crate's own `src/lint/rules/`, and
+`crates/kicli/tests/specimen_rules/`, whose registry the seam test measures. The
+test therefore measures the mechanism that ships rather than a copy of it.
+
+Generated per directory: one `#[path = "…"] mod` declaration per file, a
+`BY_FILE` table pairing each file's name with the rules it declares, `all()` and
+`files()`. A rule file declares `pub static RULES`, so one file may hold a family
+of rules that share a definition — which is what `lint/rules/labels.rs` will need
+for `KI-LBL-001/002`.
+
+| Rejected | Why |
+|---|---|
+| a distributed-slice crate (`inventory`, `linkme`) | **It does not solve the problem.** Rust compiles no file that no `mod` declaration names, so a distributed slice still needs the per-rule `mod` line the check is about. It would have bought a new dependency and a §9 licence check for nothing. Not raised with the orchestrator, because the answer did not depend on the licence. |
+| `include!` of a generated registry **into the module tree** | This is what was built, and the entry lists it separately from the build script only because the two are usually named as alternatives. The interaction with `#![deny(missing_docs)]` is real and is handled: the generator writes a doc comment above every public item it emits, which was found by the compiler refusing the first draft. |
+| a hand-written `mod` list in `lint/rules.rs` | The FAIL branch. Costed below rather than guessed at. |
+| a macro that expands to the registry | `ENGINEERING.md`'s DRY caveat forbids it in as many words, and it would not have worked anyway: a macro cannot enumerate a directory. |
+
+## What the FAIL branch would have cost, measured rather than argued
+
+Recorded because the plan's re-cut turns on it, and because a PASS that hides
+the alternative's price is worth less at a checkpoint.
+
+**The minimum edit would have been one line per rule file** — `mod grid;` in a
+`crates/kicli/src/lint/rules.rs` holding nothing else, kept in alphabetical
+order. **Mechanical, not a judgement.** No match arm, no registration call, no
+weight table: the `BY_FILE` table the generator writes could have been written by
+hand from the same `mod` list, so a rule author would have edited exactly one
+line in exactly one existing file.
+
+That is the cheap end of the range the plan feared, not the expensive end.
+
+## The cost this mechanism does carry, measured
+
+**`cargo fmt --check` cannot see a rule file, and `cargo fmt --check` is one of
+the six gates.** `rustfmt` walks the module tree from the crate root and does not
+follow an `include!`, so the `#[path]` declarations inside the generated file are
+invisible to it. Measured on a scratch crate before any of this was written:
+
+```
+=== cargo fmt --check ===        (over a deliberately mangled rule file)
+fmt exit=0
+       0 /tmp/fmtout             (no diff reported at all)
+=== rustfmt --check directly on it ===
+rustfmt exit=1
+```
+
+`cargo clippy --all-targets` **is not** affected — it lints a rule file
+normally, measured in the same scratch crate (`dead_code` reported against
+`src/rules/alpha.rs:9`).
+
+The refund is `crates/kicli/tests/rule_files_are_formatted.rs`, which hands the
+same files to `rustfmt` directly. `rustfmt` is a pinned component in
+`rust-toolchain.toml`, so its absence is a broken environment rather than a
+reason to skip.
+
+**PROPOSED (lane-t1): the loss of a gate's reach is worth recording at the
+checkpoint even though it is repaired.** Recommendation: accept, because the
+repair is executable, runs inside `cargo test`, and is shown capable of failing.
+The alternative reading is that a seam which blinds one of six gates is a seam
+that should not ship; that reading is available to James and the measurement
+above is what it would rest on.
+
+## Scope: one file outside the brief's IN list
+
+`crates/kicli/build.rs` is new and was not on the brief's IN list. It is not a
+merge hotspot either — it did not exist. The task entry names a build script as
+a candidate mechanism in its own table, so the goal state contemplated it and
+the enumeration under-counted; the brief's own rule is that the named goal state
+wins over the list. `Cargo.toml` is **not** touched: cargo detects `build.rs` at
+the package root with no manifest key.
+
+Nothing else outside the list was touched. `crates/kicli/src/lib.rs` already
+declared `pub mod lint;` and was not edited.
