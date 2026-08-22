@@ -1,4 +1,4 @@
-# Worked examples become measured output (opening 3)
+# Worked examples become measured output (opening 3) ✅
 
 **Provenance: advisor recommendation, James-approved, M4 close (boundary
 package, item 9).** Verbatim:
@@ -313,6 +313,17 @@ it. `AGENT.md` documents the flag it corresponds to (`reformatted`) already.
   `crates/kicli/tests/delta_view.rs::delta_distinguishes_moved_from_edited`
   asserts these same four lines from a real `Delta::between`, differing only in
   `Test:R` where the document writes `Device:R`. Left alone.
+
+  > **Corrected by the tick reviewer, and the correction goes beneath the claim
+  > rather than over it.** The reviewer ran that test and diffed its output
+  > against the document: **the ORDER of the trailing three lines also differs**
+  > — the document writes `~S`, `+S`, `-S`; the test emits `+S`, `-S`, `~S`. So
+  > "differing only in `Test:R`" is an overstatement, measured. It does not
+  > touch this task's goal states, because the block is outside the diff, was
+  > explicitly not regenerated, and is outside the new check's rebuild boundary
+  > — but "corroborated" is a weaker claim than this paragraph made it sound,
+  > and the difference is exactly the kind a later reader would take on trust.
+  > **The block is corroborated in content and not in order.**
 - **The layout digest (`AGENT.md` ~176).** A different writer, outside this
   task's anchor. Left alone.
 - **The session walkthrough's commented output (`AGENT.md` ~737).** A narrative
@@ -340,3 +351,55 @@ Nothing else. No merge hotspot touched.
 `cargo xtask check` — all six gates pass (fmt, clippy, test, doc, deny, clean).
 Corpus and environment gates do not count from a lane worktree; the
 orchestrator's merged run is the one that does.
+
+---
+
+## Tick — APPROVE, 2026-08-22
+
+**Reviewer verdict: APPROVE.** Merged `f69bad6`; lane `lane-o3`, base `9f4eb39`,
+one commit `72ce305`, four files, all inside this entry's IN list.
+
+**What the reviewer measured itself:**
+
+- **The headline defect, against the binary rather than against this entry.** It
+  built the scenario with `kicli_probe::Probe` — two resistors, pin 1 at
+  `50.80,50.80` and `76.20,50.80` — and ran the real built binary's `wire draw`
+  in a `git archive` scratch tree. The output matched the regenerated block
+  **byte for byte, including the three handles** `116592a7`, `7239e219`,
+  `723e5aa0`, the `wires added: 3   junctions added: 0` line and the cost
+  breakdown. The old block was a genuine documentation defect, confirmed.
+- **The counts, by an independent re-implementation** of the frame rule in
+  Python: 22 documented lines and 16 rebuilt on the final document, against the
+  20/14 floors this entry asserts — **honest floors, not overcounts**, the
+  difference being the two `+ W` lines the regeneration itself added after the
+  constants were set. Removing the `"# "` strip drops the count by exactly 3, as
+  claimed.
+- **The reads-nothing falsification (F7), reproduced.** Changing
+  `record_examples`'s separator match from `Some(' ')` to `Some('!')` gave
+  `0 record example line(s)` and `0 example(s) were rebuilt`, **both presence
+  controls firing**. The file was content-hash-verified back to the lane's state
+  before the next step.
+- **The shared-ancestor boundary, tested and found honest.** Restoring the
+  `wire draw` block to its pre-fix single-line form left **both** tests passing —
+  because a self-consistent single record for a single object is legitimately
+  reconstructable. That is precisely the limit this entry's rustdoc states:
+  *agreement is not provenance.* The reviewer recorded it as the named boundary
+  rather than as a gap.
+
+**On `Change::ALL` — derivation or citation?** The reviewer's answer, recorded
+because it is the question the derivation rule exists to ask: it is **not a pure
+derivation**. A variant could be added to the enum, handled in `mark()` under
+compiler force, and never added to `ALL` under no force at all. **The rustdoc
+says exactly that**, so the bound is honest rather than oversold — and an honest
+bound is what the skill asks for when a stronger instrument is not available.
+
+**Scope:** `AGENT.md` confined to lines inside fenced example blocks, no prose
+outside them; `delta.rs` exactly `Change::ALL` plus one unit test with the
+rustdoc saying why; both new tests inside `agent_doc.rs`, so the completion
+check does exercise everything the scope permits. No merge hotspot touched.
+
+**The reviewer's own friction, recorded because it was the orchestrator's:** the
+brief's pin went stale mid-review when this lane amended `3171db0` into
+`72ce305`, and the orchestrator had to correct it live. The reviewer re-verified
+the diff stat and both scratch trees' content hashes against the new head rather
+than assuming the correction.
