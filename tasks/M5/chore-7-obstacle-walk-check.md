@@ -1,4 +1,4 @@
-# The obstacle walk is direction-blind, and asserted to be (chore 7)
+# The obstacle walk is direction-blind, and asserted to be (chore 7) ✅
 
 **Provenance: James's ratification and advisor rulings, M5 plan review,
 question 3.** Verbatim:
@@ -175,3 +175,63 @@ test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
 ```
 
 All tests pass, including the new one.
+
+
+---
+
+## Tick — APPROVE, 2026-08-22
+
+**Reviewer verdict: APPROVE.** Lane `lane-c7`, commit `94eae37`, base
+`d4c0eb8`, merged to `main` as `5fede1b`. Recorded beside the tick per the
+tick-review rule; the reviewer had the entry and the diff, never the
+implementer's narrative.
+
+**The reviewer did not take this entry's word for the falsification.** It made a
+`mktemp -d` scratch copy of the worktree, **verified it byte-identical**
+(`rsync -a -ci --dry-run`, no output), replaced both guards with `true` **in the
+scratch copy only**, and reran the test:
+
+```
+assertion `left == right` failed: horizontal wire maps differ in occupied cells
+  left:  columns 14–22 (9 cells)
+  right: columns 22–30 (9 cells)
+```
+
+**That matches this entry's pre-measured prediction exactly** — 14–22 → 22–30,
+8 of 9 differing — which is the useful property of writing the expected
+falsification result into the entry *before* the work: it turns the reviewer's
+job from judgement into comparison. The reviewer restored the guards and reran
+the file (6/6) to confirm nothing else moved.
+
+Verified against the three questions:
+
+| Question | Answer |
+|---|---|
+| Does the evidence support the tick? | Yes. `git diff … -- crates/kicli/src/route/obstacles.rs` **empty** — the no-source-change constraint held. Built from drawings via `drawing()`, `SheetObjects::read`, `Obstacles::build`, not a hand-made list. |
+| Is every new check shown capable of failing? | Yes, **re-measured independently** rather than read. |
+| Does the diff exceed scope? | No. Two IN-list files; `obstacles.rs` and `opening-2` both empty in the diff. |
+
+**The anti-vacuity control is present and is what makes the equality mean
+anything**: `assert!(!forward_h_cells.is_empty(), …)` and its vertical twin run
+*before* the equality, so two empty maps cannot pass. The comparison is over
+`Vec<(Cell, Vec<Feature>)>` — **same cells with the same features**, not merely
+endpoint coverage, which the mutation would also have satisfied.
+
+**Falsification named to the skill's standard**: the entry names the assertion
+by its message (`"horizontal wire maps differ in occupied cells"`) and the exact
+guard diff, not a bare line number.
+
+> **WORKFLOW NOTE, reviewer, verbatim:** *"The brief pre-computed the expected
+> falsification numbers precisely enough that verification was a straight rerun
+> with no ambiguity to resolve — this is the review brief working as intended,
+> nothing missing or in the way."*
+
+### The coordination incident, disclosed and not weighed
+
+The lane initially wrote this test into the **main checkout** rather than its
+pinned worktree, was stopped by the orchestrator, and relocated it with no loss.
+Disclosed by the lane in its final message, as its brief required. **Explicitly
+excluded from the reviewer's verdict** — it is a coordination fact, recorded in
+`tasks/reports/M5-checkpoint1.md` under Coordination and Layer and tooling, and
+its root cause is a hole in `chore-runner.md` rather than anything about this
+test.

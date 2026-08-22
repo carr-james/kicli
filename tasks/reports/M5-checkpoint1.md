@@ -93,6 +93,7 @@ Four of the ten (3, 5, 9, 10) are the orchestrator's own defects, self-filed.
 
 | Task | Lane | What landed | Evidence | Verdict |
 |---|---|---|---|---|
+| the obstacle walk's missing check (`chore-7-obstacle-walk-check.md`) | `lane-c7` | one test in `route_obstacles.rs`, **no source change** — the third triage class's first worked example | entry "Tick — APPROVE"; lane `94eae37`; merge `5fede1b` | **APPROVE** |
 
 ---
 

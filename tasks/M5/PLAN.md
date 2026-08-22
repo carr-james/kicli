@@ -70,7 +70,8 @@ Phase 1 than at the third merge conflict.
 | Task | State |
 |---|---|
 | the joined net's contract field (`opening-1-joined-net-contract.md`) | **UNBLOCKED and scheduled.** The freeze lift is the **orchestrator's** step in the main checkout — question 2, ruled. The entry's procedure is re-worded to name that owner; the banked reconnaissance stands. |
-| the obstacle walk's direction (`opening-2-obstacle-walk-direction.md`) | **MEASURED.** Reachable, guard correct, check missing. See below. |
+| the obstacle walk's direction (`opening-2-obstacle-walk-direction.md`) | **MEASURED**, ticked. Reachable, guard correct, check missing. See below. |
+| the obstacle walk's missing check (`chore-7-obstacle-walk-check.md`) | **DONE**, ticked APPROVE, merged `5fede1b`. Ruled a chore at the plan review; one test, no source change. The reviewer re-ran the falsification independently and got the entry's pre-measured numbers exactly. |
 | worked examples become measured output (`opening-3-measured-examples.md`) | **DONE**, ticked APPROVE, merged `f69bad6`. It found a live defect on its first application. |
 
 ### What the obstacle measurement returned, and the one place it needs James
