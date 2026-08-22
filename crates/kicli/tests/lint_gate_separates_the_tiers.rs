@@ -330,12 +330,12 @@ fn a_rule_at_or_above_its_saturation_fails_the_gate() {
     );
     // The reader is told which rule, how many, out of what, and against what
     // share. Nothing else explains a saturating failure.
-    assert!(
-        saturated
-            .text()
-            .contains("saturated KI-GATE-002  wires 6 of 10 >= 1/2"),
-        "{}",
-        saturated.text()
+    assert_eq!(
+        saturated.text(),
+        concat!(
+            "score 79  gate fail  raw 6.0\n",
+            "  saturated KI-GATE-002  wires 6 of 10 >= 1/2\n",
+        )
     );
 }
 
