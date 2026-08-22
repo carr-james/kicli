@@ -93,6 +93,7 @@ Four of the ten (3, 5, 9, 10) are the orchestrator's own defects, self-filed.
 
 | Task | Lane | What landed | Evidence | Verdict |
 |---|---|---|---|---|
+| the joined net's contract field (`opening-1-joined-net-contract.md`) | `lane-o1b` | the field moved into the frozen route contract, `with_net` removed, `research/wire-routing.md` §8 amended, five goldens migrated; **two blind instruments found by breaking things** | entry "Tick — APPROVE"; lane `6a9e6a4`; merge `e4449ed`; freeze restored next commit | **APPROVE** |
 | **the rule identity and registration seam** (`phase1-t1-rule-identity-and-registration.md`) | `lane-t1` | **the seam, and its verdict: PASS.** A `build.rs` generates the module list and registry from the rules directory — no new dependency, `Cargo.toml` untouched. Plus five new checks and a measured `fmt` gate loss with its repair | entry "Tick — APPROVE"; lane `749eaae`; merge `ee08396` | **APPROVE** |
 | the seed catalogue and the ground-name list (`phase1-t5-seed-catalogue-and-ground-names.md`) | `lane-t5` | two PROPOSED answers with sources, **awaiting James** — plus two BLOCKED items and a correction to the orchestrator's brief | entry "Tick — APPROVE"; lane `088df33`; merge `0333151` | **APPROVE** |
 | the obstacle walk's missing check (`chore-7-obstacle-walk-check.md`) | `lane-c7` | one test in `route_obstacles.rs`, **no source change** — the third triage class's first worked example | entry "Tick — APPROVE"; lane `94eae37`; merge `5fede1b` | **APPROVE** |

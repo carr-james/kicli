@@ -1,4 +1,4 @@
-# The joined net's contract field (opening 1)
+# The joined net's contract field (opening 1) ✅
 
 **Provenance: James's ruling on BLOCKED 2, M4 close review.** Verbatim:
 
@@ -689,3 +689,88 @@ reason recorded above.
 The scope enumeration did **not** prove wrong: nothing outside the IN list was
 needed. One file the enumeration did not anticipate — `wire_output_contract.rs`
 — is inside it, under `crates/kicli/tests/**`.
+
+---
+
+## Tick — APPROVE, 2026-08-22
+
+**Reviewer verdict: APPROVE.** Lane `lane-o1b`, head `6a9e6a4` (code `d5725fc`,
+evidence `6a9e6a4`), base `d4c0eb8`. Pinned at review start **and re-checked at
+finish — no drift.**
+
+**Method**: `mktemp -d` populated by `git archive lane-o1b | tar -x`, fidelity
+verified by matching tracked-file counts (**316 == 316**) before reading
+anything. A **second** scratch tree from `git archive d4c0eb8` supplied the
+pre-change binary. Nothing ran in the live checkout.
+
+The reviewer also verified the freeze-lift commit itself: `git show --stat`
+confirms `d4c0eb8` touches **only** `.claude/hooks/frozen-paths.txt`, with the
+dedup of the duplicated 2026-08-15 block visible in the diff — matching this
+entry's claim.
+
+### The degenerate-equality defence, independently reproduced
+
+**This was the heart of the task and the reviewer attacked it directly.** It
+applied break B3 in its own copy and ran the **entire** suite with
+`--no-fail-fast`:
+
+- **exactly 15 distinct test functions failed**, names matching this entry's list
+  exactly;
+- **`a_route_joins_the_two_pins_it_names` and `a_joined_net_matches_the_golden`
+  both stayed GREEN** — the trap, exactly as predicted.
+
+**The defence holds, and the reviewer checked the thing that would have broken
+it**: are the three literals genuinely independent, or the same fixture family?
+It read the test bodies and confirmed `connecting_to_a_net_takes_the_nearest_terminal`'s
+`"SIG"`, `wire_loop` step 3's `"SIG"`, and
+`a_performed_proposal_reports_the_net_its_labels_made`'s `"R1_1"` are **on
+different fixtures and different drawings, not one generator.**
+
+### The falsification table, three rows reproduced
+
+| Break | Reviewer's own result |
+|---|---|
+| **B1** — delete the JSON key line | **exactly 15** failing tests, names matching exactly |
+| **B3** — constant `Some("SIG_A")` | **exactly 15**, matching, including the two-green-checks finding |
+| **B8** — drop `perform`'s auto-labels net assignment | **exactly ONE** test fails — the new one. Confirms `wire connect --auto-labels` had no behavioural check before this task. |
+
+### The text-form claim, re-measured rather than trusted
+
+The reviewer built **both** binaries via `git archive`, generated **its own probe
+drawing** rather than reusing the lane's artefact, and ran all five arms
+(`wire connect` routed / proposal / `--auto-labels`, `wire draw`,
+`wire draw --auto-labels`). **All five byte-identical.**
+
+That independently establishes goal-state item 4 and, with it, the reason **no
+`AGENT.md` text block needed regenerating** — which matters because `chore-8`
+records that the drawing behind those blocks is not currently reproducible.
+
+### The rest, verified
+
+- **`with_net` is gone, not bypassed** — `grep` finds zero occurrences.
+- **Migrated checks**: each matches this entry's before/after table.
+  `claimed_net` and `wire_loop.rs`'s new helper both **assert presence
+  separately from value**, closing the null-versus-absent hole the
+  reconnaissance predicted.
+- **Goldens**: `KEYS` grew to 16 with `joined_net` inserted alphabetically; all
+  five existing goldens gained `"joined_net": null`; the new
+  `wire_contract_routed_joined.golden` is present.
+- **`spec/SPEC.md` §9 read in full** — it covers algorithm, obstacles, cost
+  model and the crossing seam, and says **nothing** about a connection's joined
+  net. The "silence, not contradiction" reading is confirmed correct, and the
+  counter-argument is recorded as PROPOSED rather than silently resolved.
+- **Scope**: exactly the 16 files this entry names.
+  `.claude/hooks/frozen-paths.txt` **empty in the diff**;
+  `crates/kicli/src/route/**` touches only `report.rs`; `spec/SPEC.md` and
+  `tasks/M5/PLAN.md` both empty.
+- **Both judgement calls** (`joined_net` vs `net`; §9 unamended) are recorded as
+  PROPOSED with reasoning. The reviewer explicitly did not substitute its own
+  preference on either.
+
+> **WORKFLOW NOTE, opening-1's reviewer, verbatim:** *"No friction this time: the
+> brief's five focus areas mapped cleanly onto verifiable, reproducible
+> measurements (exact failing-test-name matches under three independent break
+> replications, and an independently-generated probe drawing for the
+> byte-identical claim), which made this review unusually fast to ground in
+> measurement rather than narrative — worth naming as the shape a good brief
+> takes."*

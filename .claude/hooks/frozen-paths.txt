@@ -16,10 +16,11 @@
 # (This block stood twice, verbatim. One copy removed by the M5 opening-1 lift,
 # which is the first commit to own this file since the duplication appeared.)
 #
-# LIFTED NOW, by James's ruling on BLOCKED 2 at the M4 close, for exactly one
-# change: crates/kicli/src/route/report.rs gains the joined-net contract field,
-# with research/wire-routing.md §8 amended in the same lane commit, and
+# Lifted once more, by James's ruling on BLOCKED 2 at the M4 close, for exactly
+# one change: crates/kicli/src/route/report.rs gained the joined-net contract
+# field, with research/wire-routing.md §8 amended in the same lane commit and
 # T18/T19's sibling-key surface migrated to the contract field. The entry is
-# tasks/M5/opening-1-joined-net-contract.md. RESTORED in the first commit after
-# that lane's merge — this is a lift window, not a removal.
-# crates/kicli/src/route/report.rs
+# tasks/M5/opening-1-joined-net-contract.md. The window was d4c0eb8 (lift) to
+# the merge at e4449ed, and it is CLOSED by this commit. The freeze continues,
+# and the next change needs its own ruling.
+crates/kicli/src/route/report.rs
