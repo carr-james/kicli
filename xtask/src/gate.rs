@@ -203,6 +203,37 @@ pub fn no_kicad_cli(arm: &Arm) -> Verdict {
     }
 }
 
+/// The verdict for an opt-in arm that will not run, or nothing when it runs.
+///
+/// `requested` is the `--corpus` flag. `oracle` says whether `kicad-cli` was
+/// found. An arm that always runs is never skipped here, whatever is asked.
+///
+/// The oracle arm's two skips are different answers to different questions,
+/// and the reader needs to tell them apart: nobody asked for it, against the
+/// tool it needs is not installed.
+#[must_use]
+pub fn skipped_before_running(arm: &Arm, requested: bool, oracle: bool) -> Option<Verdict> {
+    match arm.run {
+        Run::Always | Run::Tree => None,
+        Run::OnCorpusFlag => {
+            if requested {
+                None
+            } else {
+                Some(not_requested(arm))
+            }
+        }
+        Run::RidesCorpus => {
+            if !requested {
+                Some(not_requested(arm))
+            } else if oracle {
+                None
+            } else {
+                Some(no_kicad_cli(arm))
+            }
+        }
+    }
+}
+
 /// What an arm turns on, named as a reader would look for it.
 fn off(arm: &Arm) -> String {
     if let Some(feature) = arm.feature {
@@ -335,7 +366,7 @@ fn found_verdict<'a>(outcomes: &'a [(&'static str, Verdict)], name: &str) -> Opt
 
 #[cfg(test)]
 mod tests {
-    use super::{ARMS, Run, Verdict, no_kicad_cli, not_requested, summary};
+    use super::{ARMS, Run, Verdict, no_kicad_cli, not_requested, skipped_before_running, summary};
     use std::path::{Path, PathBuf};
 
     /// The workspace root, from this crate's manifest.
@@ -544,6 +575,67 @@ mod tests {
     }
 
     // --- The summary. ---
+
+    #[test]
+    fn an_opt_in_arm_runs_only_when_it_is_asked_for_and_its_tool_is_there() {
+        // All four combinations, for both opt-in arms. A selector that always
+        // skipped, always ran, or gave both arms the same answer fails here.
+        let corpus = named(super::CORPUS);
+        let oracle = named(super::ORACLE);
+
+        assert_eq!(
+            skipped_before_running(corpus, false, true),
+            Some(not_requested(corpus)),
+            "nobody asked for the corpus arm and it did not skip"
+        );
+        assert_eq!(
+            skipped_before_running(oracle, false, false),
+            Some(not_requested(oracle)),
+            "nobody asked for the oracle arm and it did not skip"
+        );
+        assert_eq!(
+            skipped_before_running(corpus, true, true),
+            None,
+            "the corpus arm was asked for and did not run"
+        );
+        assert_eq!(
+            skipped_before_running(oracle, true, true),
+            None,
+            "the oracle arm was asked for, kicad-cli is there, and it did not run"
+        );
+        assert_eq!(
+            skipped_before_running(corpus, true, false),
+            None,
+            "the corpus arm needs no kicad-cli and did not run without one"
+        );
+
+        // The one case that must name the tool rather than the flag.
+        match skipped_before_running(oracle, true, false) {
+            Some(Verdict::Skip { why, .. }) => assert!(
+                why.contains("kicad-cli is not on PATH"),
+                "the oracle arm skipped for the wrong stated reason: {why}"
+            ),
+            other => panic!("kicad-cli is absent and the oracle arm gave {other:?}"),
+        }
+    }
+
+    #[test]
+    fn an_arm_that_always_runs_is_never_skipped() {
+        for arm in ARMS {
+            if !matches!(arm.run, Run::Always | Run::Tree) {
+                continue;
+            }
+            for requested in [false, true] {
+                for oracle in [false, true] {
+                    assert!(
+                        skipped_before_running(arm, requested, oracle).is_none(),
+                        "arm `{}` always runs and was skipped at requested={requested} oracle={oracle}",
+                        arm.name
+                    );
+                }
+            }
+        }
+    }
 
     #[test]
     fn each_arm_reports_its_own_verdict() {

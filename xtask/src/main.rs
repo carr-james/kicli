@@ -74,12 +74,17 @@ fn run_check(corpus_requested: bool) -> ExitCode {
     let mut corpus_ran: Option<Verdict> = None;
 
     for arm in ARMS {
+        if let Some(skipped) = gate::skipped_before_running(arm, corpus_requested, oracle.is_some())
+        {
+            outcomes.push((arm.name, skipped));
+            continue;
+        }
         let verdict = match arm.run {
             Run::Always => {
                 header(arm.name);
                 verdict_of(cargo(arm.args, arm.env, &[]))
             }
-            Run::OnCorpusFlag if corpus_requested => {
+            Run::OnCorpusFlag => {
                 header(arm.name);
                 let verdict = run_corpus(arm, oracle.is_some());
                 corpus_ran = Some(verdict.clone());
@@ -88,11 +93,7 @@ fn run_check(corpus_requested: bool) -> ExitCode {
             // The oracle arm has no command of its own. It is the corpus run
             // carrying KICLI_TEST_KICAD_CLI, so it reports what that run
             // reported.
-            Run::RidesCorpus if corpus_requested && oracle.is_some() => {
-                corpus_ran.clone().unwrap_or(Verdict::Fail)
-            }
-            Run::RidesCorpus if corpus_requested => gate::no_kicad_cli(arm),
-            Run::OnCorpusFlag | Run::RidesCorpus => gate::not_requested(arm),
+            Run::RidesCorpus => corpus_ran.clone().unwrap_or(Verdict::Fail),
             Run::Tree => {
                 header(arm.name);
                 verdict_of(tree_is_unchanged(before.as_deref()))
