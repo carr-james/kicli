@@ -700,3 +700,40 @@ a measurement this task owed rather than a gate.
 **Diff scope, re-measured at hand-off** (`git diff --stat 78c4a21..HEAD`): 12
 files, and every one of them is named in the scope table at the top of this
 section.
+
+---
+
+## Tick — APPROVE
+
+**Reviewer verdict: APPROVE.** Recorded beside the tick per `CLAUDE.md`'s
+tick-review rule. Lane `c41edd4` (over `d825a88`, `329ca74`), base `78c4a21`,
+merged `e7d3a76`.
+
+**The review re-derived rather than re-read**, and the evidence of that is what
+makes the verdict worth recording:
+
+| Claim | How the reviewer settled it |
+|---|---|
+| the fixture's **96** | derived independently from §11.5 against `score.rs`: one crossing, weight 1, `per_wire` normaliser `1/max(1,10/10)=1`, raw `1.0`, `100·exp(−1/25)=96.08→96`. **Not aimed at** |
+| the ERC oracle | ran `kicad-cli sch erc --severity-all` on the committed fixture itself: **19 violations, exactly `{lib_symbol_issues: 12, power_pin_not_driven: 4, endpoint_off_grid: 3}`** — matching the entry |
+| the degenerate-fixture answer | verified `src/lint/rules/` is **empty** and `registry.rs` builds from that empty directory, so the entry's plain statement is factually true rather than a hedge |
+| **B3** (tiers swapped in `Gate::of`) | applied in its own verified scratch tree: **7 of 9 failed, 2 passed** — exact match |
+| **B6** (`>=`→`>`) | confirmed the pre-break hash matched the recorded good state, then broke it: **exactly one test failed**, `a_rule_below_its_saturation_passes_the_gate_and_still_scores` |
+| the normaliser move | `Normaliser::of`'s logic **untouched**, so `KI-LAY-003` and `KI-JCT-001` take identical values today. T3's pin has its assertions unchanged |
+| scope | 12 files, 2798 insertions, 8 deletions. **The four disclosed files are the complete set outside the IN list**; no hotspot but `MANIFEST` touched |
+| `invariants.rs` | **an assertion, not a weakening** — the diff adds an exact-match block (`assert_eq!(failed.len(), 1)`, `Invariant::GeometryOnGrid`, `faults.len() == 2`) rather than an exclusion for the new fixture |
+
+**B6 is the row worth keeping.** A break caught by **exactly one assertion**
+means that assertion is the only thing standing between this project and an
+off-by-one **in a gate**. It is the 5-of-10 boundary control in check 4, and it
+exists because the brief demanded the below-the-fraction direction as a separate
+check rather than folding it into the above-the-fraction one.
+
+**The reviewer's own methodology note, recorded because it is a real trap**: its
+first scratch extraction used a directory literally named `src`, which
+spuriously matched `the_four_way_rule_has_one_home.rs`'s path-component sweep
+(`any(|part| part == "src")`) and produced **two false FAILs unrelated to this
+diff**. It re-extracted under a neutral name, confirmed the suite green on both
+`lane-t4` and base `78c4a21`, and classified it as its own artefact before
+treating it as a finding — which is the environment-break-class discipline
+working exactly as the skill describes.
