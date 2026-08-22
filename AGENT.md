@@ -248,6 +248,77 @@ of the two you are holding.
 I /0000...0000 / sym=19 pwr=2 nets=12
 ```
 
+### `kicli sch pins`
+
+Where a symbol's pins are, and what may be connected to each one. **Read-only:
+it writes nothing.** Ask it before drawing a first wire onto a part, rather than
+inferring an offset and learning from a write command that the guess was wrong.
+
+```
+kicli sch pins R20
+```
+
+```
+# pins R20 Test:R  sheet=/13000001-0000-4000-8000-030000000000  at=46.99,107.95 angle=90 mirror=- grid=1.27  scope=symbol
+# P num name type at heading escape state
+P 1 ~ passive 43.18,107.95 -x 41.91,107.95 net=D0
+P 2 ~ passive 50.8,107.95 +x 52.07,107.95 free
+```
+
+The target is `REF` for every pin of a symbol, `REF.PIN` for one of them, or a
+symbol's identifier. **A target is required.** There is no whole-project form: a
+project's every pin is a flood, and `sch view` already lists the symbols.
+
+| Flag | What it does |
+|---|---|
+| `--free` | List only the pins nothing is joined to yet. |
+| `--stats` | Report the size of the answer in bytes. |
+
+| Field | Meaning |
+|---|---|
+| `num` | The pin number. `R20.2` is how every other command addresses it. |
+| `name` | The library's name for the pin. `~` means it has none. |
+| `type` | The electrical type: `passive`, `power_in`, `output`, and the rest. |
+| `at` | Where the pin connects — the point `--from-pin` resolves to. |
+| `heading` | The direction a wire must leave in: `+x`, `-x`, `+y`, `-y`. `*` is any. |
+| `escape` | **The first point a wire from this pin may reach.** |
+| `state` | One or more of the words below, always in this order. |
+
+| State word | Meaning |
+|---|---|
+| `free` | Nothing is joined to this pin. |
+| `net=NAME` | The pin is already on that net. |
+| `off-grid` | The pin is not on the placement grid, so **no wire may start here at all**. kicli refuses rather than moving somebody's pin. |
+| `blocked=HANDLE` | Something is one step out, so a route cannot get **past** the escape point. A one-segment wire *to* the escape point is still accepted; a `wire connect` through it is not. |
+| `crowded` | Three wire ends already meet here. A fourth is refused, so `wire connect` offsets its end by one grid step and reports the adjustment. |
+| `hidden` | The pin is drawn by nothing. A hidden power pin still connects. |
+
+**The escape point is the answer to "what will you accept?"** It is written in
+the same `x,y` form `--to-at` takes, so it goes straight back into a command
+with no arithmetic in between:
+
+```
+kicli wire draw --from-pin R20.2 --to-at 52.07,107.95
+```
+
+```
+routed R20.2 -> 52.07,107.95   via 1 segments, 0 corners, 1.27mm
+  cost 3 = length 1 + turns 0 + crossings 0 + text 0 + proximity 2
+  wires added: 1   junctions added: 0
++ W 905a7dc4 50.80,107.95..52.07,107.95
+checked: every invariant passed
+```
+
+A symbol with more pins than `view.max_bytes` allows answers with counts
+instead of records, and says every way to get the records back: name one pin as
+`REF.N`, narrow with `--free`, or raise the budget.
+
+```
+# pins J1 Probe:CONN  sheet=/00000000-0000-4000-8000-999999999999  at=101.6,101.6 angle=0 mirror=- grid=1.27  scope=symbol-summary  full=2127B budget=200B
+# pins=40 listed=40 free=40 reachable=40
+# name one pin as J1.N to see it, narrow with --free, or raise view.max_bytes
+```
+
 ## The commands that write
 
 Every command below changes one file and reports what it changed. The report is

@@ -1,4 +1,4 @@
-# Carried in from M4 — D2, nothing read-only will tell an agent where a pin is
+# Carried in from M4 — D2, nothing read-only will tell an agent where a pin is ✅
 
 *Migrated verbatim from the former `tasks/M5.md` at the M5 opening, by the
 boundary-package ruling that gives M5 one file per task. The text below is the
@@ -560,3 +560,65 @@ already shifts an `S` record of the connectivity view. The empty case is closed
 is not this lane's to close: fixing it in one view and not the other would leave
 one tool with two grammars. Recorded here so the next reader of either view
 finds it written down.
+
+
+---
+
+## Tick — APPROVE, 2026-08-22
+
+**Reviewer verdict: APPROVE.** Lane `lane-pin`, commit `ac23bbf`, base
+`a8f2057`, merged to `main` as `d031bed`. Pinned at start and re-checked at
+finish, unchanged.
+
+**Method**: three independent scratch copies via `git archive lane-pin | tar -x`,
+each verified against `git ls-tree -r --name-only lane-pin` (**340 files,
+identical listing**) before reading anything.
+
+### What the reviewer re-measured rather than read
+
+| Claim | Reviewer's own result |
+|---|---|
+| **the router is reused, not reimplemented** | read `view/pins.rs`: it calls `Terminal::of_pin`, `Obstacles::build(...).entering(...)`, `route::terminal::has_room`. **No parallel geometry.** |
+| **writes-nothing, falsified** | patched `cli/pins.rs` to add a `std::fs::write` into the read path; `asking_where_the_pins_are_leaves_the_project_byte_identical` failed exactly as claimed (`left: Some(6), right: Some(37325)`), while the control still passed |
+| **goal-state 2 round-trips through printed TEXT** | `the_printed_escape_point_is_accepted_by_wire_draw_first_time` spawns `kicli sch pins`, parses the escape token out of **stdout as text**, then spawns a **second** `kicli wire draw` process with that literal string. **Two processes, no shared in-process ancestor.** The companion control (`…moved_off_grid_is_refused`) guards against a degenerate pass. |
+| **the measured false positive** | built the binary and ran `wire connect --from-pin R20.1 --to-pin R21.2` on the fixture — it routed straight through `41.91,107.95` with no complaint, and `sch pins R20` now reports `net=D0` rather than `blocked` |
+| **the budget ceiling** | `pins_ceiling(pins) = 256 + 96·pins` is asserted, **is shown capable of failing** (`the_ceiling_is_capable_of_failing`, a 1-byte/pin formula the real answer must exceed), and the fallback is exercised at multiple budgets including the boundary |
+| **`command_surface.rs` owes nothing** | ran it on the clean lane tree: **22 passed, 0 failed**, file untouched — the entry's correction to the brief is right |
+
+### Break 6, and the reviewer went past the brief on it
+
+Forcing `net` to `None` failed **only** the new check
+(`a_pin_already_on_a_net_names_it_and_free_lists_only_the_others`), 1 of 15. The
+reviewer then **removed that test function and re-ran with the break still
+applied**: **all 14 remaining checks stayed green.**
+
+**That is a stronger result than the brief asked for.** Showing the new check
+fails proves the check works; showing the suite passes *without* it proves **the
+hole was real.** Those are different claims and only the second justifies the
+check's existence.
+
+### The sanctioned red, closed
+
+The reviewer confirmed the failure on the clean lane tree — **8 passed, 2
+failed**, with the exact messages the entry quotes — and `AGENT.md` untouched
+(`grep -n "sch pins" AGENT.md` → nothing). **Not weighed against the tick**, per
+its brief.
+
+**Paid at merge by the orchestrator, who owns `AGENT.md` as a merge hotspot.**
+The entry's measured block was applied verbatim at the position it names, and
+`cargo test -p kicli --test agent_doc` now reports **10 passed, 0 failed** —
+matching the entry's own prediction exactly.
+
+### Scope
+
+Exactly the declared set. `git diff a8f2057..lane-pin -- AGENT.md spec/SPEC.md
+Cargo.toml lib.rs build.rs command_surface.rs 'crates/kicli/src/lint/**'`
+returns **empty** — **no collision with the parallel `lint/` lane**, which was
+the live risk in this dispatch. The three additive deviations are each declared
+with a stated reason and each is mechanically necessary for the declared
+surface.
+
+> **WORKFLOW NOTE, the pin lane's reviewer, verbatim:** *"Everything needed for
+> review was present and consistent — entry, diff, and pre-declared RED/skip-hook
+> rationale for `agent_doc` all matched what re-measurement showed on a fresh
+> archive; no friction to report this cycle."*
