@@ -418,6 +418,21 @@ fn a_drawn_wire_answers_in_the_contract_and_in_the_mutation_result() {
         object["wire"]["status"], "routed",
         "the noun's key carries the contract: {object}"
     );
+    // `wire draw` was not asked to join anything, and the contract carries
+    // every key at every status — so the joined net is present and null. The
+    // text assertion above is the other half: no null, no line.
+    assert!(
+        object["wire"]
+            .as_object()
+            .expect("the contract is an object")
+            .contains_key("joined_net"),
+        "the key is there even where there is no net to name: {object}"
+    );
+    assert_eq!(
+        object["wire"]["joined_net"],
+        serde_json::Value::Null,
+        "wire draw reports no net: {object}"
+    );
     assert_eq!(object["wire"]["cost"]["total"], 44);
     assert!(
         object["invariants"].is_array(),

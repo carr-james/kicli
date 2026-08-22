@@ -23,6 +23,7 @@ invalid U1.14 -> R7.1
     "wires": [],
     "junctions": []
   },
+  "joined_net": null,
   "labels": null,
   "blocked_by": [],
   "reason": "the segment from (50.8,50.8) to (76.2,63.5) is diagonal",

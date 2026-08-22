@@ -83,8 +83,21 @@ impl Connected {
     }
 
     /// The net the command claims the two ends are now on.
+    ///
+    /// It is a field of the route contract, under the noun's own key, so this
+    /// reads it there and not beside it. **Presence is asserted before the
+    /// value**, because `as_str()` answers `None` for a null and for a key
+    /// that is not there at all, and the contract's rule is that the key is
+    /// there at every status. Without this the null arm below could not tell a
+    /// dropped key from a reported "nothing joined".
     fn claimed_net(&self) -> Option<&str> {
-        self.object()["net"].as_str()
+        let wire = self.wire().as_object().expect("the contract is an object");
+        assert!(
+            wire.contains_key("joined_net"),
+            "the contract dropped the joined net instead of nulling it: {}",
+            self.object()
+        );
+        wire["joined_net"].as_str()
     }
 
     /// The identifiers of the junctions the run wrote.
@@ -344,6 +357,14 @@ fn a_route_joins_the_two_pins_it_names() {
     // And the net the command claimed is the net the extractor found. A report
     // that is right about the connection and wrong about its name is what this
     // clause is for, so the two are compared rather than each checked alone.
+    //
+    // **The two sides share an ancestor, and the literal below is what stops
+    // that mattering.** Both run `connectivity::extract` over the written
+    // file — the command in its own process, this test in this one — so a
+    // break inside the extractor moves them together and the equality alone
+    // would see nothing. `SIG_A` is not the extractor's answer: it is the text
+    // of the label `two_resistors_one_named` wrote into the drawing, so the
+    // second assertion fails on exactly the breaks the first cannot see.
     let found = net_name_of(&sheet, "R1", "1");
     assert_eq!(
         run.claimed_net(),
@@ -557,6 +578,77 @@ fn kicad_agrees_about_the_route() {
     }
 }
 
+/// A performed proposal reports the net its labels made, like any other join.
+///
+/// **This arm had no behavioural check of its own until the joined net became
+/// a contract field.** `wire connect --auto-labels` renders inside
+/// `cli::edit::wire::perform`, which is shared with `wire draw --auto-labels`,
+/// and only the `wire draw` side was tested (`route_labels.rs`). The shared
+/// renderer is now told which ends to report a net for, and without this the
+/// `wire connect` side of that decision could be deleted with every check
+/// still green.
+///
+/// Nothing joins the two ends here but the name the two labels share, so the
+/// net the command reports is the extractor's answer about a join made out of
+/// text rather than out of wire — which is the case most likely to be got
+/// wrong by predicting instead of reading the file back.
+#[test]
+fn a_performed_proposal_reports_the_net_its_labels_made() {
+    let sheet = two_resistors_one_named("connect-performed");
+    let project = sheet.parent().expect("the drawing sits in a directory");
+    std::fs::write(
+        project.join("kicli.toml"),
+        "[routing]\nlabel_threshold = \"1G\"\n",
+    )
+    .expect("the settings file is writable");
+
+    let before = kicli_nets(&sheet);
+    assert!(
+        !before.contains(&net(&["R1.1", "R2.1"])),
+        "the two pins are not joined before the command runs: {before:?}"
+    );
+
+    let run = connect(
+        &sheet,
+        &["--from-pin", "R1.1", "--to-pin", "R2.1", "--auto-labels"],
+    );
+    assert_eq!(run.wire()["status"], "labels", "{}", run.object());
+    assert!(
+        !run.wire()["added"]["wires"]
+            .as_array()
+            .expect("the key is always there")
+            .is_empty(),
+        "the pair is performed on stubs, so something reached the file: {}",
+        run.object()
+    );
+
+    // The join is real, and the name the report gives it is the name the
+    // drawing now carries. The literal is the second arm: `R1_1` is
+    // `<reference>_<pin name>`, built by the label fallback from the drawing's
+    // own text, and it is not the extractor's answer — so a break inside the
+    // extractor that moved both sides together still fails here.
+    let after = kicli_nets(&sheet);
+    assert!(
+        after.contains(&net(&["R1.1", "R2.1"])),
+        "the labels did not join the two pins: {after:?}"
+    );
+    let found = net_name_of(&sheet, "R1", "1");
+    assert_eq!(
+        run.claimed_net(),
+        Some(found.as_str()),
+        "the claimed net is not the extractor's: {}",
+        run.object()
+    );
+    assert_eq!(found, "R1_1", "the pair is named after the pin it left");
+
+    if let Some(kicad) = oracle(&sheet) {
+        assert!(
+            lines(&kicad).contains(&net(&["R1.1", "R2.1"]).join(",")),
+            "KiCad does not report the join the labels made: {kicad:?}"
+        );
+    }
+}
+
 /// The pair-arm nobody runs by hand: a proposal writes nothing at all.
 ///
 /// A connection longer than `routing.label_threshold` is an answer rather than
@@ -578,10 +670,20 @@ fn a_connection_over_the_threshold_is_proposed_and_not_drawn() {
 
     let run = connect(&sheet, &["--from-pin", "R1.1", "--to-pin", "R2.1"]);
     assert_eq!(run.wire()["status"], "labels", "{}", run.object());
+    // Nothing was written, so nothing was joined — and the contract says so
+    // with a null rather than by dropping the key. `claimed_net` asserts the
+    // key is present before reading it, which is what makes this arm able to
+    // tell "reported nothing" from "reported nothing back".
     assert_eq!(
         run.claimed_net(),
         None,
         "nothing was written, so nothing was joined: {}",
+        run.object()
+    );
+    assert_eq!(
+        run.wire()["joined_net"],
+        serde_json::Value::Null,
+        "and it is null, not some other empty thing: {}",
         run.object()
     );
     assert_eq!(

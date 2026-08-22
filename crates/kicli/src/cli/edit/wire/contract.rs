@@ -48,8 +48,19 @@ pub fn render(report: &Report, grid: Iu) -> Rendered {
 }
 
 /// The text form.
+///
+/// **The joined net leads, ahead of the status line.** It is the answer to the
+/// question `wire connect` was asked — *what are these two ends on now?* — and
+/// it sat above the headline before it was a contract field, in the command
+/// layer that prepended it. Moving it into the renderer without moving it on
+/// the page keeps every byte an agent already reads, which is what
+/// `AGENT.md`'s worked examples show.
 fn text(report: &Report, grid: Iu) -> String {
-    let mut out = headline(report, grid);
+    let mut out = String::new();
+    if let Some(net) = &report.joined_net {
+        let _ = writeln!(out, "joined: net {net}");
+    }
+    out.push_str(&headline(report, grid));
     if let Some(reason) = &report.reason {
         let _ = writeln!(out, "  reason: {reason}");
     }
@@ -202,6 +213,7 @@ fn to_json(report: &Report, grid: Iu) -> Value {
             "wires": report.added.wires.iter().map(|uuid| uuid.0.clone()).collect::<Vec<String>>(),
             "junctions": report.added.junctions.iter().map(|uuid| uuid.0.clone()).collect::<Vec<String>>(),
         },
+        "joined_net": report.joined_net,
         "labels": report.labels.as_ref().map(label_pair),
         "blocked_by": report.blocked_by,
         "reason": report.reason,
@@ -327,6 +339,52 @@ mod tests {
             serde_json::Value::Null,
             "the key stays, so a caller never branches on its absence"
         );
+    }
+
+    #[test]
+    fn a_route_that_joined_nothing_prints_no_line_and_still_carries_the_key() {
+        let rendered = render(&worked_example(), GRID);
+        assert!(
+            !rendered.text.contains("joined:"),
+            "the text line is absent when there is nothing to say: {}",
+            rendered.text
+        );
+        // Presence and null are asserted apart, because a reader that only
+        // asks for the value cannot tell a null from a dropped key — and
+        // every-key-at-every-status is the rule being checked.
+        assert!(
+            rendered
+                .json
+                .as_object()
+                .expect("the contract is an object")
+                .contains_key("joined_net"),
+            "the key is there at every status: {}",
+            rendered.json
+        );
+        assert_eq!(
+            rendered.json["joined_net"],
+            serde_json::Value::Null,
+            "and it is null rather than absent"
+        );
+    }
+
+    #[test]
+    fn a_joined_net_leads_the_text_and_names_itself_in_json() {
+        let mut report = worked_example();
+        report.joined_net = Some("SIG_A".to_owned());
+        let rendered = render(&report, GRID);
+        // The line sits above the status line, which is where the command
+        // layer put it before it was a contract field. `AGENT.md` shows that
+        // order, so the whole first line is asserted rather than a substring.
+        assert!(
+            rendered.text.starts_with(
+                "joined: net SIG_A
+routed U1.14 -> R7.1"
+            ),
+            "{}",
+            rendered.text
+        );
+        assert_eq!(rendered.json["joined_net"], "SIG_A");
     }
 
     #[test]

@@ -290,6 +290,7 @@ JSON (`--output json`):
   "crossings": [ { "wire": "da5aa983", "net": "GND", "at": [152.4,88.9] } ],
   "adjusted": [ { "terminal": "R7.1", "by": [0.0,1.27], "why": "four-way" } ],
   "added": { "wires": ["uuid…","uuid…","uuid…"], "junctions": ["uuid…"] },
+  "joined_net": null,
   "alternatives_considered": 7 }
 ```
 
@@ -318,6 +319,34 @@ when nothing moved, of `{ terminal, by, why }`:
 
 `reason` continues to say the same thing in English for a person, and carries no
 load an agent must parse.
+
+**The net a connection joined is a field of this contract, and it is attributed
+at the same seam.** Ruled 2026-08-22 — James's ruling on BLOCKED 2 at the M4
+close, `tasks/M5/opening-1-joined-net-contract.md`. `wire connect` must answer
+*which net are these two ends on now*, and until this ruling the command layer
+answered it in a key beside the contract rather than inside it, so the contract
+did not describe the whole of a route's result. `joined_net` is now that answer:
+
+```
+joined: net SIG_A
+routed R1.1 -> R2.1   via 3 segments, 2 corners, 43.18mm
+  cost 70 = length 34 + turns 12 + crossings 20 + text 0 + proximity 4
+```
+
+- **It is read back out of the written file, never predicted.** What the two
+  ends are on is a property of the drawing kicli has just written, not of the
+  arithmetic that produced it, so it is taken from the file. It is therefore
+  not derivable from any other field here.
+- **In JSON it is `null` when nothing was joined, and the key is never absent** —
+  the same every-key-at-every-status rule the rest of this contract keeps. Three
+  cases give a null: a proposal, which wrote nothing to join anything into; a
+  connection between two ends that name no pin; and `wire draw`, which takes the
+  corners it was given and is not asked to join two ends.
+- **The text line is printed only when there is a name to print**, which is the
+  rule the `adjusted` line already follows. It sits **above** the status line —
+  the one thing in this contract that does — because it is the answer to the
+  question `wire connect` was asked, and because that is where the command layer
+  printed it before it was a field here.
 
 **A crossing names the wire it crossed, and the net is attributed at the seam.**
 The first draft of this contract reported a crossing as `{ net, at }`. The

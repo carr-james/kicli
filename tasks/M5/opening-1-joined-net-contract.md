@@ -364,3 +364,328 @@ evidence standing whatever it asserts.
   `edit_wire_connect.rs` (`oracle(...)` arms at lines 412, 454, 493 and 791) and
   keep running unchanged. Environment-gated, so it is the orchestrator's merged
   run that counts.
+
+---
+
+## Implementation record — lane `lane-o1b`, base `d4c0eb8`
+
+**Base verified as the lane's first action.** `git log --oneline -1` answered
+`d4c0eb8 freeze: lifted for exactly the joined-net contract field (M5
+opening-1)` and `git status --porcelain` was empty. No fast-forward was needed.
+The freeze lift was already in the main checkout, and `.claude/hooks/
+frozen-paths.txt` was **not touched by this lane**: `git diff --stat` names no
+such path. The hook did not refuse a single edit to `report.rs`, which is the
+other half of `BLOCKED 1`'s finding measured from the far side — with the main
+checkout's list lifted, the main checkout's script allows.
+
+### The field, and what it is called
+
+`Report::joined_net: Option<String>`, rendered as the JSON key `"joined_net"`
+and as the text line `joined: net NAME`.
+
+**PROPOSED — the key is `joined_net` and not `net`.** The sibling key it
+replaces was called `net`, so keeping that name would have been the smaller
+diff. Three reasons for the rename, and a ruling may reverse it:
+
+1. Every other field of this contract maps 1:1 onto its JSON key
+   (`blocked_by`, `alternatives_considered`, `length_mm`). Naming the Rust
+   field `joined_net` and the key `net` would be the only split in the module,
+   and `contract.rs`'s third stated rule is that the two forms use one
+   vocabulary.
+2. `net` already means something else one level down — `crossings[].net` — and
+   the two are different questions. `joined_net` cannot be misread for it.
+3. The move breaks every existing reader anyway (the key changes container),
+   so the rename costs a reader nothing extra and buys the disambiguation.
+
+### The shared renderer — the one real design decision, and what was chosen
+
+`perform()` renders inside itself and is shared by `connect_wire`'s
+`--auto-labels` arm and `draw_wire`'s. The net is read back **off disk after the
+commit**, so it cannot be computed by the caller before the call.
+
+**Chosen: `perform` gained a parameter, `joins: Option<[&End; 2]>` — "the two
+ends whose net to report".** `connect_wire` passes `Some([&request.from, &far])`;
+`draw_wire` passes `None`. `perform` fills `route.joined_net` after its commit
+and before its render.
+
+Rejected, with reasons:
+
+- **Return the unrendered `Report` and render in each caller.** It would put
+  the mutation report, the note and the text splice in two places, which is the
+  second-answer-waiting-to-disagree shape the contract module exists to avoid.
+- **A closure `&dyn Fn(&Path) -> Option<String>`.** Same effect, more
+  machinery, and it hides which ends are being asked about at the call site.
+
+**`wire draw` therefore reports `joined_net: null` always, and this is a
+contract statement rather than an omission.** `wire draw` takes the corners it
+was given; it is not asked to join two ends and does not answer for what it
+happened to connect. Recorded in `research/wire-routing.md` §8, in `AGENT.md`,
+and in the field's own rustdoc.
+
+### Goal-state item 4 — the text form, MEASURED rather than argued
+
+**The position did not move, and no `AGENT.md` text block needed regenerating.**
+This was measured, not read. The pre-change binary was built from `HEAD`
+(`d4c0eb8`) into a scratch directory by the `git archive` recipe in
+`falsification-control`, and both binaries were run against byte-identical
+copies of the same probe drawing:
+
+| arm | command (both binaries) | result |
+|---|---|---|
+| `wire connect`, routed | `kicli -q wire connect --from-pin R1.1 --to-pin R2.1 -p <copy>` | **byte-identical**, `shasum 86562b5ec652b05434fe6af17080f41be28600f2` on both |
+| `wire connect`, proposal | same, with `label_threshold = "1G"` | byte-identical |
+| `wire connect --auto-labels` | same, plus `--auto-labels` | byte-identical (leads `joined: net R1_1`) |
+| `wire draw` | `kicli -q wire draw --from-pin R1.1 --to-pin R2.1 --via 50.8,45.72 --via 76.2,45.72 -p <copy>` | byte-identical |
+| `wire draw --auto-labels` | same, plus `--auto-labels` | byte-identical |
+
+The JSON diffs over the same runs are exactly the intended change and nothing
+else — `wire connect`: `-  "net": "SIG_A"` at the top level, `+ "joined_net":
+"SIG_A"` inside `"wire"`; `wire draw` and the proposal arm: `+ "joined_net":
+null` inside `"wire"` (and `- "net": null` at the top level for the proposal).
+
+### A property the change EXPOSED, which is a finding
+
+`wire_output_contract.rs`'s `the_status_word_starts_the_first_line_of_every_form`
+claimed the status word starts the first line of every form. **That claim was
+already false for `wire connect` and the check could not see it**: the joined
+line was prepended by the command layer, above the whole result, and the
+renderer — which is all that test drives — never produced it. Now that the line
+is a contract field the exception is measurable, so it is stated and measured:
+`only_the_joined_net_may_come_before_the_status_word` asserts the first line is
+exactly `joined: net SIG_A`, that the status word starts the very next line, and
+that the same report with `joined_net = None` leads with the status word and is
+exactly one line shorter.
+
+This is the `author's vocabulary` kind from `falsification-control`: an
+instrument blind in the dimension its author was not driving.
+
+### `command_surface.rs:403` — confirmed, not changed
+
+`printed.starts_with("routed R1.1 -> R2.1   via 3 segments, 2 corners,
+35.56mm\n")` still passes: `wire draw` reports no net, so no line is printed.
+It was left exactly as it was, and it is the guard that catches the mistake of
+reporting a net from the shared renderer for the wrong verb.
+`route_labels.rs:396`'s `starts_with("labels U1.1 -> U2.2\n")` is the same guard
+on the `wire draw --auto-labels` arm, and is also unchanged and passing.
+
+### Checks migrated, with what each asserted before and after
+
+| check | before | after |
+|---|---|---|
+| `edit_wire_connect.rs` `Connected::claimed_net` (helper for three assertions) | `self.object()["net"].as_str()` — the top-level sibling key | asserts `wire()["joined_net"]` is **present**, then reads it. Presence and value are separate, because `as_str()` answers `None` for a null and for an absent key alike |
+| `edit_wire_connect.rs` `a_route_joins_the_two_pins_it_names` | `claimed_net() == Some(found)` where `found = net_name_of(sheet,"R1","1")` | unchanged in form; the shared-ancestor analysis is now written into the test beside it (below) |
+| `edit_wire_connect.rs` `a_connection_over_the_threshold_is_proposed_and_not_drawn` | `claimed_net() == None` — could not tell null from absent | `claimed_net() == None` **through the presence assertion**, plus `wire()["joined_net"] == Value::Null` |
+| `edit_wire_connect.rs` `connecting_to_a_net_takes_the_nearest_terminal` (line ~786) | `claimed_net() == Some("SIG")` | same literal, through the migrated helper |
+| `wire_loop.rs` step 2 | `pins["net"].as_str() == Some(named)` — top-level | `joined_net(&pins) == Some(named)`, a new helper that asserts key presence first |
+| `wire_loop.rs` step 3 | `to_net["net"].as_str() == Some("SIG")` | `joined_net(&to_net) == Some("SIG")` |
+| `wire_output_contract.rs` `KEYS` | 15 keys, no joined net | 16 keys, `"joined_net"` among them. The list is written out rather than derived, so a dropped key fails at every status |
+| the five `wire_contract_*.golden` files | no joined net | each gains `"joined_net": null` |
+| `wire_output_contract.rs` `the_status_word_starts_the_first_line_of_every_form` | unchanged | unchanged; joined by `only_the_joined_net_may_come_before_the_status_word` |
+
+Added, not migrated: `contract.rs`'s two renderer tests, `report.rs`'s
+no-wire-no-net assertion, `command_surface.rs`'s `wire draw` presence-and-null
+pair, and `wire_contract_routed_joined.golden` — because a field seen only as
+`null` in every golden has never been seen rendered, which is the reason that
+file's own module doc gives for the moved-terminal golden.
+
+### The degenerate-equality question, answered
+
+`a_route_joins_the_two_pins_it_names` compares the reported net with the
+extractor's. **The two sides share an ancestor.** The command computes its
+answer with `Hierarchy::load` + `connectivity::extract` + `net_of` in its own
+process; `net_name_of` computes the control with `Hierarchy::load` +
+`connectivity::extract` + `net_of` in the test's process. A break inside the
+extractor moves both and the equality sees nothing.
+
+**What stops that mattering is the literal on the line after it**:
+`assert_eq!(found, "SIG_A")`. `SIG_A` is not the extractor's answer — it is the
+text of the label `two_resistors_one_named` writes into the drawing — so it
+fails on exactly the breaks the equality cannot see. The analysis is now written
+into the test as a comment, so the next reader does not have to redo it.
+
+The second do-nothing arm the skill asks for is already in the file and across
+it: `connecting_to_a_net_takes_the_nearest_terminal` asserts `Some("SIG")` and `wire_loop.rs`
+step 3 asserts `Some("SIG")` against a different drawing, so a `joined_net` that
+returned a constant fails one of the three.
+
+### `AGENT.md`, regenerated and measured
+
+Two blocks were invalidated; the command that produced each is recorded.
+
+1. **The `wire draw` JSON example** (the `{ "status": "routed", "from": "R1.1"
+   … }` block). Regenerated from:
+
+   ```sh
+   kicli -q --output json wire draw --from-pin R1.1 --to-pin R2.1 \
+     --via 50.8,45.72 --via 76.2,45.72 -p <copy of the two-resistor drawing>
+   ```
+
+   The block was then **verified mechanically** against that run: parsed, the
+   elided `added.wires` substituted, and compared — `keys equal: True`,
+   `values equal: True`. The block's only change is the added
+   `"joined_net": null`.
+
+2. **The prose above the `joined: net #n5` sample**, which said the key was "a
+   top-level `"net"` key beside `"wire"`". Rewritten to name `"joined_net"`
+   inside `"wire"`, with the three null cases stated.
+
+**The two worked `wire connect` blocks (`joined: net #n1`, R30/R31) were NOT
+regenerated, and that is a measurement rather than an omission.** Their drawing
+is not reproducible from anything in the repository — the gap
+`tasks/M5/chore-8-agent-example-recipe.md` records. It did not have to be: the
+text form was proved byte-identical across the change on five arms (above), so
+nothing those blocks show has moved. **Reported as live evidence for chore-8**:
+the only reason this task could regenerate the `wire draw` block at all is that
+its drawing was recoverable by hand from `command_surface.rs`'s fixture, and the
+recipe had to be reconstructed by reading test source. The recipe used, in full,
+is the probe drawing `R1 @ (50.8, 54.61)`, `R2 @ (76.2, 54.61)`, both `R` with
+pins `1` and `2` — which reproduces the committed example's three wire handles
+`116592a7`, `7239e219`, `723e5aa0` exactly, so the reconstruction is confirmed
+rather than assumed.
+
+### `spec/SPEC.md` §9 — deliberately NOT amended
+
+**PROPOSED.** The entry's condition is "one sentence, only if §8 and §9 would
+otherwise disagree". Read in full: §9 states the algorithm, the obstacles, the
+cost model, the four-way rule, the label fallback, the status set and the
+crossing seam. **It says nothing whatever about the net a connection joined**,
+so §8 gaining the field contradicts no sentence there, and the condition is not
+met. Recorded rather than acted on, with the argument for the other reading so a
+ruling can take it: §9's opening sentence — *"returns the route plus a cost
+breakdown"* — could be read as an enumeration that is now short by one, and §9
+already carries one sentence about a caller-attributed field (the crossing net),
+so a reader could infer from §9 that the crossing net is the only one. One
+sentence beside that paragraph would close it.
+
+### Oracle standing — verified, not inherited
+
+This change is report-only: it moves where a net name is printed and touches no
+write path and nothing in `crate::connectivity`. `git diff --stat` names no file
+under `crates/kicli/src/connectivity/` or `crates/kicli/src/edit/`. The oracle
+arms that already gate these claims are unchanged and still present —
+`oracle(...)` at `edit_wire_connect.rs` lines 412, 454, 493 and 791 as banked,
+re-measured after the edit as lines 433, 475, 514 and 822. Environment-gated, so
+the orchestrator's merged run is what counts.
+
+### Reconnaissance, checked against the tree
+
+The banked reconnaissance was read as reference and every line relied on was
+re-measured at `d4c0eb8`. All of it held, with one correction:
+
+- **Correct**: the three `claimed_net` call sites; `wire_loop.rs:424`/`:449`;
+  no check asserts the text line (only `AGENT.md` reads it); `command_surface.rs`
+  is the `wire draw` guard; the write ordering; `spec/SPEC.md` §9's silence.
+- **Correct, and now strengthened rather than relocated**: `claimed_net` was
+  degenerate on the null arm.
+- **Incomplete**: it did not name `wire_output_contract.rs`, which asserts the
+  contract's key set against a literal list and holds five goldens. That file
+  did not assert the joined net before this change and does now, so it was in
+  scope under "files whose checks assert the joined net" — it just could not be
+  found by grepping for the old key.
+
+### Falsification table
+
+Good state committed before the first break, per `falsification-control` rule 1.
+Anchored to content hashes, not SHAs: `crates/kicli/src/cli/edit/wire/contract.rs`
+`8aac8d457bd9a46d3192a06d3b204c7d4130661a`,
+`crates/kicli/src/cli/edit/wire.rs` `78f744c3c3b6d08f5de7aa3237338b7f1260a5a2`,
+`crates/kicli/tests/edit_wire_connect.rs`
+`7d5858a2d454fd80815b9be669a35ac95913f6ca`. Every restore was checksummed
+against those before the next break; `cargo xtask check` is green on the
+restored tree.
+
+Run with `cargo test --no-fail-fast` — without it cargo stops after the first
+failing target and the table under-counts.
+
+| # | what was broken, exactly | what caught it |
+|---|---|---|
+| B1 | `contract.rs::to_json`: the whole line `"joined_net": report.joined_net,` deleted, so the key never appears | **15**, over five binaries: `every_status_answers_with_the_same_key_set`; all six golden checks; `contract.rs`'s two renderer tests; `a_route_joins_the_two_pins_it_names`, `a_connection_over_the_threshold_is_proposed_and_not_drawn`, `a_performed_proposal_reports_the_net_its_labels_made`, `connecting_to_a_net_takes_the_nearest_terminal`; `an_agent_wires_a_sheet_and_kicad_agrees`; `a_drawn_wire_answers_in_the_contract_and_in_the_mutation_result` |
+| B2 | same line, value replaced by `serde_json::Value::Null` — **the do-nothing arm**: key present, never a name | **6**: `a_joined_net_matches_the_golden`; `contract.rs::a_joined_net_leads_the_text_and_names_itself_in_json`; `a_route_joins_the_two_pins_it_names`; `a_performed_proposal_reports_the_net_its_labels_made`; `connecting_to_a_net_takes_the_nearest_terminal`; `an_agent_wires_a_sheet_and_kicad_agrees`. **The presence assertions do not fire**, which is why presence and value are asserted separately rather than through one `as_str()` |
+| B3 | two changes together in `contract.rs`: `to_json`'s value → the constant `Some("SIG_A".to_owned())`, and `text`'s conditional `writeln!` → an unconditional `writeln!(out, "joined: net SIG_A")` | **15**, including `only_the_joined_net_may_come_before_the_status_word`, `the_status_word_starts_the_first_line_of_every_form`, `an_empty_report_still_names_both_ends`, `auto_labels_writes_the_pair_and_says_so`, `command_surface`'s presence-and-null pair, and every null golden. **See the row below it: two checks stayed green and that is the finding** |
+| B4 | `contract.rs::text`: the `if let Some(net) … writeln!` block deleted; JSON untouched | **3**: `a_joined_net_matches_the_golden`, `contract.rs::a_joined_net_leads_the_text_and_names_itself_in_json`, `only_the_joined_net_may_come_before_the_status_word` |
+| B5 | `contract.rs::text`: the same block moved to **after** `headline` — exactly the position change `AGENT.md` would notice | the same **3**. This is goal-state item 4's guard, and it is the reason no `AGENT.md` text block had to be regenerated |
+| B6 | `wire.rs::draw_wire`: `perform(…, None)` → `perform(…, Some([&request.from, &request.to]))` — `wire draw` reporting a net through the shared renderer | **1**: `route_labels::auto_labels_writes_the_pair_and_says_so`, on `starts_with("labels U1.1 -> U2.2\n")`. `command_surface.rs`'s `starts_with("routed …")` did **not** fire, and that is correct rather than a hole: it drives the plain `wire draw` path, which never enters `perform` |
+| B7 | `wire.rs::connect_wire`: `drawn.report.joined_net = joined_net(…)` → `let _ = joined_net(…)` | **3**: `a_route_joins_the_two_pins_it_names`, `connecting_to_a_net_takes_the_nearest_terminal`, `an_agent_wires_a_sheet_and_kicad_agrees` |
+| B8 | `wire.rs::perform`: `route.joined_net = joins.and_then(…)` → `let _ = joins.and_then(…)` — the `wire connect --auto-labels` arm | **1, and only 1**: `a_performed_proposal_reports_the_net_its_labels_made`, added by this task. See below |
+
+#### B3's two green checks, diagnosed rather than skipped
+
+`falsification-control` says green is never good news. Two checks stayed green
+under B3 and they are different cases.
+
+- **`a_route_joins_the_two_pins_it_names` — case 2, the dangerous one, and it is
+  the degenerate-equality prediction confirmed by measurement.** That check
+  compares the reported net with `net_name_of(sheet,"R1","1")`, and the constant
+  the break substituted is `SIG_A`, which is that fixture's own answer. A
+  reported-equals-extractor check on one fixture cannot see a constant. What
+  does see it: `connecting_to_a_net_takes_the_nearest_terminal` and `wire_loop` step 3, which
+  assert the literal `"SIG"` on a different drawing, and
+  `a_performed_proposal_reports_the_net_its_labels_made`, which asserts `R1_1`
+  on a third. **The equality is only sound because those three literals stand
+  beside it**, and that is now written into the test as a comment.
+- **`a_joined_net_matches_the_golden` — case 1, a genuine no-op.** The new
+  golden's own value is `SIG_A`, so substituting the constant `SIG_A` changed
+  nothing that golden asserts. It fires on B1, B2, B4 and B5, so it is not a
+  blind instrument; it is simply the one case B3 could not move.
+
+#### B8 is the reason a check was added rather than only migrated
+
+**`wire connect --auto-labels` had no behavioural check at all** before this
+task — `route_labels.rs` drives `wire draw --auto-labels`, and
+`command_surface.rs` only reads the two `--help` texts. The migration put a
+decision on that arm (`perform`'s `joins` parameter), and B8 measured that
+deleting it left **every check in the repository green**. That is why
+`a_performed_proposal_reports_the_net_its_labels_made` exists, and its own
+falsification is B8: with it, the break fails; without it, the break is
+invisible.
+
+#### The environment break class
+
+The new golden `wire_contract_routed_joined.golden` derives from a probe drawing
+and therefore consumes generated identifiers — the class `falsification-control`
+says is not covered by source breaks. Second-directory run, by the skill's own
+recipe (`git archive HEAD | tar -x -C "$(mktemp -d)"`), of
+`wire_output_contract`, `edit_wire_connect` and `command_surface`: **11, 15 and
+22 tests, all passing**, under a scratch path this worktree never saw. The
+existing `without_generated_identifiers` normalisation is what makes that true,
+and the new golden inherits it unchanged.
+
+#### What is NOT watched by a committed check, said plainly
+
+**The `AGENT.md` JSON example block.** `agent_doc.rs` compares the document's
+command surface against `clap`, not its example output, so a wrong example
+passes every gate. This block was verified once, mechanically, against a real
+run (`keys equal: True`, `values equal: True`) — but that verification is a
+measurement in this entry and not a check in the tree. It is precisely what
+`tasks/M5/chore-8-agent-example-recipe.md` is for, and this is evidence for it.
+
+### Completion check, run in the lane worktree
+
+```
+cargo xtask check   ->  fmt pass, clippy pass, test pass, doc pass,
+                        deny pass, clean pass — all gates passed
+cargo test --test agent_doc        ->  10 passed; 0 failed
+cargo test --test command_surface  ->  22 passed; 0 failed
+```
+
+Corpus- and environment-gated arms do not count from inside a lane worktree;
+the orchestrator's merged run is what counts. The oracle arms in
+`edit_wire_connect.rs` were exercised here without `KICLI_TEST_KICAD_CLI`, so
+they skipped, and `the_oracle_says_when_it_did_not_run` is the check that says
+so rather than letting a silent run read as a passing one.
+
+### Scope, measured at hand-off
+
+`git diff --stat d4c0eb8 HEAD` names 16 files, every one on the brief's IN list:
+`AGENT.md`, `research/wire-routing.md`, `crates/kicli/src/route/report.rs`,
+`crates/kicli/src/cli/edit/wire.rs`, `crates/kicli/src/cli/edit/wire/contract.rs`,
+six files and five goldens under `crates/kicli/tests/`, one new golden, and this
+entry. **`.claude/hooks/frozen-paths.txt` does not appear**, which is the
+freeze-cycle evidence this task owes from the lane's side: the lift is
+`d4c0eb8`, the change is on top of it, and the restore is the orchestrator's
+first commit after the merge. `spec/SPEC.md` does not appear either, for the
+reason recorded above.
+
+The scope enumeration did **not** prove wrong: nothing outside the IN list was
+needed. One file the enumeration did not anticipate — `wire_output_contract.rs`
+— is inside it, under `crates/kicli/tests/**`.

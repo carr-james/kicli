@@ -24,6 +24,7 @@ blocked U1.14 -> R7.1
     "wires": [],
     "junctions": []
   },
+  "joined_net": null,
   "labels": null,
   "blocked_by": [
     "U1",

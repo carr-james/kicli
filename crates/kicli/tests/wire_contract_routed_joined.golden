@@ -1,7 +1,6 @@
+joined: net SIG_A
 routed R1.1 -> R2.1   via 3 segments, 2 corners, 35.56mm
-  reason: R2.1 would have made a fourth wire end meet at one point
   cost 44 = length 28 + turns 12 + crossings 0 + text 0 + proximity 4
-  adjusted: R2.1 by 0.00,1.27mm (four-way)
   wires added: 3   junctions added: 0
 ---
 {
@@ -38,16 +37,7 @@ routed R1.1 -> R2.1   via 3 segments, 2 corners, 35.56mm
     "proximity": 4
   },
   "crossings": [],
-  "adjusted": [
-    {
-      "terminal": "R2.1",
-      "by": [
-        0.0,
-        1.27
-      ],
-      "why": "four-way"
-    }
-  ],
+  "adjusted": [],
   "added": {
     "wires": [
       "<id-1>",
@@ -56,9 +46,9 @@ routed R1.1 -> R2.1   via 3 segments, 2 corners, 35.56mm
     ],
     "junctions": []
   },
-  "joined_net": null,
+  "joined_net": "SIG_A",
   "labels": null,
   "blocked_by": [],
-  "reason": "R2.1 would have made a fourth wire end meet at one point",
+  "reason": null,
   "alternatives_considered": 0
 }

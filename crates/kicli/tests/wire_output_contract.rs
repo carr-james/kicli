@@ -238,6 +238,21 @@ fn a_constructed_refusal() -> Report {
     report
 }
 
+/// A drawn route reported as the connection it joined, constructed.
+///
+/// **The joined net is constructed here, not measured.** Nothing in this test
+/// binary joins a net: the value is read back out of the written file by the
+/// `wire connect` verb, one layer above this renderer, and
+/// `crates/kicli/tests/edit_wire_connect.rs` is where a real one is measured
+/// against the extractor. This case exists because a field seen only as `null`
+/// in every golden has never been seen rendered — which is the same reason the
+/// moved-terminal case below has a golden of its own.
+fn a_route_that_joined_a_net(name: &str) -> Report {
+    let mut report = a_drawn_route(name);
+    report.joined_net = Some("SIG_A".to_owned());
+    report
+}
+
 /// A drawn route whose second terminal the router had to move, constructed.
 ///
 /// The drawn route above moves nothing, because taking the corners a caller
@@ -258,6 +273,14 @@ fn a_route_that_moved_a_terminal(name: &str) -> Report {
 #[test]
 fn a_drawn_route_matches_the_golden() {
     matches_golden("routed", &a_drawn_route("routed-golden"));
+}
+
+#[test]
+fn a_joined_net_matches_the_golden() {
+    matches_golden(
+        "routed_joined",
+        &a_route_that_joined_a_net("routed-joined-golden"),
+    );
 }
 
 #[test]
@@ -287,7 +310,7 @@ fn an_invalid_request_matches_the_golden() {
 ///
 /// The list is written out rather than derived, because a list derived from the
 /// renderer would agree with the renderer however wrong the renderer was.
-const KEYS: [&str; 15] = [
+const KEYS: [&str; 16] = [
     "added",
     "adjusted",
     "alternatives_considered",
@@ -296,6 +319,7 @@ const KEYS: [&str; 15] = [
     "cost",
     "crossings",
     "from",
+    "joined_net",
     "labels",
     "length_mm",
     "path",
@@ -469,6 +493,51 @@ fn the_status_word_starts_the_first_line_of_every_form() {
         );
         assert_eq!(rendered.json["status"], report.status.token());
     }
+}
+
+/// The one thing that may come before the status word, and nothing else may.
+///
+/// **This is a boundary the renderer did not used to have to keep.** The
+/// joined net was prepended by the command layer, above the whole result, so
+/// the loop above could say "every form" while `wire connect` printed a line
+/// before the status word anyway — the renderer never saw it and the check
+/// could not either. Now that the line is a contract field, the exception is
+/// stated where it can be measured: exactly one line may precede the status
+/// word, it is the joined net, and the status word starts the line after it.
+#[test]
+fn only_the_joined_net_may_come_before_the_status_word() {
+    let joined = render(&a_route_that_joined_a_net("routed-joined-order"), GRID);
+    let mut lines = joined.text.lines();
+    assert_eq!(
+        lines.next(),
+        Some("joined: net SIG_A"),
+        "the joined net leads: {}",
+        joined.text
+    );
+    assert!(
+        lines
+            .next()
+            .expect("the status line follows it")
+            .starts_with("routed"),
+        "the status word starts the very next line: {}",
+        joined.text
+    );
+
+    // And the same report with nothing joined leads with the status word, so
+    // the exception is the field's doing and not the renderer's shape.
+    let mut bare = a_route_that_joined_a_net("routed-joined-order-bare");
+    bare.joined_net = None;
+    let plain = render(&bare, GRID);
+    assert!(
+        plain.text.starts_with("routed"),
+        "no net, no line: {}",
+        plain.text
+    );
+    assert_eq!(
+        plain.text.lines().count(),
+        joined.text.lines().count() - 1,
+        "the joined net adds exactly one line and changes no other"
+    );
 }
 
 #[test]
