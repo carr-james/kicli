@@ -1,4 +1,4 @@
-# The seed catalogue and the ground-name list, researched (Phase 1, T5)
+# The seed catalogue and the ground-name list, researched (Phase 1, T5) ✅
 
 **Provenance: James's ratification and advisor rulings, M5 plan review,
 question 4.** Verbatim:
@@ -997,3 +997,47 @@ grounds down and negative supplies up — **was** given a falsifying control and
 it is recorded at **E2.3**: the reading was re-derived by rendering with
 KiCad's own plotter, where an inverted coordinate convention would have shown
 `GND` up and `+5V` down. It showed neither.
+
+
+---
+
+## Tick — APPROVE, 2026-08-22
+
+**Reviewer verdict: APPROVE.** Lane `lane-t5`, commit `088df33`, base `d4c0eb8`,
+merged to `main` as `0333151`. Recorded beside the tick. The reviewer had the
+entry and the diff, never the lane's narrative.
+
+**The reviewer re-derived rather than re-read**, which is the standard this
+entry needed, because a research deliverable's failure mode is a number that
+traces to nothing. Independently reproduced, from the sources rather than from
+this file:
+
+| Claim | How the reviewer checked it |
+|---|---|
+| the seed catalogue never existed | re-ran `git log --all --diff-filter=A -- "*catalogue*"` — identical output |
+| KiCad's power library | **parsed `power.kicad_sym` itself: 101 symbols, name-for-name identical; 89 up / 12 down; the twelve-name list character-for-character identical** |
+| the templates corpus | parsed all 19 template schematics: 93 power placements, the value distribution, **14 `lib_id`/`Value` mismatches in the exact eight files named**, 8 non-zero rotations at the named angles |
+| the three leading-`-` labels | found in exactly `API_Series-500.kicad_sch`, as claimed |
+| Lathrop | live URL 403s (confirmed); archive snapshot returns 200 at the cited URL; **every attributed sentence verbatim present in the text the reviewer fetched itself** |
+| Greenberg | fetched the doc — **8,339 bytes, exact match**; the DNP sentence present verbatim, confirming the inversion |
+| Sutherland | the six `3V3` spellings verbatim present |
+| the 24-of-28 tier count | **counted the SUPPORTED tier markers by hand — exactly 4** (`KI-HIER-001`, `KI-CONN-001`, `KI-JCT-001`, `KI-XING-001`), giving 24 by subtraction |
+
+**The tier count was checked for the specific way it could have been fake.** The
+brief warned that a table collapsing *tier* support into *existence* support
+would make the number mean something else. The reviewer confirmed the table
+genuinely distinguishes them — `KI-FLD-001` has an existence source while its
+tier is marked *"in tension"*, not supported.
+
+**On the one measurement-shaped claim**, the reviewer notes it went further than
+this entry did: *"the one 'measurement-shaped' claim (KiCad direction
+convention) got an explicit falsifying control at E2.3, and I additionally
+re-derived the same result directly from the library file myself, which is
+stronger than the render the entry describes."*
+
+**Scope: exact.** One file. `git diff d4c0eb8..lane-t5 -- spec/ research/`
+returns **zero lines** — both OUT paths untouched.
+
+**Not weighed, correctly:** the BLOCKED item and the Greenberg-video finding are
+James's, and the reviewer left both alone per its brief. It confirmed only that
+the video was not consulted, which is the standing ruling.

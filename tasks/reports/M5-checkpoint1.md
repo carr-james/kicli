@@ -93,6 +93,7 @@ Four of the ten (3, 5, 9, 10) are the orchestrator's own defects, self-filed.
 
 | Task | Lane | What landed | Evidence | Verdict |
 |---|---|---|---|---|
+| the seed catalogue and the ground-name list (`phase1-t5-seed-catalogue-and-ground-names.md`) | `lane-t5` | two PROPOSED answers with sources, **awaiting James** — plus two BLOCKED items and a correction to the orchestrator's brief | entry "Tick — APPROVE"; lane `088df33`; merge `0333151` | **APPROVE** |
 | the obstacle walk's missing check (`chore-7-obstacle-walk-check.md`) | `lane-c7` | one test in `route_obstacles.rs`, **no source change** — the third triage class's first worked example | entry "Tick — APPROVE"; lane `94eae37`; merge `5fede1b` | **APPROVE** |
 
 ---
@@ -232,6 +233,30 @@ unrelated commit, not through the check.
 
 *Recommendation: accept, together with item 1 — one section, both effects.*
 **Not applied.**
+
+**6. A tick reviewer's scratchpad is not private, and it contained the
+implementer's own downloaded sources.** Full measurement in Verification
+integrity, above. The reviewer of T5 was given a scratchpad already holding
+`lathrop.txt` and `hackaday.html` — the files the T5 *implementer* had fetched
+while writing the entry under review.
+
+**The danger is precise**: a reviewer verifying "is this quote really in
+Lathrop?" by opening a `lathrop.txt` it did not download is checking the entry
+against the entry's own working copy. It would look identical to a real
+verification and would confirm anything the implementer had already convinced
+itself of. **The whole point of a fresh-context reviewer is defeated by a shared
+filesystem.**
+
+*Recommendation: accept, as a line in `tick-reviewer.md`* — a reviewer treats
+its scratchpad as **contaminated**, fetches every external source itself under
+filenames it chooses, and never reads a file it did not create. It cost this
+reviewer nothing to do; it noticed unprompted, and the next one may not.
+
+Worth pairing with a second, cheaper measure: **the orchestrator gives each
+subagent a scratchpad path it creates fresh per dispatch**, which is the
+orchestrator's own instrument and needs no ruling. Applied going forward.
+
+**Not applied** to `tick-reviewer.md` — agent definitions change by ruling.
 
 **5. `cargo xtask check` reports "all gates passed" without running the corpus
 arm.** Full measurement in Verification integrity, above. `CLAUDE.md` requires
@@ -591,6 +616,36 @@ is the only tool hook; further hooks require a triggering incident."* This is a
 triggering incident, but the cheaper fix (b) is available and untried, and a
 second hook should not be spent on a problem a brief pattern solves. If (b) is
 applied and the failure recurs, *that* is the incident that earns the hook.
+
+### A reviewer's "private" scratchpad already held the implementer's artefacts
+
+**WORKFLOW NOTE, T5's tick reviewer, verbatim:**
+
+> *"The scratchpad directory handed to me (`.../3d3843d1-.../scratchpad`) was **not actually empty/private** — it already contained files (`hackaday.html`, `poly.html/.txt`, `lathrop.txt`, `extract.py`, and several subdirectories) I did not create, apparently left by earlier work under the same session ID. This is exactly the shared-scratchpad collision the review protocol warns about; I did not rely on any pre-existing file as evidence and re-fetched everything myself under filenames I chose, but the harness's claim that this directory is "session-specific... and can generally be used without permission prompts" did not hold in practice and should not be trusted at face value on future reviews."*
+
+**This is a verification-integrity finding, not a tidiness one, and it is the
+most serious thing in this area.** Look at the filenames: `hackaday.html`,
+`lathrop.txt` — **those are the T5 implementer's own downloaded sources.** The
+reviewer whose job is to check T5's claims against the world was handed a
+directory pre-loaded with the implementer's copy of that world.
+
+**A reviewer that had read `lathrop.txt` instead of fetching Lathrop would have
+"independently confirmed" the entry against the entry's own working files.**
+That is a shared-ancestor failure — the exact class the
+`falsification-control` skill exists for — arriving through the *harness* rather
+than through a test's construction, where no rule in this project was looking
+for it.
+
+**The control held, and it held because the reviewer was suspicious rather than
+because anything stopped it.** It re-fetched every source itself under filenames
+it chose. Nothing in the tick-review brief, the `tick-reviewer` definition, or
+the skills told it to; it noticed the directory was dirty and drew the right
+conclusion unprompted.
+
+*Filed as PROPOSED 6.* **This is the strongest candidate in this session for a
+rule rather than a note**, because the failure is invisible when it happens: a
+review that quotes the implementer's cached copy looks exactly like a review
+that fetched the source.
 
 ### The orchestrator committed PROPOSED 10's defect again, within the hour of promoting the rule against it
 
