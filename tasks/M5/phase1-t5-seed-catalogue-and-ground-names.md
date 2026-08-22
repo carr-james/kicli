@@ -1041,3 +1041,154 @@ returns **zero lines** — both OUT paths untouched.
 **Not weighed, correctly:** the BLOCKED item and the Greenberg-video finding are
 James's, and the reviewer left both alone per its brief. It confirmed only that
 the video was not consulted, which is the standing ruling.
+
+# E7 — the vendored snapshot (lane snap)
+
+**Provenance: James's ruling on BLOCKED 2, checkpoint 1 review** — *"The
+retrieval is SNAPSHOTTED into the repo (dated, with source URL) so the citation
+cannot drift"*. Everything measured below is **measured, lane `lane-snap`,
+2026-08-22**, and is a **second independent retrieval** of the same source, not a
+re-reading of E4.
+
+## E7.1 Where the snapshot landed, and the retrieval facts
+
+| File | What it is |
+|---|---|
+| `research/snapshots/greenberg-schematic-checklist-2026-08-22.md` | the snapshot: provenance header, verbatim body, comments fenced separately, stated rendering losses |
+| `research/snapshots/greenberg-schematic-checklist-2026-08-22.source.txt` | the byte-exact plain-text export, vendored unaltered |
+| `research/snapshots/README.md` | what the directory is; a snapshot is never edited, a new retrieval is a new dated file |
+
+Retrieval 1, the primary artefact:
+
+- URL `https://docs.google.com/document/d/1gCPILcrdGZJjRzIDSL-b3ezVReeK5S-7raeub1RohyE/export?format=txt`
+- method `curl -sS -L`, anonymous, no auth
+- **HTTP 200**, **8,339 bytes**, MD5 `e04ed36a3066374a7e02e4224adfc109`
+- UTF-8 with BOM, CRLF endings, no trailing newline
+
+Retrieval 2, supplementary, taken **only** to recover what the text export drops
+(hyperlink targets and character emphasis) and contributing no rule text:
+same document, `?format=html`, **HTTP 200**, **20,782 bytes**, MD5
+`2ebb2f516ca7092a79c1fb24ac99a4cb`.
+
+**The KiCon video was not consulted**, per James's standing round-6 ruling. The
+artefact here is the published text checklist, which is what §8 Q2 named.
+
+### E7.1.1 Falsification of the snapshot's fidelity claim
+
+The snapshot asserts its body is byte-identical to the retrieval. That assertion
+is checked by extracting the fenced blocks back out of the `.md` and hashing
+them, and the check is **shown capable of failing twice over**:
+
+- **It failed naturally on the first build.** The source's last line has no
+  trailing newline, so the closing fence glued onto it, the fence broke, and the
+  extraction swallowed the document tail. Caught by the probe, not by eye, and
+  repaired.
+- **It was then failed deliberately.** One word in the snapshot body was mutated
+  (`descriptively named.` -> `descriptively NAMED.`) and the probe's digest
+  changed from `87d0784e22f4360e0654dfef71f6d42f` to
+  `182c780b1e1b53a674f0a6291a4baf69`.
+
+Passing state: extracted body hashes to `87d0784e22f4360e0654dfef71f6d42f`,
+equal to the retrieval under exactly three declared normalisations (BOM stripped,
+CRLF to LF, one trailing newline added). Those three are named in the snapshot
+itself rather than left silent.
+
+The absence findings in E7.3 rest on greps whose harness is likewise shown live:
+the same loop that returned zero for `junction`, `PDF`, `mono`, `one page`,
+`per sheet`, `title` and `legib` returned **hits** for `cross` (3) and `DNP` (1).
+A probe that can only return zero proves nothing; this one cannot.
+
+## E7.2 Fidelity control against E4.2's retrieval — content matches, the counts do not
+
+**The document has not drifted.** E4.2 recorded HTTP 200 and 8,339 bytes; this
+retrieval is HTTP 200 and 8,339 bytes. Identical.
+
+**E4.2's structural count is nonetheless wrong.** It records *"55 checklist items
+in 8 groups"*. Counted structurally from the identical bytes:
+
+- **9 group headings, not 8**
+- **47 checklist items, not 55**
+- 56 bullet lines in total (9 + 47)
+
+Since the bytes are identical there is nothing a drift could have changed, so
+this is a counting error and not a source change. `55` and `8` are consistent
+with one off-by-one — the first group heading absorbed into the title, leaving
+55 of 56 bullets and 8 of 9 headings. **Corroborated independently** from the
+HTML export, where bold marks all nine group headings and only two items:
+"No unapproved errors OR warnings in the ERC." and "Your schematic is peer
+reviewed by at least one person not involved in the design." Per group:
+Visual Design Best Practices 12, Schematic Symbols 3, Part values 5, Circuit
+Gotchas 8, Design for Test 4, Design for Fail 5, Electrical Rule checks 2, BOM
+Integration 3, "You're Almost Done" checks 5.
+
+The correction is recorded here beneath E4.2 rather than over it: E4.2 is left
+untouched, and how the number went wrong is what a later reader needs.
+
+## E7.3 Row-by-row verdict on E4.3
+
+**All thirteen rows re-checked against this lane's own retrieval. The headline
+holds: five attributions are unsupported, and E4.3's five names are the right
+five.** Three rows carry corrections and none reverses a verdict.
+
+| # | E4.3 row | This lane's verdict |
+|---|---|---|
+| 1 | power direction `KI-FLOW-001` | **CONFIRM supported.** Correction: "Always" is *not* emphasised in the source; the boldface is E4.3's. The word is the author's, the emphasis is not. Verdict unaffected. |
+| 2 | MFR/MPN `KI-DOC-001` | **CONFIRM supported.** Quote exact (source uses curly quotes). |
+| 3 | datasheet `KI-DOC-002` | **CONFIRM supported only as optional.** "Bonus points" is likewise not bold in the source, but the phrase is optional-framing on its own words, so the verdict does not lean on the typography. |
+| 4 | version/date `KI-DOC-003` | **CONFIRM**, including *"`title` has no source"* — `title` returns **0 hits** across the whole rule body. **Addition:** E4.3 omits a second supporting item, *"If this is a revision, record changes to the schematic in a table or in nearby documentation."* |
+| 5 | purpose notes, voltage ranges `KI-DOC-004` | **CONFIRM, and the support is broader than E4.3 shows.** E4.3 cites two items; there are **four**. The two uncited: *"Functional blocks are clearly labeled (plenty of whitespace around it, or maybe even a box)."* and *"All connectors have text that describes where they go, and describes signals (voltage, current, names)."* |
+| 6 | left-to-right flow `KI-FLOW-002` | **PARTIAL DISAGREEMENT — see PROPOSED 1.** |
+| 7 | named significant nets `KI-LBL-002` | **CONFIRM supported.** Quote exact. |
+| 8 | crossings `KI-XING-001` | **CONFIRM supported.** Note the source's own hedge — *"avoid crossing net wires **as possible**"* — which is advisory language, not an absolute. |
+| 9 | 4-way junctions `KI-JCT-001` | **CONFIRM absent.** `junction`, `4-way`, `four-way`, `T-junction` all return 0 hits in the rule body. Strike the citation. |
+| 10 | explicit-over-label `KI-LBL-001` | **CONFIRM absent and inverted — and E4.3 understates it.** E4.3 cites only the net-stubs item, which is scoped to single-pin stubs. A second and more direct inversion goes uncited: *"Power supplies use supply symbols (not wires) with useful names."* — the checklist explicitly prefers the label-like construct **over** wires. |
+| 11 | mono-PDF legibility `KI-TXT-002` | **CONFIRM absent.** `PDF`, `print`, `mono`, `grey`, `gray`, `colou`, `legib` all return 0 hits. Strike the citation. |
+| 12 | minimise DNP `KI-DNP-001` | **CONFIRM unsupported — strike the citation. PARTIAL DISAGREEMENT on "recommends the opposite": see PROPOSED 2.** |
+| 13 | "one page, one idea" `KI-LAY-002` | **CONFIRM absent.** `one page`, `one idea`, `per page`, `per sheet` all return 0 hits. Strike the citation. |
+
+**PROPOSED 1 (row 6, `KI-FLOW-002`).** E4.3 marks left-to-right flow "supported"
+on two quotes, and on a second reading neither quite carries a *sheet-level* flow
+rule. *"All symbols are schematic symbols, not packages (inputs on left, outputs
+on right, power on top and bottom)"* is about **pin arrangement within a symbol**,
+which is a different claim from how a sheet reads left to right. *"Data flow
+(inputs, outputs, requirements) are clear and labeled"* requires clarity and
+labelling, **not a direction**. Recommendation: keep the Greenberg citation but
+**downgrade it to weak/partial** rather than striking it, and do not let it carry
+a left-to-right *direction* requirement on its own. Lower stakes than rows 9–13
+and it does not change the "five unsupported" headline.
+
+**PROPOSED 2 (row 12, `KI-DNP-001`).** The strike is right; the wording overshoots.
+The source item is *"Add required cable or required accessory part numbers as
+text, or add as Do Not Place (DNP) components if you want them to show up in the
+BOM."* — that endorses DNP for **one narrow purpose**, getting *required*
+accessories into the BOM. It is not an endorsement of just-in-case or
+speculative parts, which is what `KI-DNP-001` penalises. So the checklist does
+not *"recommend the opposite"* so much as **carve out a legitimate DNP use the
+rule would catch as a false positive**. Recommendation: strike the Greenberg
+citation as E4.3 says, and separately treat the required-accessory case as a
+**candidate exemption** for `KI-DNP-001` rather than as evidence against it.
+That is the more useful finding of the two.
+
+## E7.4 What the snapshot recovered that the text export had lost
+
+Recorded because it is the reason the snapshot is worth more than the URL, and
+because a Phase 3 lane should not have to re-fetch to get it:
+
+- Two hyperlink targets the `?format=txt` export drops: the capacitor-derating
+  reference *"also see this"* -> <https://github.com/CDFER/Ceramic-Capacitor-Derating>,
+  and *"See also Checklist for PCB Layout"* -> a **sibling Greenberg checklist**
+  for PCB layout, document `1rTR0l9Wx3Xt49cGbwR0zIWP6VN6aWhkTXeV7VV9wQNA`. That
+  sibling is **not** retrieved or snapshotted here; it is out of this lane's
+  scope and is flagged as a possible future source, not consulted.
+- The author's own emphasis, which the text export flattens entirely: exactly
+  two rules are bold (the ERC item and the peer-review item). If a Phase 3 lane
+  wants author-weighted tiers, those two are the only ones the author marked.
+
+## E7.5 Confirmation of E4.4
+
+**E4.4 is confirmed.** The comments `[a]`–`[j]` are present in this retrieval,
+they are third-party reader comments, and they are not Greenberg's rules. In the
+snapshot they are fenced under a heading that says so in terms. Their inline
+anchors also appear **inside the body text** (`Checklist[a][b]`, `your user[h][i]`)
+and are left unaltered there as retrieved, since removing them would edit the
+snapshot.

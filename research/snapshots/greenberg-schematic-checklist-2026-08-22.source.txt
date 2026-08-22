@@ -1,0 +1,119 @@
+﻿Checklist[a][b] for Schematics v2026-02-15
+Andrew Greenberg - http://github.com/andrewgreenberg
+
+
+* Visual Design Best Practices[c][d][e][f][g]
+   * Power supplies use supply symbols (not wires) with useful names.
+   * Positive supplies point up, ground and negative supplies point down. Always.
+   * All important nets are descriptively named.
+   * Net “stubs” (nets visually connected to only one pin) use an “off-sheet” or “Global” type of label with the correct In/Out/Bidirectional flag shape and cross reference info (sheet / location if possible).
+   * Functional blocks are clearly labeled (plenty of whitespace around it, or maybe even a box).
+   * Functional blocks have text that describes what they do and their requirements (e.g., Vbatt to 3.3 V @ 1 A switching power supply”).
+   * There's a frame around the schematic.
+   * It's clear where your power is coming from and what the power requirements are (V/I).
+   * Data flow (inputs, outputs, requirements) are clear and labeled.
+   * All connectors have text that describes where they go, and describes signals (voltage, current, names)..
+   * Route wires at a consistent distance from each other and avoid crossing net wires as possible.
+   * Groups of nets above about ≥ 4 nets collected into buses.
+* Schematic Symbols
+   * All symbols are schematic symbols, not packages (inputs on left, outputs on right, power on top and bottom).
+   * Pins have correct electrical rule check (ERC) direction (inputs, outputs, passives, etc).
+   * Components with symbolic shapes use those shapes (e.g, opamps are triangles).
+* Part values
+   * Capacitors have the appropriate voltage (usually ≥ 2x working voltage, also see this) and specify dielectric type if necessary.
+   * Special case capacitors marked with power and tolerance.
+   * Power dissipation checked on all resistors.
+   * Special case resistors marked with power and tolerance.
+   * Layout features that are circuit elements (e.g., copper inductor) are labeled in the schematic.
+* Circuit Gotchas
+   * MOSFETs oriented correctly WRT the body diode (!), with note if intentionally forward conducting.
+   * Check IC part numbers reflect the correct package type.
+   * Small, low ESR (e.g., ceramic) bypass capacitors on all IC supplies (check datasheet for values).
+   * Check voltage inputs and outputs match across power domains (e.g., 5V to 3.3V).
+   * Check that powered-off  domains are not phantom powered by their inputs from other circuits (including test circuits, like UARTs).
+   * Check for UART TX/RX swaps (TX to RX, RX to TX) and name with source, e.g. MCU_TX.
+   * Check for pull-up/down resistors on open collector/drain outputs (e.g.,  I2C lines).
+   * Check for required pull-up/down resistors to set nets in a default state at power up.
+* Design for Test
+   * Place pads or connector for programming your ICs.
+   * Place test points on critical signals, especially power and ground and reset lines.
+   * Check the PCB side (front/back) for  SMT test points, or use through-hole test points. Double check the board side works for  your programmer / bed-of-nails tester / programming jig.
+   * Add debugging hardware (e.g., LEDs, UART connectors, jumpers, scope probe points, etc).
+* Design for Fail
+   * Group components in separable modularly powered blocks and use zero ohm resistors or cuttable jumpers to disconnect (especially for switching power supplies!)
+   * Unused pins (especially GPIO) should  go to usable test points. Consider adding some random  pull-up and pull-down resistors connected to a test point on the board, too.
+   * Consider somehow encoding your PCB hardware revision in hardware (GPIO pullups, etc).
+   * UART (serial port) TX/RX are always mixed up, triple-check them. Also consider cuttable jumpers here.
+   * Consider over-voltage/ polarity input protection if you or your user[h][i] can screw this up.
+* Electrical Rule checks
+   * No unapproved errors OR warnings in the ERC.
+   * All important excluded errors/warnings have a comment on why they’re approved.
+* Bill of Material (BOM) Integration
+   * Add “MFR” (Manufacturer) and “MPN” (Manufacturer’s Part Number) to all components as attributes.
+   * Bonus points for adding a distributor, distributor part number, description, and datasheet link.
+   * Add required cable or required accessory part numbers as text, or add as Do Not Place (DNP) components if you want them to show up in the BOM..
+* “You’re Almost Done” checks
+   * Your schematic is peer reviewed by at least one person not involved in the design.
+   * Check that your specialized parts are in stock at a distributor.
+   * Re-run ERC and double check your approved errors, looking for accidentally approved errors.
+   * If this is a revision, record changes to the schematic in a table or in nearby documentation.
+   * Update your schematic version and/or date [j].
+
+
+See also Checklist for PCB Layout
+
+
+Please comment on this checklist using Google Doc Comments!!
+
+
+[a]the checklist is great, and we have your video + presentation to go with it, but I guess a 'working document/page/blog/presentation' is needed properly explaining the rationale, e.g. https://blog.poly.nomial.co.uk/2025-08-10-creating-high-quality-electronics-schematics.html (but kept up-to-date)
+[b]i just also realized it's two checklists in one. For one, it's a checklist on 'improving readability' as per your presentation at KiCon. The other is 'general design guidelines' which are in itself important, but a different topic maybe?
+[c]Next, someone else made a blogpost about this as well https://blog.poly.nomial.co.uk/2025-08-10-creating-high-quality-electronics-schematics.html
+
+
+where the following points make a lot of sense too, which helps with the visual bits (maybe less on the reading bit ...)
+
+
+1. Stick to the grid
+
+
+2. Avoid small and unnecessary turns
+
+
+3. No random angles
+
+
+6. Avoid spaghetti
+
+
+7. Symbols are logical, footprints are physical (you have this, but I think the important point is, that its often preferably to make your package match its use-case e.g. if your uart is on pins 2 and 6, re-organize these pins on your package to have them together. imo kicad should become better in this, but this might be a hard problem)
+
+
+8. Route out of pins, not across pins
+
+
+9. Label the purpose of switches, LEDs, and connectors (generally goes with your add lots of comments, but this makes it more concrete (for these parts))
+
+
+10. Give yourself space -> Don't run wires through text (you cover the space part)
+
+
+11. Be logical about where you place things
+
+
+Btw, not a fan of
+14. Decide on a net naming convention and stick to it
+
+
+In that yes, of course he's right, but everybody has their own convention. Since this is about KiCAD, stick with the KiCAD convention ;)
+[d]My own question as a 'novice' PCB designer. Should decoupling capacitors that are close to the IC be connected to the symbol power inputs directly, or placed elsewhere on the schematic separately? On one hand it shows intent clearer (these caps should be close to the IC), but on the other it can be a bit messier in the schematic
+[e]Olliver S. shared a nice link to a list of guidelines. #11 addresses your question. 
+https://blog.poly.nomial.co.uk/2025-08-10-creating-high-quality-electronics-schematics.html
+[f]I missed that, thanks Brandon!
+[g]I think we can do better! While all mentioned points are important!
+
+
+First, we should use (SI) version of RKM https://en.wikipedia.org/wiki/RKM_code for reference designators (SI support was later added avoiding the painful eyesore of '4K7 by using 4k7, which types easier to boot).
+[h]Further more, on refdes's while I get that on the other side of the pond the squigly resistor symbol is preferred, but the square euro one has as an advantage you can put the refdes in the box. this works well up until R999 (from a size point of view) What's your opinion on that?
+[i]That's fine, I don't have a big opinion either way. I joke about "freedom symbols" but both have advantages.
+[j]Here is where I prefer automation. I use some tools https://gitlab.com/ci-includes/kici (made by me) to do a lot of things via 'a software developer flow' e.g. commits, tags, generation etc.
