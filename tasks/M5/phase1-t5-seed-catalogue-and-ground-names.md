@@ -1041,3 +1041,253 @@ returns **zero lines** — both OUT paths untouched.
 **Not weighed, correctly:** the BLOCKED item and the Greenberg-video finding are
 James's, and the reviewer left both alone per its brief. It confirmed only that
 the video was not consulted, which is the standing ruling.
+
+# E7 — the vendored snapshot (lane snap)
+
+**Provenance: James's ruling on BLOCKED 2, checkpoint 1 review** — *"The
+retrieval is SNAPSHOTTED into the repo (dated, with source URL) so the citation
+cannot drift"*. Everything measured below is **measured, lane `lane-snap`,
+2026-08-22**, and is a **second independent retrieval** of the same source, not a
+re-reading of E4.
+
+## E7.1 Where the snapshot landed, and the retrieval facts
+
+| File | What it is |
+|---|---|
+| `research/snapshots/greenberg-schematic-checklist-2026-08-22.md` | the snapshot: provenance header, verbatim body, comments fenced separately, stated rendering losses |
+| `research/snapshots/greenberg-schematic-checklist-2026-08-22.source.txt` | the byte-exact plain-text export, vendored unaltered |
+| `research/snapshots/README.md` | what the directory is; a snapshot's body is never edited, a new retrieval is a new dated file |
+
+**Disclosed: the brief named two files and this lane wrote three.** The extra
+one is the vendored `.source.txt`. It is **inside** the declared IN scope, which
+is the glob `research/snapshots/**` (new files only), so this is a disclosure and
+not a scope excess — but the brief enumerated its two expected files, and a lane
+that adds a third says so **in the record**. It was added because a digest that
+can only be re-derived by re-fetching the URL is not much of a defence against
+the URL changing; with the raw export vendored, every integrity claim in the
+snapshot is checkable offline, forever, from inside the repository.
+
+*Recorded on the tick reviewer's REJECT, and the reason it needed recording is
+itself worth keeping: this disclosure was made in the lane's final message to the
+orchestrator and nowhere else. That message is not the record. The reviewer went
+looking for it in the entry, the README and the commit message, and found none of
+the three — the E7.1 table above simply listed three files as though three had
+always been the plan. A deviation disclosed only in a context that dies is not
+disclosed.*
+
+Retrieval 1, the primary artefact:
+
+- URL `https://docs.google.com/document/d/1gCPILcrdGZJjRzIDSL-b3ezVReeK5S-7raeub1RohyE/export?format=txt`
+- method `curl -sS -L`, anonymous, no auth
+- **HTTP 200**, **8,339 bytes**, MD5 `e04ed36a3066374a7e02e4224adfc109`
+- UTF-8 with BOM, CRLF endings, no trailing newline
+
+Retrieval 2, supplementary, taken **only** to recover what the text export drops
+(hyperlink targets and character emphasis) and contributing no rule text:
+same document, `?format=html`, **HTTP 200**, **20,782 bytes**, MD5
+`2ebb2f516ca7092a79c1fb24ac99a4cb`.
+
+**The KiCon video was not consulted**, per James's standing round-6 ruling. The
+artefact here is the published text checklist, which is what §8 Q2 named.
+
+### E7.1.1 Falsification of the snapshot's fidelity claim
+
+**This section was rejected at tick review and rewritten. The defect and its
+correction are recorded here rather than patched over, because the defect is a
+better worked example than the fix.**
+
+The snapshot asserts its body is byte-identical to the retrieval under three
+declared normalisations: BOM stripped, CRLF to LF, one trailing newline added.
+
+**PROVENANCE: tick-review REJECT, 2026-08-22, reproduced by this lane.** As first
+committed (`22c2370`) both this entry and the snapshot stated the passing digest
+as `87d0784e22f4360e0654dfef71f6d42f`. **That constant was wrong.** It is the
+body under only **two** of the three steps — BOM strip and CRLF to LF, with **no
+trailing newline** — because the harness that produced it stripped the trailing
+newline from *both* sides (`perl -0777 -pe 's/\n\z//'`) before hashing, while
+the committed file carries it. The harness silently omitted the third
+normalisation it claimed to apply. Re-derived here, from the committed source:
+
+| Normalisation applied | MD5 | Bytes |
+|---|---|---|
+| 3 steps, as documented (**the contract**) | `bee18f2f87033aa936333dcd48f219cb` | 8,219 |
+| 2 steps, what the old harness hashed | `87d0784e22f4360e0654dfef71f6d42f` | 8,218 |
+
+**The three-step form is adopted as the contract**, because it is what the
+committed file actually contains and what the natural extraction produces. The
+digest is corrected in **both** places — here and, more importantly, in the
+snapshot itself, where a `Header correction` note records the wrong value beside
+the right one.
+
+**Why this was a REJECT and not a note.** The whole point of the snapshot is that
+a Google Doc is not an archival citation. A future reader running the stated
+procedure correctly would have got `bee18f2f…`, compared it against the asserted
+`87d0784e…`, and had every reason to conclude the artefact had been tampered
+with — in the one file in the repository whose sole purpose is that a citation
+cannot drift. **A wrong digest on a fidelity control is worse than no digest,
+because it will fire.**
+
+**The lesson, and it is a `falsification-control` lesson the skill does not yet
+carry.** The two failures recorded in the first version were real and did fire —
+the glued fence, the one-word mutation. Both genuinely demonstrated the harness
+was *alive*. **But a falsification pair proves the harness can detect change; it
+says nothing about whether the constant the harness compares against is
+correct.** The pair passed and the constant was stale. A live probe contrasted
+with a wrong passing state is a control that certifies the wrong thing with full
+confidence. **Falsifying the probe is not sufficient; the passing state needs
+deriving too, by a route that does not share the probe's assumptions** — here,
+by running the documented procedure literally rather than the harness that was
+supposed to implement it.
+
+**The content was never affected**, which is worth stating plainly: the reviewer
+confirmed by `diff` (exit 0) that the fenced blocks concatenated in document
+order are byte-identical to the 3-step-normalised source, and that `diff` passes
+here too. The artefact was faithful throughout; only the number printed beside it
+was wrong.
+
+#### The corrected harness, re-run rather than remembered
+
+Every number below comes from a run made *after* the correction, executing the
+procedure exactly as the snapshot now documents it:
+
+```
+$ perl -pe 's/^\x{ef}\x{bb}\x{bf}// if $.==1; s/\r$//' \
+      research/snapshots/greenberg-schematic-checklist-2026-08-22.source.txt > /tmp/norm.txt
+$ printf '\n' >> /tmp/norm.txt
+$ awk '/^```text$/{f=1;next} /^```$/{f=0;next} f' \
+      research/snapshots/greenberg-schematic-checklist-2026-08-22.md > /tmp/body.txt
+$ diff /tmp/norm.txt /tmp/body.txt && echo IDENTICAL
+IDENTICAL
+$ md5 -q /tmp/body.txt
+bee18f2f87033aa936333dcd48f219cb
+$ shasum -a 256 /tmp/body.txt
+54514fc0e001ab063c40a72b2f112028204601fcd9f736f928da4e4faf99e3bf
+```
+
+Cross-checked across three independent toolchains, all agreeing on
+`bee18f2f87033aa936333dcd48f219cb`: shell `md5`, `openssl md5 -r`, and Python
+`hashlib.md5`. That the digest is now reproduced by **the documented commands
+themselves** rather than by a separate script is the structural fix — the earlier
+defect was possible only because the harness and the prose were two different
+things, and only the prose was read.
+
+**Both falsifications re-run under the corrected contract**, since a mutation
+digest derived under the old one is as stale as the constant it was compared to:
+
+| Falsification | Resulting MD5 | Detected? |
+|---|---|---|
+| passing state (no mutation) | `bee18f2f87033aa936333dcd48f219cb` | — |
+| one word changed: `descriptively named.` -> `descriptively NAMED.` | `0922563ce497d97ae8c604519ac6695c` | **yes** |
+| the original glued-fence defect reintroduced (newline before closing fence deleted) | `64fdc0fd13218894fc39919a70417f29`, 8,344 bytes | **yes** |
+
+The second row is the defect that occurred naturally on the first build: the
+source's last line has no trailing newline, so the closing fence glued onto it,
+the fence broke, and the extraction swallowed the document tail. It is
+reintroduced deliberately here so that the probe's sensitivity to it is shown by
+a run rather than by a story about an earlier run.
+
+One further check was made that the first version did not make. The corrected
+snapshot adds a fenced `sh` block **containing the extractor's own pattern**,
+which could plausibly have broken the extractor. It does not — `/^```text$/` is
+anchored and the documented command line does not match it — but that was
+**verified by re-running the extraction after the patch**, not reasoned about.
+
+The absence findings in E7.3 rest on greps whose harness is likewise shown live:
+the same loop that returned zero for `junction`, `PDF`, `mono`, `one page`,
+`per sheet`, `title` and `legib` returned **hits** for `cross` (3) and `DNP` (1).
+A probe that can only return zero proves nothing; this one cannot.
+
+## E7.2 Fidelity control against E4.2's retrieval — content matches, the counts do not
+
+**The document has not drifted.** E4.2 recorded HTTP 200 and 8,339 bytes; this
+retrieval is HTTP 200 and 8,339 bytes. Identical.
+
+**E4.2's structural count is nonetheless wrong.** It records *"55 checklist items
+in 8 groups"*. Counted structurally from the identical bytes:
+
+- **9 group headings, not 8**
+- **47 checklist items, not 55**
+- 56 bullet lines in total (9 + 47)
+
+Since the bytes are identical there is nothing a drift could have changed, so
+this is a counting error and not a source change. `55` and `8` are consistent
+with one off-by-one — the first group heading absorbed into the title, leaving
+55 of 56 bullets and 8 of 9 headings. **Corroborated independently** from the
+HTML export, where bold marks all nine group headings and only two items:
+"No unapproved errors OR warnings in the ERC." and "Your schematic is peer
+reviewed by at least one person not involved in the design." Per group:
+Visual Design Best Practices 12, Schematic Symbols 3, Part values 5, Circuit
+Gotchas 8, Design for Test 4, Design for Fail 5, Electrical Rule checks 2, BOM
+Integration 3, "You're Almost Done" checks 5.
+
+The correction is recorded here beneath E4.2 rather than over it: E4.2 is left
+untouched, and how the number went wrong is what a later reader needs.
+
+## E7.3 Row-by-row verdict on E4.3
+
+**All thirteen rows re-checked against this lane's own retrieval. The headline
+holds: five attributions are unsupported, and E4.3's five names are the right
+five.** Three rows carry corrections and none reverses a verdict.
+
+| # | E4.3 row | This lane's verdict |
+|---|---|---|
+| 1 | power direction `KI-FLOW-001` | **CONFIRM supported.** Correction: "Always" is *not* emphasised in the source; the boldface is E4.3's. The word is the author's, the emphasis is not. Verdict unaffected. |
+| 2 | MFR/MPN `KI-DOC-001` | **CONFIRM supported.** Quote exact (source uses curly quotes). |
+| 3 | datasheet `KI-DOC-002` | **CONFIRM supported only as optional.** "Bonus points" is likewise not bold in the source, but the phrase is optional-framing on its own words, so the verdict does not lean on the typography. |
+| 4 | version/date `KI-DOC-003` | **CONFIRM**, including *"`title` has no source"* — `title` returns **0 hits** across the whole rule body. **Addition:** E4.3 omits a second supporting item, *"If this is a revision, record changes to the schematic in a table or in nearby documentation."* |
+| 5 | purpose notes, voltage ranges `KI-DOC-004` | **CONFIRM, and the support is broader than E4.3 shows.** E4.3 cites two items; there are **four**. The two uncited: *"Functional blocks are clearly labeled (plenty of whitespace around it, or maybe even a box)."* and *"All connectors have text that describes where they go, and describes signals (voltage, current, names)."* |
+| 6 | left-to-right flow `KI-FLOW-002` | **PARTIAL DISAGREEMENT — see PROPOSED 1.** |
+| 7 | named significant nets `KI-LBL-002` | **CONFIRM supported.** Quote exact. |
+| 8 | crossings `KI-XING-001` | **CONFIRM supported.** Note the source's own hedge — *"avoid crossing net wires **as possible**"* — which is advisory language, not an absolute. |
+| 9 | 4-way junctions `KI-JCT-001` | **CONFIRM absent.** `junction`, `4-way`, `four-way`, `T-junction` all return 0 hits in the rule body. Strike the citation. |
+| 10 | explicit-over-label `KI-LBL-001` | **CONFIRM absent and inverted — and E4.3 understates it.** E4.3 cites only the net-stubs item, which is scoped to single-pin stubs. A second and more direct inversion goes uncited: *"Power supplies use supply symbols (not wires) with useful names."* — the checklist explicitly prefers the label-like construct **over** wires. |
+| 11 | mono-PDF legibility `KI-TXT-002` | **CONFIRM absent.** `PDF`, `print`, `mono`, `grey`, `gray`, `colou`, `legib` all return 0 hits. Strike the citation. |
+| 12 | minimise DNP `KI-DNP-001` | **CONFIRM unsupported — strike the citation. PARTIAL DISAGREEMENT on "recommends the opposite": see PROPOSED 2.** |
+| 13 | "one page, one idea" `KI-LAY-002` | **CONFIRM absent.** `one page`, `one idea`, `per page`, `per sheet` all return 0 hits. Strike the citation. |
+
+**PROPOSED 1 (row 6, `KI-FLOW-002`).** E4.3 marks left-to-right flow "supported"
+on two quotes, and on a second reading neither quite carries a *sheet-level* flow
+rule. *"All symbols are schematic symbols, not packages (inputs on left, outputs
+on right, power on top and bottom)"* is about **pin arrangement within a symbol**,
+which is a different claim from how a sheet reads left to right. *"Data flow
+(inputs, outputs, requirements) are clear and labeled"* requires clarity and
+labelling, **not a direction**. Recommendation: keep the Greenberg citation but
+**downgrade it to weak/partial** rather than striking it, and do not let it carry
+a left-to-right *direction* requirement on its own. Lower stakes than rows 9–13
+and it does not change the "five unsupported" headline.
+
+**PROPOSED 2 (row 12, `KI-DNP-001`).** The strike is right; the wording overshoots.
+The source item is *"Add required cable or required accessory part numbers as
+text, or add as Do Not Place (DNP) components if you want them to show up in the
+BOM."* — that endorses DNP for **one narrow purpose**, getting *required*
+accessories into the BOM. It is not an endorsement of just-in-case or
+speculative parts, which is what `KI-DNP-001` penalises. So the checklist does
+not *"recommend the opposite"* so much as **carve out a legitimate DNP use the
+rule would catch as a false positive**. Recommendation: strike the Greenberg
+citation as E4.3 says, and separately treat the required-accessory case as a
+**candidate exemption** for `KI-DNP-001` rather than as evidence against it.
+That is the more useful finding of the two.
+
+## E7.4 What the snapshot recovered that the text export had lost
+
+Recorded because it is the reason the snapshot is worth more than the URL, and
+because a Phase 3 lane should not have to re-fetch to get it:
+
+- Two hyperlink targets the `?format=txt` export drops: the capacitor-derating
+  reference *"also see this"* -> <https://github.com/CDFER/Ceramic-Capacitor-Derating>,
+  and *"See also Checklist for PCB Layout"* -> a **sibling Greenberg checklist**
+  for PCB layout, document `1rTR0l9Wx3Xt49cGbwR0zIWP6VN6aWhkTXeV7VV9wQNA`. That
+  sibling is **not** retrieved or snapshotted here; it is out of this lane's
+  scope and is flagged as a possible future source, not consulted.
+- The author's own emphasis, which the text export flattens entirely: exactly
+  two rules are bold (the ERC item and the peer-review item). If a Phase 3 lane
+  wants author-weighted tiers, those two are the only ones the author marked.
+
+## E7.5 Confirmation of E4.4
+
+**E4.4 is confirmed.** The comments `[a]`–`[j]` are present in this retrieval,
+they are third-party reader comments, and they are not Greenberg's rules. In the
+snapshot they are fenced under a heading that says so in terms. Their inline
+anchors also appear **inside the body text** (`Checklist[a][b]`, `your user[h][i]`)
+and are left unaltered there as retrieved, since removing them would edit the
+snapshot.
