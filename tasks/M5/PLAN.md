@@ -62,7 +62,7 @@ Phase 1 than at the third merge conflict.
 |---|---|
 | the joined net's contract field (`opening-1-joined-net-contract.md`) | **PARKED.** BLOCKED on the freeze-lift mechanism: a lane worktree's `frozen-paths.txt` is never the list the hook enforces. Needs a ruling; the reconnaissance is banked in the entry so re-dispatch is cheap. |
 | the obstacle walk's direction (`opening-2-obstacle-walk-direction.md`) | **MEASURED.** Reachable, guard correct, check missing. See below. |
-| worked examples become measured output (`opening-3-measured-examples.md`) | in a lane |
+| worked examples become measured output (`opening-3-measured-examples.md`) | **DONE**, ticked APPROVE, merged `f69bad6`. It found a live defect on its first application. |
 
 ### What the obstacle measurement returned, and the one place it needs James
 
@@ -86,6 +86,31 @@ there is none. Followed literally, it is **an M5 task**; read for its purpose, i
 is a one-test chore. **Filed as a task, per the ruling's own words** — the
 orchestrator does not reverse James — with this discrepancy recorded rather than
 absorbed. It is one line of the plan to move it either way.
+
+### What the measured-examples check returned
+
+**The rule paid on the run that introduced it.** `AGENT.md`'s `wire draw` block
+claimed a **three-segment** route and listed **one** of the three wire records,
+omitting `wires added: 3   junctions added: 0` entirely. An agent following the
+document's own instruction to delete "the wires the report named" would have
+deleted one of three and left two behind.
+
+That is dogfood defect 3's class — a hand-written example that was correct until
+the writer changed — **alive and undetected in the document D3 was already fixed
+in**. Confirmed by the reviewer against the built binary, byte for byte.
+
+**Two consequences for this plan.**
+
+- **A chore is owed** (PROPOSED 8 of the session report): every regenerated block
+  stands on a drawing built by a throwaway crate **outside the repository**, so
+  the examples are measured and **not reproducible**. Until a fixture or probe
+  recipe is committed, "regenerate it" is a project rather than a command. **M5
+  will touch `AGENT.md` heavily** — `sch score` is a new command surface — so
+  this lands before Phase 2, not after.
+- **The check enforces agreement, not provenance.** A hand-written example that
+  happens to match what the writer emits still passes. That boundary is stated
+  in the check's own rustdoc and is the honest limit of a control anchored to
+  the thing it controls.
 
 ---
 
