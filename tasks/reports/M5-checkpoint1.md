@@ -556,9 +556,25 @@ Phase 2.
 
 ### 1. Score
 
-**Ticked:** 1 — chore 7, APPROVE first time, no rejections.
+**Ticked:** 4 — chore 7, T5, T1, opening-1. **All four APPROVE first time. No
+rejections, and therefore no escalations.**
 
-**Merged:** 1 lane (`lane-c7` → `5fede1b`). Scope verified before the merge
+**And all four reviewers re-derived rather than re-read**, which is the number
+worth carrying out of this stop. Three took `git archive` into a `mktemp -d` and
+verified fidelity by file count before reading anything; one re-parsed KiCad's
+own library rather than checking the entry's arithmetic; one re-fetched every
+external source rather than trusting a scratchpad that turned out to contain the
+implementer's copies. **A tick review that only reads the entry could not have
+produced any of the confirmations in this report.**
+
+**The freeze cycle completed**: lift `d4c0eb8` → merge `e4449ed` → restore
+`a8f2057`. Three commits wide, which is what the mechanism costs now the lift
+and the change belong to different actors in different trees.
+
+**Phase 0 is closed.** All three `opening-*` tasks are done and ticked.
+
+**Merged:** 4 lanes — `lane-c7` → `5fede1b`, `lane-t5` → `0333151`,
+`lane-t1` → `ee08396`, `lane-o1b` → `e4449ed`. Scope verified before the merge
 (`git diff --stat d4c0eb8..lane-c7`: exactly the two IN-list files), main
 checkout clean before it began, merge confirmed **by reading the merge commit's
 two parents** rather than `HEAD` — the rule promoted this morning, used the
@@ -573,6 +589,22 @@ the run, per the other rule promoted this morning):
 | `cargo xtask corpus --verify` | 115 schematics, 36 library tables, **0 not at the pinned stamp**, verified |
 | `cargo test -p kicli --features corpus`, `KICLI_TEST_KICAD_CLI=1` | **71 binaries, 535 passed, 0 failed, 0 ignored, 0 skip markers** |
 | netlist oracle, `--nocapture` | **`hierarchies matched: 35/35`**, 5 tests, 16.09s |
+
+**At the `lane-t1` and `lane-o1b` merges (`ee08396`, `e4449ed`)**, on a
+quiescent tree after record commit `a8f2057`: `cargo xtask check` **6 of 6**;
+corpus arm **77 binaries, 569 passed, 0 failed, 1 ignored**.
+
+**The one ignored test is legitimate and says so itself**:
+`the_report_a_child_process_prints`, ignored with the reason *"run by the
+process-boundary arm, in a child process"* — it is the helper T1's determinism
+check spawns, not a check that was skipped. Named here because this report
+elsewhere argues that a skipped check must be distinguishable from a passing
+one, and this is what doing it properly looks like: **the ignore reason states
+who runs it instead.**
+
+The suite grew **71 → 77 binaries and 535 → 569 tests** across the two merges. That pair is the session's real
+code-weight — the seam plus five new lint checks, and the frozen contract's new
+field with five migrated goldens.
 
 **At the `lane-t5` merge (`0333151`)**, on a quiescent tree after record commit
 `a1d31ef`: `cargo xtask check` **6 of 6**; corpus arm **71 binaries, 535 passed,
@@ -869,6 +901,19 @@ stands; the standing instruction that the next dogfood run gets *"a clean shell
 environment"* is **still unmet**, and this is the third independent sighting.
 
 ### 6. Budget
+
+**A corpus run was reported FAILED by the orchestrator's own shell, and it had
+passed.** The command ended `…; grep -cE 'test result: FAILED' "$f"`, and
+**`grep -c` exits 1 when it finds zero matches** — so the pipeline's exit code
+reported the *absence* of failures as a failure. `cargo`'s own `exit=0` was
+sitting in the same output file the whole time.
+
+**Nothing was wrong and thirty seconds were spent establishing that.** It is
+recorded because of what it is an instance of: this stop's recurring theme is
+instruments that answer a different question than the one asked, and the
+orchestrator built one, in the act of checking for exactly that class of
+problem. *A "no failures found" check whose success path exits non-zero is the
+same defect as a summary that cannot say "did not run".*
 
 **The orchestrator truncated its own evidence with `tail -30` and had to re-run
 a 16-minute suite.** The first full corpus-enabled run was piped through
