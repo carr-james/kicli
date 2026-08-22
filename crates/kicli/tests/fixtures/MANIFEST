@@ -67,3 +67,4 @@ project/cycle/inner.kicad_sch 20260306 normal no hand
 text/calibration.textlength - oracle - kicad-cli
 sch/routing/calibration.kicad_sch 20260306 normal yes kicad-cli
 sch/routing/calibration.netlist - oracle - kicad-cli
+sch/score/high_and_blocked.kicad_sch 20260306 normal yes kicad-cli

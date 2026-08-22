@@ -1,7 +1,7 @@
 //! The four checks catch what they are named for, and nothing else.
 
 use kicli::geometry::GRID;
-use kicli::model::{Invariant, Schematic, check_invariants};
+use kicli::model::{Invariant, Outcome, Schematic, check_invariants};
 use kicli_sexpr::Doc;
 use std::path::{Path, PathBuf};
 
@@ -158,6 +158,27 @@ fn invariants_pass_on_every_fixture() {
         // This one exists to be refused, and unreadable_numbers checks that it
         // is. It never reaches the invariant check because it never loads.
         if path.contains("unreadable_coordinate") {
+            continue;
+        }
+        // This one carries a blocking fault on purpose: one symbol sits off
+        // the connection grid, which is what a gate that reads tiers needs a
+        // real file to fail on. It is asserted rather than skipped, so the
+        // fixture cannot quietly acquire a second fault and still be believed.
+        if path.contains("score/high_and_blocked") {
+            let source = std::fs::read_to_string(root.join(path)).expect("fixture reads");
+            let doc = Doc::parse(&source).expect("fixture parses");
+            let schematic = Schematic::read(&doc).expect("fixture reads");
+            let report = check_invariants(&doc, &schematic, GRID);
+            let failed: Vec<&Outcome> = report.failures().collect();
+            assert_eq!(failed.len(), 1, "one invariant fails: {failed:?}");
+            assert_eq!(failed[0].invariant, Invariant::GeometryOnGrid);
+            assert_eq!(
+                failed[0].faults.len(),
+                2,
+                "the two wire ends at the off-grid symbol: {:?}",
+                failed[0].faults
+            );
+            checked += 1;
             continue;
         }
         let source = std::fs::read_to_string(root.join(path)).expect("fixture reads");
