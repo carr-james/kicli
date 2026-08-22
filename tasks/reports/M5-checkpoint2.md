@@ -151,6 +151,68 @@ they would have passed identically against a constant from any run, including a
 stale one. **The discipline as written asks for the break and the catch. It does
 not ask anyone to re-derive the green.** Filed as PROPOSED 1.
 
+**The lane, on being shown this, named the hole better than the report had:**
+
+> **WORKFLOW NOTE, `lane-snap`, verbatim:** *"`falsification-control` requires showing a check can fail, but says nothing about deriving the *passing state* by a route independent of the probe — this REJECT is exactly that hole: two genuine falsifications fired, proving the probe alive, while the constant they were contrasted against was stale, so the control certified the wrong thing with full confidence. The skill should carry it as a worked example, with the accompanying rule that a stated digest must be reproducible by commands the document itself prints, since prose and harness that are separate artefacts will drift and only the prose gets read."*
+
+**Accepted in full, and the second half is the part the report had missed.** The
+defect was **only possible because the harness and the prose were two artefacts
+and only the prose was read.** The harness stripped the trailing newline from
+both sides (`perl -0777 -pe 's/\n\z//'`); the prose said three normalisations;
+nobody compared them, because the prose was the thing anyone would check.
+
+### The repair, and why it is better than the correction that was asked for
+
+`lane-snap` was sent back for a corrected number. **It returned a corrected
+mechanism.**
+
+| | MD5 | Bytes |
+|---|---|---|
+| 3 steps, as documented — the contract, now settled | **`bee18f2f87033aa936333dcd48f219cb`** | 8,219 |
+| 2 steps, what the harness actually hashed | `87d0784e22f4360e0654dfef71f6d42f` | 8,218 |
+
+**Both falsifications were re-derived under the corrected contract**, on the
+lane's own reasoning that *"a mutation digest derived under the old one is as
+stale as the constant it was compared against"* — which is the report's PROPOSED
+1 applied by the lane to its own repair, unprompted. The mutation digest it
+produced, `0922563ce497d97ae8c604519ac6695c`, **matches the value the reviewer
+had derived independently**.
+
+**The structural half: the digest is now produced by commands the snapshot
+itself prints**, so prose and harness are one artefact. And the lane **re-ran
+the extractor after patching**, because the new shell block contains the
+extractor's own fence pattern and could plausibly have broken it — *"it does
+not, but that was measured rather than reasoned"*, which is the distinction this
+whole report is about.
+
+**The wrong value is recorded beside the right one** in a `Header correction`
+note, with the `diff` proving the body never moved. Not silently overwritten.
+
+### A lane amended a rule it had itself written, and said so — `lane-snap`
+
+**Raised by the lane, on its own initiative, and it is the right call.**
+
+Its own `research/snapshots/README.md` **rule 1** — *"a snapshot is never edited
+after it is taken"* — **forbade the correction it had just been ordered to
+make.** Rather than violate its own stated rule silently, it amended rule 1 to
+distinguish the **immutable reproduced body** from a **demonstrably false
+integrity constant in the header**, and added **rule 7**: *a stated digest must
+be reproducible by a procedure the file itself gives.*
+
+> *"Flagging it because it is a governing-text change I made on my own judgement
+> rather than on your instruction."*
+
+**Accepted, and labelled PROPOSED rather than absorbed.** The reasoning is
+sound — an integrity constant that is *demonstrably false* is not part of the
+reproduced artefact, and a rule that forbids repairing it makes the file
+permanently wrong. **The risk is a loophole**: "correcting an integrity constant"
+must not become a door through which content edits walk. The re-review is asked
+to judge exactly that, and the `diff` evidence is what settles it.
+
+**Worth noting what did NOT happen**: the rule was one the lane wrote itself,
+hours earlier, in the same session. It would have been trivially easy to treat
+it as its own and quietly edit it. It treated it as governing text instead.
+
 ### The reviewer that produced it re-derived rather than re-read, and the fifth term list is the tell — `review-snap`
 
 Worth recording as a measurement of the review rather than of the work. Beyond
