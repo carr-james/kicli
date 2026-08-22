@@ -1,11 +1,20 @@
 # M5 — Scoring: the plan
 
-> **PROPOSAL. Nothing here is ruled and nothing here is dispatched.**
-> Written by the orchestrator at the M5 opening, for James's ratification.
-> Provenance for every carried item is in the file named beside it; provenance
-> for the plan's *shape* is `spec/SPEC.md` §11 and §19, and
-> `research/style-rules.md` §4 and §6, which §11.4 makes the canonical
-> catalogue.
+> **RATIFIED, with one amendment.** Provenance: James's ratification and advisor
+> rulings, M5 plan review. The four-phase shape stands; **Phase 3 opens at TWO
+> lanes**, widening mid-phase only on evidence of frictionless first merges (see
+> Phase 3 below). All five questions at the foot of this file are ruled, each
+> recorded at its question.
+>
+> Written by the orchestrator at the M5 opening. Provenance for every carried
+> item is in the file named beside it; provenance for the plan's *shape* is
+> `spec/SPEC.md` §11 and §19, and `research/style-rules.md` §4 and §6, which
+> §11.4 makes the canonical catalogue.
+>
+> **The milestone's north star is `RULES.md`'s, and it governs every value-level
+> call in this plan**: *"The tool must validate the important aspects of quality
+> schematics. It must never reward a schematic that is impossible to read and
+> understand."*
 
 ## Goal of M5
 
@@ -60,7 +69,7 @@ Phase 1 than at the third merge conflict.
 
 | Task | State |
 |---|---|
-| the joined net's contract field (`opening-1-joined-net-contract.md`) | **PARKED.** BLOCKED on the freeze-lift mechanism: a lane worktree's `frozen-paths.txt` is never the list the hook enforces. Needs a ruling; the reconnaissance is banked in the entry so re-dispatch is cheap. |
+| the joined net's contract field (`opening-1-joined-net-contract.md`) | **UNBLOCKED and scheduled.** The freeze lift is the **orchestrator's** step in the main checkout — question 2, ruled. The entry's procedure is re-worded to name that owner; the banked reconnaissance stands. |
 | the obstacle walk's direction (`opening-2-obstacle-walk-direction.md`) | **MEASURED.** Reachable, guard correct, check missing. See below. |
 | worked examples become measured output (`opening-3-measured-examples.md`) | **DONE**, ticked APPROVE, merged `f69bad6`. It found a live defect on its first application. |
 
@@ -86,6 +95,18 @@ there is none. Followed literally, it is **an M5 task**; read for its purpose, i
 is a one-test chore. **Filed as a task, per the ruling's own words** — the
 orchestrator does not reverse James — with this discrepancy recorded rather than
 absorbed. It is one line of the plan to move it either way.
+
+**RULED: it is a CHORE.** Provenance: James's ratification and advisor rulings,
+M5 plan review, question 3. Verbatim: *"the measurement dissolved the
+possible-defect proxy my ruling's words conditioned on; task text yields to
+measured reality, rulings included."* The line is moved, and the entry is
+`chore-7-obstacle-walk-check.md`.
+
+**The general lesson was ruled into the layer at the same time**: the
+`mutation-run` skill gains a **third triage class** — *reachable but correct: the
+check is the deliverable* — because the two it had (genuine coverage gap, benign
+survivor) could not name this survivor, which is the ordinary case rather than an
+exotic one. That is `lane-o2`'s finding (PROPOSED 3), promoted.
 
 ### What the measured-examples check returned
 
@@ -127,7 +148,17 @@ these wrong is the expensive kind of wrong.
 | **T3** | **The score formula and the normalisers.** §11.5: `raw_penalty = Σ w_r·n_r·norm_r`, `score = round(100·exp(−raw/K))`, `K = 25`; `per_object`, `per_wire`, `per_sheet`. Project score is the symbol-count-weighted mean. | **No floating point outside the final `exp`** — an executable twin like M4's `no floating point` gate. A sheet with 4 symbols and one crossing scores worse than one with 200 symbols and one crossing. |
 | **T4** | **Tier 1 does not reduce the score.** It sets `"gate": "fail"` independently. | A file that scores 96 and fails the gate exists as a fixture, and both facts are visible in one output. |
 
+| **T5** | **The seed catalogue and the ground-name list, researched.** Question 4, ruled: Q1 and Q5 of `research/style-rules.md` §8 become **one bounded research task** (`phase1-t5-seed-catalogue-and-ground-names.md`). | Its deliverable is **PROPOSED answers with sources**, awaiting James's ratification at the checkpoint — *the linter's notion of "good" is his to sign*. It runs alongside T1–T4 where it does not contend: it writes no source file. |
+| **carried-2** | **Where a pin is, read-only** (`carried-2-pin-location.md`). Dogfood D2, the largest of the first run's nine defects. | Scheduled after the seam merges. Disjoint from `lint/**`, so it is the one Phase 1 item that may run beside a spine task. |
+
 **Dependency:** everything. Phases 2 and 3 do not start until Phase 1 merges.
+
+**And Phase 2 is gated on more than the merge.** Ruling, M5 plan review: the
+**seam verdict** (T1's mechanical check, PASS or FAIL) and the **T5 research
+proposals** both go to James at the checkpoint, and **no Phase 2 lane is
+dispatched until he ratifies both.** A FAIL on T1 re-cuts the lane table and this
+plan, and that is a finding rather than a setback — see the design question
+above.
 
 ---
 
@@ -158,6 +189,33 @@ most likely a refusal rather than a finding, which is a decision, not a patch.
 
 Twenty-two rules. Grouped by the *definitions* they share rather than by
 alphabet, because that is what decides lane boundaries.
+
+### AMENDMENT — Phase 3 opens at TWO lanes
+
+**Provenance: James's ratification and advisor rulings, M5 plan review.** The
+plan asked (question 1) whether Phase 3's six lanes were worth the coordination
+against two larger ones. **Ruled: open at two, widen mid-phase only on evidence
+of frictionless first merges.**
+
+The groups below are **not** six lanes on day one. They are the definition-
+sharing map, and the map is what tells you how to cut two lanes and where the
+seams would be if the phase widens. The opening cut and the widening rule:
+
+- **Lane 1 — nets, labels and flow**: the significant-net rules, the label rule,
+  and flow and direction. They share the significant-net definition and the
+  power-name lists, so splitting them is splitting a definition.
+- **Lane 2 — geometry, text, fields, docs and DNP**: everything standing on the
+  geometry module and the two-box model, plus the two independents.
+- **The widening evidence is the first merges**, and it is a measurement, not a
+  feeling: a first merge in each lane that is **clean, in scope, and green on
+  the orchestrator's full check with no re-dispatch** is what buys a third and
+  fourth lane. A rejected tick, an out-of-scope diff, or a merge conflict in
+  either lane and the phase stays at two.
+
+Recorded because the reason is the interesting part: **six lanes is a bet that
+the T1 seam holds**, and the seam is exactly what Phase 1 is measuring. Two
+lanes is the shape that is right whether the seam passes or fails, and widening
+is cheap in a way that un-widening is not.
 
 | Group | Rules | Shares |
 |---|---|---|
@@ -237,7 +295,7 @@ happen is exactly the corpus those two weights have never had.
 | `carried-1-sheet-pin-angle.md` — a sheet pin whose angle disagrees with its position | **Phase 2**, beside `KI-CONN-001` | whether it earns a `KI-…` code is a §11.4 decision, and §11.4 is what M5 builds. **Recommendation unchanged since M4 T14: report the disagreement, do not correct it silently.** The disagreeing drawing already exists as a recipe — the reflected arm of `edit_wire_sheet_pin.rs`. |
 | `carried-2-pin-location.md` — D2, nothing read-only tells an agent where a pin is | **Phase 1**, as its own task | the largest of the first dogfood run's nine defects, and a **design decision about the agent-facing surface**. The answer already exists internally in `route::terminal`, `Terminal::of_pin`, merely unexposed — which is what makes it cheap to build and expensive to design badly. Constitution §6 governs the shape. Defect 6 is the same wound from the other side and folds in. |
 | `carried-3-reader-strictness.md` | **Phase 2** | see above |
-| `carried-4-handle-lint.md` — the handle rule wants a lint over MIR | **Phase 3, or deferred** | real work with a real dependency (`cargo-dylint` or equivalent) **and a licence check under Constitution §9**. Its lesson is needed in Phase 3 whether or not the lint is built; the lint itself is the most droppable thing in this plan. |
+| `carried-4-handle-lint.md` — the handle rule wants a lint over MIR | **OUT of M5. Backlogged.** | **Ruled, question 5**: a new dependency, a Constitution §9 licence check, **its lesson available without it**, and **no contribution to schematic readability, which is the milestone's goal**. The last clause is the one that decided it and is the north star doing its work. **Its lesson is still owed in Phase 3** — whoever writes a classifying rule reads the entry — and that is now the entry's only claim on this milestone. |
 | `carried-5-calibration-sweep.md` | **Phase 4** | see above |
 
 ## The chores, and where each fits
@@ -252,7 +310,8 @@ Six are filed. None is design work; each has a check that guards it.
 | `chore-4-mutation-loop-control.md` — P1/P2 assertions share an ancestor | any time; the control T21 already built |
 | `chore-5-blocked-fixture.md` — `blocked` has no committed fixture | any time |
 | `chore-6-window-holds-dead-code.md` — remove `Window::holds` | any time; ruled |
-| **the obstacle walk's missing check** (from `opening-2`) | **filed as a task per the ruling**; one test in `route_obstacles.rs`, no source change |
+| `chore-7-obstacle-walk-check.md` — the obstacle walk's missing check (from `opening-2`) | **RULED a chore**, question 3. Phase 0; one test in `route_obstacles.rs`, no source change. |
+| `chore-8-agent-example-recipe.md` — nothing in the repo reproduces the drawings the `AGENT.md` examples were measured from | **before Phase 2**, per PROPOSED 8, promoted. `sch score` is a new command surface and M5 will touch `AGENT.md` heavily; until this lands, "regenerate it" is a project rather than a command. |
 
 ---
 
@@ -263,14 +322,20 @@ lanes never own the same module; merge hotspots are the orchestrator's.
 
 | Lane | Owns | Phase |
 |---|---|---|
-| **spine** | `crates/kicli/src/lint/{finding,rule,score}.rs`, `crates/kicli/src/kicad/erc.rs` | 1 (orchestrator, sequential) |
+| **spine** | `crates/kicli/src/lint/{finding,rule,score}.rs`, `crates/kicli/src/kicad/erc.rs` | 1 (sequential, one lane at a time) |
+| **pin location** | `crates/kicli/src/route/terminal.rs` (read), the new read-only view and its CLI seam | 1, beside the spine — disjoint from `lint/**` |
 | **A — blocking geometry** | `lint/rules/grid.rs`, `overlap.rs`, `wire_body.rs` | 2 |
 | **B — blocking connectivity** | `lint/rules/pin_on_wire.rs`, `hier.rs`, the reader-strictness decision | 2 |
-| **C — significant nets** | `lint/rules/labels.rs`, `route_quality.rs` | 3 |
-| **D — flow and layout** | `lint/rules/flow.rs`, `layout.rs`, `junction.rs` | 3 |
-| **E — text and fields** | `lint/rules/text.rs`, `fields.rs` | 3 |
-| **F — documentation** | `lint/rules/docs.rs` | 3 |
+| **C — nets, labels and flow** | `lint/rules/labels.rs`, `route_quality.rs`, `flow.rs` | 3, **opening lane 1** |
+| **D — geometry, text, fields, docs, DNP** | `lint/rules/layout.rs`, `junction.rs`, `text.rs`, `fields.rs`, `docs.rs`, `dnp.rs` | 3, **opening lane 2** |
 | **calibration** | `crates/kicli/tests/score_calibration.rs`, `xtask` corpus additions | 4 |
+
+**Phase 3's C and D are the two-lane amendment's opening cut.** The six-lane
+version of this table is retired rather than deleted: if the first merges in C
+and D come back clean, in scope and green with no re-dispatch, C splits into
+significant-nets and flow, and D splits into geometry, text-and-fields, and
+documentation, along the group boundaries in the Phase 3 table. **The split
+seams are pre-drawn precisely so widening is a decision rather than a re-plan.**
 
 **Merge hotspots, orchestrator-only:** `Cargo.toml`, `lib.rs`, `lint/mod.rs`
 (**if T1 fails to remove it as one**), `AGENT.md`, `tests/command_surface.rs`,
@@ -307,21 +372,80 @@ no gate, since it spends the credibility of a real one.
 
 ---
 
-## What James is asked to rule
+## What James was asked to rule — ALL FIVE RULED
 
-1. **Ratify or re-cut this plan**, in particular the four-phase shape and
-   whether Phase 3's six lanes are worth the coordination against two larger
-   ones.
-2. **The freeze-lift mechanism** (`opening-1`'s BLOCKED item) — the plan cannot
-   schedule that task until it has an owner.
-3. **The obstacle walk's missing check: task or chore?** Filed as a task on the
-   ruling's literal words; the measurement says chore. One line either way.
-4. **`research/style-rules.md` §8's five open questions**, which have stood
-   since the research phase and which Phase 3 cannot finish without: the seed
-   catalogue (Q1), the Greenberg video (Q2), ERC coupling for `--gate` (Q3),
-   the score shape and `K = 25` (Q4), and the ground-name list (Q5). **Q3 and
-   Q4 are already answered in `spec/SPEC.md` §11.2 and §11.5** and need only
-   confirming; Q1, Q2 and Q5 are genuinely open.
-5. **Whether `carried-4`'s MIR lint is in this milestone at all.** It carries a
-   new dependency and a Constitution §9 licence check, and its lesson is
-   available without it.
+**Provenance for every ruling below: James's ratification and advisor rulings,
+M5 plan review.** Kept as questions with their answers beneath, rather than
+rewritten into statements, because the question is what makes the answer
+readable — and because a plan that shows what it did not know is a better
+record than one that only shows what it decided.
+
+### 1. Ratify or re-cut the plan; are Phase 3's six lanes worth it?
+
+**RATIFIED, with one amendment: Phase 3 opens at TWO lanes**, widening
+mid-phase only on evidence of frictionless first merges. The four-phase shape
+stands unchanged. The amendment, the opening cut and the widening evidence are
+recorded at Phase 3 above, and the lane table carries the pre-drawn split seams.
+
+### 2. The freeze-lift mechanism (`opening-1`'s BLOCKED item)
+
+**RULED: the freeze lift is the ORCHESTRATOR's step, in the main checkout** —
+lift before dispatch, restore after merge, **both committed with this ruling's
+provenance**. This is the entry's fallback option 2, taken.
+
+**Option 1 — teaching the hook to read the edited file's own worktree list — is
+REJECTED, and the reason is the general one**: a hook that resolved its list
+from the edited file's worktree would let a lane lift its own freeze inside its
+own world. The main-checkout resolution is **privilege separation**, and it is
+now deliberate rather than incidental. `lane-o1`'s measurement stands and was
+correct in every particular; what it found was a property, not a bug.
+
+**Consequence recorded rather than absorbed**: the M4-close ruling that created
+`opening-1` said *"Restore the path in the same commit […] A commit where the
+freeze is lifted and not restored must never exist on the branch."* This ruling
+says lift-before-dispatch and restore-after-merge, which **necessarily creates
+that commit**. Later ruling, same author, addressed specifically at this
+mechanism — so it governs, and the earlier words are superseded on this one
+point rather than in general. The window is narrowed to what it must be: the
+lift commit names the single file and the single change, the restore is the
+first commit after the merge, and both carry this provenance. **Flagged to James
+in the report's User signal area**, because a superseded rule that nobody
+noticed being superseded is how a rule quietly stops meaning anything.
+
+### 3. The obstacle walk's missing check: task or chore?
+
+**RULED: CHORE.** Verbatim: *"the measurement dissolved the possible-defect
+proxy my ruling's words conditioned on; task text yields to measured reality,
+rulings included."* Filed as `chore-7-obstacle-walk-check.md`. The general half
+of the ruling went into the `mutation-run` skill as a **third triage class** —
+*reachable but correct: the check is the deliverable* — which is PROPOSED 3
+(`lane-o2`'s finding) promoted in the same breath.
+
+The sentence worth keeping: **task text yields to measured reality, rulings
+included.** The project already bound lanes to that rule; this is the first time
+it was applied to a ruling, by the person who made it.
+
+### 4. `research/style-rules.md` §8's five open questions
+
+- **Q3 (ERC coupling for `--gate`) and Q4 (the score shape and `K = 25`):
+  CONFIRMED as answered** by `spec/SPEC.md` §11.2 and §11.5. No work owed beyond
+  citing them; T2 and T3 build to those sections.
+- **Q2 (the Greenberg video): CLOSED by citation** of James's standing round-6
+  ruling — the video is skipped and **the text sources govern**. `KI-DOC-001…004`
+  is written from published text only, and the Phase 3 table's Q22 note already
+  said so.
+- **Q1 (the seed catalogue) and Q5 (the ground-name list): ONE bounded Phase 1
+  research task**, `phase1-t5-seed-catalogue-and-ground-names.md`. Its
+  deliverable is **PROPOSED answers with sources, awaiting James's ratification
+  at the checkpoint** — *the linter's notion of "good" is his to sign*. That
+  clause is why this is not a lane decision: Q1 and Q5 are where the tool's
+  values are written down, and the north star is the sentence they answer to.
+
+### 5. Is `carried-4`'s MIR lint in this milestone at all?
+
+**RULED: OUT of M5, backlogged**, for four stated reasons: a new dependency, a
+Constitution §9 licence check, its lesson available without it, and **no
+contribution to schematic readability, which is the milestone's goal**. The
+entry records the backlog with those reasons; its lesson is still owed to
+whoever writes a classifying rule in Phase 3, and that is now its only claim on
+this milestone.

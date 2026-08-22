@@ -152,10 +152,36 @@ Adopted on advisor recommendation via PR, M4 Phase 2.
   that provenance where it lands, in the entry or document it governs, at the
   time it is given. The advisor reviews rulings for conflict with recorded
   principle and raises any conflict to James; the advisor does not reverse him.
-- The frozen surface is enforced by a PreToolUse hook over
+- The frozen surface is **guarded, not enforced**, by a PreToolUse hook over
   `.claude/hooks/frozen-paths.txt`. Lifting a freeze IS the ruling path; the
   orchestrator is not exempt. This is the only tool hook; further hooks
   require a triggering incident.
+
+  **"Guarded" is the honest word and the change is deliberate.** Promoted from
+  PROPOSED 1 at the M5 opening. `.claude/settings.json` matches
+  `Edit|MultiEdit|Write`; **Bash is not matched**, so a change made with `sed`,
+  `python3` or a heredoc is never seen. The mechanism is an assistance against
+  the accidental `Edit`, and calling it enforcement claimed a door that is open.
+  Nothing improper had happened — the gap was invisible because it never bit,
+  which is exactly why it was worth reporting. The alternative honest position,
+  extending the matcher to `Bash` with command inspection, **remains open and is
+  real work with false negatives of its own**; this wording change is the cheap,
+  reversible half and is labelled PROPOSED-promoted rather than final.
+
+  **The rule the hook cannot enforce is enforced by ownership instead**: the
+  lift is the orchestrator's step in the main checkout, and the hook's
+  main-checkout list resolution is privilege separation rather than a bug. See
+  `tasks/M5/PLAN.md` question 2.
+- **The freeze lift is the orchestrator's, in the main checkout** — lift before
+  dispatch, restore after merge, both committed with the ruling's provenance.
+  Ruling: James, M5 plan review, question 2. A lane cannot perform a lift: the
+  hook resolves its list relative to the main checkout, so the lift a lane
+  commits is invisible to the hook that enforces it. Measured by `lane-o1`,
+  which parked the task rather than working around the hook. **This supersedes,
+  on this one point only, the M4-close ruling's "all of it is one commit"** —
+  two actors in two trees cannot share a commit. The lift commit touches
+  `frozen-paths.txt` and nothing else, and the restore is the first commit after
+  the merge.
 - Subagents do not spawn subagents (`.claude/settings.json` caps depth at 1,
   concurrency at 4): every layer is a summarisation hop that loses evidence.
 - The gates run as a git pre-commit hook. One-time setup per checkout:

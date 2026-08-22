@@ -1,5 +1,36 @@
 # Carried in from M4 C1 — the handle rule needs a lint, not a sweep
 
+## STATUS: OUT of M5. Backlogged. ⛔
+
+**Provenance: James's ratification and advisor rulings, M5 plan review,
+question 5.** Four reasons, and the fourth is the one that decided it:
+
+1. it carries a **new dependency** (`cargo-dylint` or equivalent);
+2. that dependency needs a **Constitution §9 licence check**;
+3. **its lesson is available without it** — see the next paragraph;
+4. **it contributes nothing to schematic readability, which is this milestone's
+   goal.** M5's north star is *"the tool must validate the important aspects of
+   quality schematics"*; a lint over kicli's own MIR validates kicli, not a
+   schematic.
+
+**Backlogged, not closed.** The work is real and the analysis below is not
+re-litigated by this ruling — it is deferred to a milestone whose goal it
+serves.
+
+### What this entry still owes M5
+
+**Its lesson, and that debt is live.** M5 Phase 3 is *a whole milestone of
+checks that classify*, and this entry is **three rejections' worth of evidence
+about what a classifier can and cannot decide** — specifically that a sweep
+classifying by name, against a closed word list, is blind in a way each
+successive reviewer found one level deeper. `PLAN.md` requires whoever writes a
+classifying rule to read this file first. That requirement survives the
+backlog; it is now this entry's **only** claim on this milestone.
+
+---
+
+*The M4 record follows, unchanged.*
+
 *Migrated verbatim from the former `tasks/M5.md` at the M5 opening, by the
 boundary-package ruling that gives M5 one file per task. The text below is the
 record as M4 wrote it; nothing was re-argued in the move.*

@@ -44,6 +44,14 @@ before dispatching work.
   nothing telling it how. Say it in the brief, and require the deviation to be
   disclosed in the lane's first paragraph — CLAUDE.md's reversal trigger governs
   *undisclosed* excess, and that is only fair if the brief asked for disclosure.
+- **A brief's completion check must be able to run everything its scope
+  permits.** Promoted from PROPOSED 9 at the M5 opening. The `opening-3` entry
+  allowed its check to live in "a new test file beside `agent_doc.rs`" while
+  naming `cargo test --test agent_doc` as the completion check — which would
+  never run such a file. Nothing went wrong only because the lane declined the
+  offer. **A brief that offers a choice its own check cannot cover is a brief
+  that can report green on a check that ran nothing.** Same family as the
+  two-verdicts defect: offer nothing you cannot then verify.
 - **A brief carves out the evidence section the lane may write.** Promoted from
   PROPOSED 2. A ruling-lane brief that says `OUT: tasks/**` collides with the
   lane-implementer's standing rule to record evidence in the entry as it works,
@@ -59,9 +67,47 @@ before dispatching work.
   say how many times you did.** Promoted from PROPOSED 8. A one-shot "bring your
   worktree forward" assumes the base then stops moving; with lanes live and the
   record committed per tick, it does not.
+- **Where a brief mandates two verdicts, ask whether a third outcome exists.**
+  Promoted from PROPOSED 3 at the M5 opening. The obstacle-walk brief offered
+  `LIVE DEFECT` or `UNREACHABLE`; **reachability makes a mutant killable, not the
+  code wrong**, so the ordinary outcome — reachable, correct, untested — had no
+  form, and the lane had to deviate or write something false. It deviated, and
+  was right to. The `mutation-run` skill now carries the third class; the general
+  rule is this line.
 - Parallelise only where file scopes are disjoint and neither task blocks on
   the other. You sequence merge-hotspot and shared-file edits. You run the
   full check, corpus included, at every lane merge.
+
+## Acting on the repository
+
+Three rules, all promoted from the M5 opening, all of them defects this
+orchestrator committed and self-filed.
+
+- **Name the checkout explicitly. `git -C <root> …`, every time.** Promoted from
+  PROPOSED 10. The Bash tool's working directory persists between calls; reading
+  a lane's diff involves a `cd` into its worktree; the **next** `git merge --no-ff`
+  therefore ran inside the lane's own worktree. It was a no-op only because git
+  refuses to merge a branch that is checked out — a protection, not a rule of
+  ours. Against a branch checked out nowhere, the merge would have succeeded in
+  the wrong tree and the main checkout would have been silently short one merge.
+- **A merge is confirmed by reading the merge commit, not by reading `HEAD`.**
+  Same incident: after the no-op, `git log --oneline -1` printed the lane's head,
+  **which reads exactly like a successful merge.** Read `git log -1 --merges` or
+  the commit's parents.
+- **The freeze lift is YOURS, in the main checkout.** Ruling, M5 plan review,
+  question 2. Lift `.claude/hooks/frozen-paths.txt` before dispatch and restore
+  it after the merge, **both committed with the ruling's provenance**, and the
+  lift commit touches that file and nothing else. A lane cannot do this: the hook
+  resolves its list from the main checkout, so the lift a lane commits is
+  invisible to the hook that enforces it — measured by `lane-o1`. That resolution
+  is **privilege separation and is deliberate**: a hook reading the edited file's
+  own worktree list would let a lane lift its own freeze inside its own world.
+- **The merged check runs on a quiescent tree, which means the record commit
+  precedes it.** Promoted from PROPOSED 5. A merged check failed its `clean` gate
+  because the orchestrator was writing the consolidated report while the check
+  ran — five real greens and one phantom red. `tick-reviewer.md` has carried this
+  as an unconditional rule for a milestone, naming the orchestrator as the
+  *cause* while binding only the reviewer. It binds the cause now.
 
 ## Decisions
 

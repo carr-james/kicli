@@ -1,9 +1,39 @@
 # M5 — Scoring: the milestone's rules
 
-**Status: the milestone is OPEN, the plan is NOT ratified.** `PLAN.md` in this
-directory is a PROPOSAL. Only the three `opening-*` entries are ruled work; they
-land the M4-close rulings and the milestone-boundary changes. **No task named in
-`PLAN.md` is dispatched until James ratifies it.**
+## The north star
+
+**James's intent, recorded verbatim. Provenance: James's ratification and
+advisor rulings, M5 plan review.**
+
+> The tool must validate the important aspects of quality schematics. It must
+> never reward a schematic that is impossible to read and understand.
+
+**This sentence is the milestone's north star and its tie-breaker.** A
+value-level scoring judgement — what counts as a rule, what a weight should be,
+whether a finding is worth an agent's attention — is **parked as PROPOSED or
+BLOCKED against this sentence, not guessed.** The second half is the sharper
+half: a drawing that is unreadable must not be able to score well, and any
+result where it does is a defect in the scorer regardless of which rules fired.
+
+
+**Status: the milestone is OPEN and the plan is RATIFIED.** Provenance: James's
+ratification and advisor rulings, M5 plan review. `PLAN.md` is binding, with one
+amendment recorded there — **Phase 3 opens at two lanes**, widening mid-phase
+only on evidence of frictionless first merges.
+
+The three `opening-*` entries remain the milestone-boundary work; the plan's own
+phases are now dispatchable in phase order. **Phase 2 is still gated**: no Phase
+2 lane is dispatched until James ratifies the Phase 1 seam verdict and the Q1/Q5
+research proposals at the checkpoint.
+
+The plan review also ruled the five plan questions; each ruling is recorded at
+its question in `PLAN.md`, and the two with consequences outside that file are:
+
+- **the MIR lint (`carried-4-handle-lint.md`) is OUT of M5**, backlogged, with
+  the reason recorded in its entry;
+- **the obstacle walk's missing check is a CHORE**, not a task
+  (`chore-7-obstacle-walk-check.md`), because the measurement dissolved the
+  possible-defect proxy the earlier ruling's words conditioned on.
 
 ## Why this directory exists rather than one `tasks/M5.md`
 

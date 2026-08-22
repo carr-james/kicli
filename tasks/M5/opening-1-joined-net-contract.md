@@ -79,25 +79,65 @@ reads that contract**.
    `AGENT.md` are measured output"). Do not hand-edit an example to match what
    you believe the code now prints.
 
-## The freeze, and how to move through it
+## The freeze, and who moves through it — RE-WORDED, and the owner is named
 
 `crates/kicli/src/route/report.rs` is on the frozen surface, enforced by a
 PreToolUse hook over `.claude/hooks/frozen-paths.txt`. **Lifting the freeze IS
-the ruling path, and this is the ruling.** The procedure is the precedent's:
+the ruling path, and this is the ruling.**
+
+**The lift is the ORCHESTRATOR's step, in the MAIN CHECKOUT.** Provenance:
+James's ratification and advisor rulings, M5 plan review, question 2, ruling on
+BLOCKED 1 below. Verbatim: *"the freeze lift is the ORCHESTRATOR's step, in the
+main checkout — lift before dispatch, restore after merge, both committed with
+the ruling's provenance."*
+
+The rejected alternative and its reason are recorded because they are the
+general lesson: teaching the hook to resolve its list from the **edited file's
+own worktree** would let a lane lift its own freeze inside its own world. The
+main-checkout resolution is **privilege separation**, and it is now deliberate.
+`lane-o1`'s measurement was right in every particular; what it found was a
+property rather than a bug.
+
+### The procedure, as it is now performed
+
+**Orchestrator, main checkout, before dispatch:**
 
 1. Remove the path from `.claude/hooks/frozen-paths.txt`, recording above it
-   what was lifted, for what single change, and by whose ruling.
-2. Make the change, including the §8 amendment.
-3. **Restore the path in the same commit.** The freeze continues; the next
-   change needs its own ruling.
-4. All of it is **one commit**. A commit where the freeze is lifted and not
-   restored must never exist on the branch.
+   what was lifted, for what single change, and by whose ruling. **Dedupe the
+   "Lifted once, by advisor ruling 2026-08-15" comment block while there** — it
+   stands twice, verbatim, at lines 4–7 and 8–11; one copy stands. Found by the
+   orchestrator while deriving this brief, and it is in the file the
+   orchestrator now owns for this cycle.
+2. **Commit the lift**, with this ruling's provenance in the message.
 
-**Also fix, in the same commit:** the "Lifted once, by advisor ruling
-2026-08-15" comment block in that file is **duplicated verbatim** (lines 4–7 and
-8–11). One copy stands, and this task's own note is added beneath it. Found by
-the orchestrator while deriving this brief; it is four lines and in the file
-being edited, so leaving it would be tidier to report than to fix.
+**Lane, in its pinned worktree:**
+
+3. Make the change, including the `research/wire-routing.md` §8 amendment.
+   **The lane does not touch `.claude/hooks/frozen-paths.txt` at all** — it is
+   out of the lane's scope, and the file the hook reads is not the lane's copy.
+
+**Orchestrator, main checkout, after the merge:**
+
+4. **Restore the path**, and commit, with the same provenance. The freeze
+   continues; the next change needs its own ruling.
+
+### The rule this supersedes, recorded rather than absorbed
+
+The M4-close ruling that created this task said: *"Restore the path in the same
+commit […] All of it is one commit. A commit where the freeze is lifted and not
+restored must never exist on the branch."* **The new ruling necessarily creates
+exactly that commit**, because the lift and the change are now performed by
+different actors in different trees.
+
+Later ruling, same author, aimed specifically at this mechanism — so it governs,
+and the earlier words are superseded **on this one point** rather than in
+general. This is recorded, not resolved silently, and it is flagged to James in
+the session report: a superseded rule that nobody noticed being superseded is
+how a rule quietly stops meaning anything.
+
+**The window is narrowed to what it must be**: the lift commit touches
+`frozen-paths.txt` and nothing else, names the single file and the single
+change, and the restore is the first commit after the merge.
 
 ## Falsification obligation
 
@@ -120,6 +160,12 @@ the two sides are derived from, and whether they share an ancestor.
 - `AGENT.md` — only example blocks this change invalidates
 - `spec/SPEC.md` §9 — one sentence, only if §8 and §9 would otherwise disagree
 - this file
+
+**OUT, and newly so:** `.claude/hooks/frozen-paths.txt`. It was on the IN list
+when this entry expected the lane to lift its own freeze. Under question 2's
+ruling the lift is the orchestrator's, in the main checkout, and **a lane
+touching that file would be editing a copy no hook ever reads** — which is the
+precise thing `lane-o1` measured.
 
 **OUT** — everything else, and in particular `crates/kicli/src/route/**` other
 than `report.rs`, every other task's entry, and `tasks/M5/PLAN.md`.
@@ -154,7 +200,15 @@ cargo test --test command_surface
 
 ---
 
-## BLOCKED 1 — the freeze cannot be lifted from a lane worktree
+## BLOCKED 1 — the freeze cannot be lifted from a lane worktree — **RULED, and the finding stands** ✅
+
+**Ruled at the M5 plan review, question 2: the lane's fallback option 2 is
+taken.** The lift moves to the orchestrator and the main checkout; the hook is
+unchanged. The preferred option 1 is rejected on privilege separation — see the
+re-worded procedure above. **The measurement below was correct in every
+particular and is not amended**; the last line of its PROPOSED section — *"the
+entry's procedure needs its owner named, because as written it names a step the
+addressee cannot take"* — is what the ruling did.
 
 **Recorded by lane `lane-o1`, at the moment of the claim, against base commit
 `a1e25ad`. No code was written; the task is not started.**

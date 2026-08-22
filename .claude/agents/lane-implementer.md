@@ -42,6 +42,11 @@ under a rule that said only "stop", made the right call, and thereby deviated
 from its brief. Recorded as a deviation despite the correct outcome — **the rule
 was wrong, not the judgement** — and this is the fixed rule.
 
+**`cargo` is not on `PATH` in your shell.** Prefix every Bash call that needs it
+with `export PATH="$HOME/.cargo/bin:$PATH"`. Promoted from PROPOSED 2 at the M5
+opening: `tick-reviewer.md` has carried this line for a milestone, this
+definition had not, and three briefs in one session had to say it by hand.
+
 Standing rules:
 
 - Provenance labels are written at the moment of the claim, never backfilled.
