@@ -168,6 +168,46 @@ it uses a mechanism `spec/SPEC.md` already has. *Escalated to James as BLOCKED 3
 because it is a value-level scoring call and `RULES.md` says those are parked
 against the north star rather than guessed.*
 
+### `spec/SPEC.md` §11.5's own justifying sentence is not true of §11.5's own table — `lane-t3`
+
+**WORKFLOW NOTE, `lane-t3`, verbatim:**
+
+> *"The brief and §11.5 both justify density normalisation with "4 symbols and one crossing is worse than 200 symbols and one crossing" — but a crossing takes `per_wire`, not `per_object`, so that sentence is only true when the wire count scales with the symbol count; a brief demanding it as a literal check invites a fixture that holds wires fixed and cannot pass. Second: `cargo test` runs one binary's checks in parallel and the probe writes to a name-keyed path, so two checks sharing a probe name is a flake that no isolated run can show — that trap is in no skill and cost a whole-suite run to find."*
+
+**The first half is a defect in the specification, not in the brief** — though the
+brief repeated it, and repeating it is the orchestrator's error. §11.5 says:
+
+> *"a sheet with 4 symbols and one crossing is worse than a sheet with 200
+> symbols and one crossing, so absolute counts will not survive calibration."*
+
+**A crossing is normalised `per_wire`.** So the sentence's own example is
+governed by the wire count, and holding symbols at 4 against 200 changes nothing
+unless the wires move too. **The spec's justifying example does not exercise the
+mechanism it justifies.**
+
+The orchestrator's brief then demanded that sentence *as a literal executable
+check* — *"the check is that exact sentence, executable"* — which, as the lane
+says, **invites a fixture that holds wires fixed and therefore cannot pass.**
+The lane wrote a check of a true property instead and explained the
+substitution, which is task-text-yields-to-measured-reality applied to a spec
+section. *Filed as PROPOSED 13: §11.5's example should be corrected to one the
+table actually produces.*
+
+### A test that is green alone and flaky in the suite, and no skill mentions the trap — `lane-t3`
+
+The second half of the note above. **`cargo test` runs one binary's checks in
+parallel**, and the probe harness writes to a **name-keyed path** — so two checks
+sharing a probe name collide, and **no isolated run of either can reveal it.**
+
+**This is a fifth kind of blind instrument, and it is worse than the four the
+`falsification-control` skill lists**, because the others are checks that fail
+to catch something. This one is a check that **passes or fails depending on
+scheduling**, and the ordinary debugging move — run the failing test alone —
+makes the symptom vanish and points the investigator away from the cause.
+
+The lane found it only because it ran the whole suite per falsification row.
+*Filed as PROPOSED 14.*
+
 ### A gate classifies by NAME rather than by content, and made a lane triplicate 70 lines — `lane-t1`
 
 **WORKFLOW NOTE, `lane-t1`, verbatim:**
@@ -402,6 +442,24 @@ unrelated commit, not through the check.
 
 *Recommendation: accept, together with item 1 — one section, both effects.*
 **Not applied.**
+
+**14. A probe name shared by two checks is a flake no isolated run can show**,
+and it is in no skill. Full measurement above. *Recommendation: accept — a line
+in the `falsification-control` skill, and probably in the probe harness's own
+rustdoc, saying that a probe's path is keyed by its name and therefore that two
+checks in one binary must not share one.* The cheaper structural fix is worth
+considering beside it: **make the probe path unique by construction** (test name
+plus a counter) so the collision is impossible rather than forbidden. **Not
+applied**, skills change by ruling and the probe harness is shared.
+
+**13. `spec/SPEC.md` §11.5's justifying example does not exercise the mechanism
+it justifies.** The sentence *"a sheet with 4 symbols and one crossing is worse
+than a sheet with 200 symbols and one crossing"* is offered as the reason
+density normalisation exists — but a crossing is normalised `per_wire`, so
+changing only the symbol count changes nothing. *Recommendation: accept —
+correct §11.5's example to one its own table produces, e.g. a field or text rule
+for `per_object`, and a wire-count example for `per_wire`.* `spec/SPEC.md` is a
+merge hotspot and a governing document; **not applied.**
 
 **12. WRITTEN SANCTION, and it is the orchestrator's defect: `lane-pin` is red
 on `agent_doc` because its brief forbade the only fix.**
