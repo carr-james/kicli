@@ -33,6 +33,25 @@ pub enum Change {
 }
 
 impl Change {
+    /// Every variant, in the order they are declared.
+    ///
+    /// Exposed for `crates/kicli/tests/agent_doc.rs`, which reads the record
+    /// examples out of `AGENT.md` and needs **the set of marks this writer can
+    /// produce** rather than a set a test author remembered. A list of `+`, `-`
+    /// and `~` spelled out in the test would be that author's vocabulary
+    /// wearing a reference; this one is the enum's.
+    ///
+    /// The bound: adding a variant here is not enforced by the compiler. What
+    /// is enforced is that a new variant makes [`Change::mark`]'s match
+    /// non-exhaustive, so the author of one has to open this impl block, and
+    /// the unit test below fails if a mark in it is missing or repeated.
+    pub const ALL: [Change; 4] = [
+        Change::Added,
+        Change::Removed,
+        Change::Moved,
+        Change::Edited,
+    ];
+
     /// The mark that starts the line.
     #[must_use]
     pub fn mark(self) -> char {
@@ -339,6 +358,31 @@ mod tests {
         assert_eq!(record_of(&ObjectKind::Symbol, Change::Added), 'S');
         assert_eq!(record_of(&ObjectKind::Field, Change::Moved), 'F');
         assert_eq!(record_of(&ObjectKind::Field, Change::Edited), 'S');
+    }
+
+    /// `ALL` is the enum, not a subset of it.
+    ///
+    /// A duplicate would hide a missing variant behind the right length, so the
+    /// marks are checked for distinctness as well as for count.
+    #[test]
+    fn every_change_is_listed_once_with_a_mark_of_its_own() {
+        let mut marks: Vec<char> = Change::ALL.iter().map(|change| change.mark()).collect();
+        assert_eq!(marks.len(), Change::ALL.len());
+        marks.sort_unstable();
+        marks.dedup();
+        assert_eq!(
+            marks,
+            vec!['+', '-', '~'],
+            "a moved and an edited object share the `~` mark, and nothing else \
+             shares one"
+        );
+        for change in Change::ALL {
+            assert_eq!(
+                Change::ALL.iter().filter(|other| **other == change).count(),
+                1,
+                "{change:?} appears once in ALL"
+            );
+        }
     }
 
     #[test]

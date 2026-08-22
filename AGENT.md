@@ -425,7 +425,7 @@ kicli label delete <TARGET>
 made, with that net's pins:
 
 ```
-+ T da5aa983 "SPY"
++ T b66e9a6a "SPY"
 checked: every invariant passed
 net SPY: R12.2 R13.1 (was #n3)
 ```
@@ -493,7 +493,10 @@ The result is the route contract, then the usual mutation report:
 ```
 routed R1.1 -> R2.1   via 3 segments, 2 corners, 35.56mm
   cost 44 = length 28 + turns 12 + crossings 0 + text 0 + proximity 4
-+ W 3300f00e 50.80,45.72..50.80,50.80
+  wires added: 3   junctions added: 0
++ W 116592a7 50.80,45.72..50.80,50.80
++ W 7239e219 50.80,45.72..76.20,45.72
++ W 723e5aa0 76.20,45.72..76.20,50.80
 checked: every invariant passed
 ```
 
@@ -536,10 +539,10 @@ labels U1.1 -> U2.2
   reason: path length 462.28mm is over the threshold 381.00mm
   labels: "U1_SCK" at 12.70,196.85 and 285.75,12.70
   wires added: 2   junctions added: 0
-+ W d58d24fb 285.75,10.16..285.75,12.70
-+ W f4ba12b5 12.70,196.85..12.70,199.39
-+ T 43aab6e9 "U1_SCK"
-+ T 479f4a3c "U1_SCK"
++ W 60ebe113 285.75,10.16..285.75,12.70
++ W b0cc65c9 12.70,196.85..12.70,199.39
++ T 0bb33a5c "U1_SCK"
++ T 4d6dc050 "U1_SCK"
 checked: every invariant passed
 note: auto-labels  kicli wrote the label "U1_SCK" at each end instead of a wire. Each label sits on a short stub from its own pin. Nothing joins the two ends but the name they share.
 ```
@@ -649,14 +652,14 @@ naming every obstacle it met, which is the list to move something out of.
 kicli wire connect --from-pin R30.1 --to-pin R31.1
 ```
 ```
-joined: net #n5
+joined: net #n1
 routed R30.1 -> R31.1   via 3 segments, 2 corners, 93.98mm
   cost 110 = length 74 + turns 12 + crossings 20 + text 0 + proximity 4
-  crossings: 1 (at 170.18,171.45 on wire e58e0c77)
+  crossings: 1 (at 170.18,171.45 on wire 01000007)
   wires added: 3   junctions added: 0
-+ W 2fbd461d 215.90,171.45..215.90,173.99
-+ W a3506aad 127.00,171.45..215.90,171.45
-+ W f1a99ad0 127.00,171.45..127.00,173.99
++ W 038625f2 127.00,171.45..127.00,173.99
++ W 2a26378f 127.00,171.45..215.90,171.45
++ W 30ceab01 215.90,171.45..215.90,173.99
 checked: every invariant passed
 ```
 
@@ -665,20 +668,20 @@ crossing. Nothing about that is a failure — it is an invitation to move `R31`
 instead. Delete the three wires the report named, move, and route again:
 
 ```sh
-kicli wire delete 2fbd461d
-kicli wire delete a3506aad
-kicli wire delete f1a99ad0
+kicli wire delete 038625f2
+kicli wire delete 2a26378f
+kicli wire delete 30ceab01
 kicli sym move R31 --to 152.4,177.8
 kicli wire connect --from-pin R30.1 --to-pin R31.1
 ```
 ```
-joined: net #n5
+joined: net #n1
 routed R30.1 -> R31.1   via 3 segments, 2 corners, 30.48mm
   cost 40 = length 24 + turns 12 + crossings 0 + text 0 + proximity 4
   wires added: 3   junctions added: 0
-+ W 2fbd461d 152.40,171.45..152.40,173.99
-+ W a3506aad 127.00,171.45..152.40,171.45
-+ W f1a99ad0 127.00,171.45..127.00,173.99
++ W 038625f2 127.00,171.45..127.00,173.99
++ W 2a26378f 127.00,171.45..152.40,171.45
++ W 30ceab01 152.40,171.45..152.40,173.99
 checked: every invariant passed
 ```
 
@@ -703,9 +706,9 @@ ends is still legal, and taking it away is a second decision that is yours.
 kicli reports every such junction as a note and leaves it in the file.
 
 ```
-- W 3300f00e 50.80,50.80..63.50,50.80
+- W 01000004 50.80,50.80..63.50,50.80
 checked: every invariant passed
-note: stranded-junction  the junction 01000003 at (63.5,50.8) now joins 1 wire end(s), and is still there. Run junction delete --at 63.5,50.8 to take it away.
+note: stranded-junction  the junction 01000006 at (63.5,50.8) now joins 1 wire end(s), and is still there. Run junction delete --at 63.5,50.8 to take it away.
 ```
 
 A bus is refused rather than deleted: a bundle carries several nets, and
