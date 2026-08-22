@@ -99,6 +99,97 @@ Four of the ten (3, 5, 9, 10) are the orchestrator's own defects, self-filed.
 
 ## 2. Findings, attributed
 
+### The rule catalogue's provenance is much thinner than the catalogue looks — `lane-t5`
+
+**Pending its tick review at the time of writing.** The measurements, as the
+lane reports them, over all 28 rules in `spec/SPEC.md` §11.4:
+
+| | Count |
+|---|---|
+| rules resting on **nothing published** | **4** |
+| rules carrying a citation **the source does not support** | **6** |
+| — of those, **inverted**: the cited source recommends what the rule penalises | **2** (`KI-DNP-001`, `KI-SYM-001`) |
+| rules **gaining** a published source they never had | 10 |
+| rules with **no source support for their TIER** | **24 of 28** |
+
+**The two inverted citations are the finding.** The sharpest, quoted by the lane
+from Lathrop: *"Some parts are commonly placed in different orientations,
+horizontal and vertical in the case of resistors."* `KI-SYM-001` cites him for
+penalising exactly that.
+
+**And `research/schematic-lint-rule-catalogue.md` has never existed on any
+branch in any commit** — the only history hit is this task's own filename. So
+the IDs and tiers are wholly this project's invention, which Q1 suspected and
+nobody had checked.
+
+**The tier column is the one that should worry Phase 3**, not the source column.
+A rule with no published source is a rule this project chose to have, which is
+legitimate and merely undeclared. **A tier with no support is a claim about
+whether a drawing is *shippable*** — Tier 1 blocks a build — and 24 of 28 are
+asserted rather than argued. `RULES.md`'s north star is the sentence they should
+be argued from, and nothing currently does.
+
+*Lane's recommendation: Phase 2 may start without Q1; the answer is owed before
+Phase 3, where every unsourced rule and all 22 invented weights live.*
+
+### The ground-name list is not incomplete, it is inverted — and this corrects the orchestrator's own brief
+
+**`lane-t5`, measured from KiCad 10.0.5's library and confirmed by rendering
+with `kicad-cli`.** Not recalled — which was the brief's binding condition and
+the one most likely to be quietly broken.
+
+**The measurement:** every stock negative supply, **plus `VSS`, `VSSA` and
+`VEE`, is drawn pointing UP — identically to `+5V`.** KiCad distinguishes
+negative from positive **by fill, not by direction.** Only the twelve
+`GND*`/`Earth*` symbols point down, and the current list recognises **three** of
+them.
+
+**The consequence reorders the whole question, and the orchestrator got it
+backwards.** The T5 brief and entry both framed the stakes as: *"a name absent
+from the list is a power symbol whose direction is never checked."*
+
+> **WORKFLOW NOTE, `lane-t5`, verbatim:** *"The brief and entry both framed Q5's
+> stakes as "a name absent from the list is a power symbol whose direction is
+> never checked" — but the specified classifier defines positive as the
+> *complement* of the ground set, so an absent name is checked *backwards*,
+> producing a false finding rather than a silent skip; the brief's own
+> north-star reasoning therefore pointed at the wrong half of the problem.
+> Separately, the brief said to check "KiCad's demos" for a legitimate
+> leading-`-` net, but the macOS KiCad 10.0.5 package ships no `demos/`
+> directory at all — a brief naming a corpus should name one the lane can
+> confirm exists, or say what to substitute."*
+
+**Both halves accepted; the first is the important one and the defect is the
+orchestrator's.** The brief reasoned from the north star to "a missing name is
+an unchecked symbol", and **because positive is defined as the complement of the
+ground set, a missing name is an INVERTED check** — a guaranteed false finding
+on a correct drawing. That is the north star's *expensive* error, not its cheap
+one, and the brief's own reasoning walked past it. **Completing the ground list
+is therefore the highest-value change in Q5 rather than a tidiness item**: nine
+additions plus a case ruling on `Earth`.
+
+**The second half is a plain brief defect and is corrected for future briefs**:
+the brief said "KiCad's demos" without a path. macOS KiCad 10.0.5 ships no
+`demos/` directory; **the corpus this repository actually uses lives at
+`target/corpus/demos`, fetched by `cargo xtask corpus`** — which the
+orchestrator knew and did not write down. *A brief naming a corpus names a path
+the lane can confirm exists.*
+
+### The `-` prefix rule over-catches zero times, and the falsifying case exists anyway — `lane-t5`
+
+Measured twice: **0 of 18** stock leading-`-` symbols are non-supplies; **0 of
+93** template power `Value`s start with `-`.
+
+**But the falsifying case is in KiCad's own shipped content**:
+`API_Series-500.kicad_sch` carries net labels `-IN+4`, `-IN-2`, `-OUT`. It is
+out of reach **only because the rule reads a power symbol's `Value`** — so, as
+the lane puts it, *the precondition is the thing to test, not the list.*
+
+**That is the right shape of answer and it is worth naming as a pattern**: "safe
+given precondition P" is a different claim from "safe", and it stays true only
+while P does. The lane leans toward **the shorter rule and the longer list**,
+which trades an unbounded risk for a bounded one.
+
 ---
 
 ## 3. Reviewer rejections
@@ -197,6 +288,101 @@ immediately.
 ---
 
 ## 6. BLOCKED items
+
+### BLOCKED 1 — the spec and the research doc carry different ground lists, and the spec declares the research doc canonical
+
+**Raised by `lane-t5`, at the moment of the claim. Correctly NOT resolved by
+precedence**, per `CLAUDE.md`: *"When two governing documents conflict, do not
+resolve by precedence — mark the item BLOCKED with both readings and ask."*
+
+**The conflict:**
+
+- `spec/SPEC.md` §11.4 states the ground/negative-supply default list.
+- `research/style-rules.md` §4 states a **different** one — it carries `VEE`, a
+  `^-?V?SS$` regex, and a redundant literal `-12V`.
+- **§11.4 itself declares §4 the canonical catalogue.**
+
+So the spec says "the other document is canonical" and then disagrees with it,
+which means **there is no reading under which both are satisfied** — the defect
+is not that one is stale, but that the spec's own pointer contradicts the spec's
+own content. `KI-FLOW-001` and `KI-FLOW-002` stand on whichever wins.
+
+**Why this is genuinely blocked rather than a PROPOSED item**: picking either
+list is a value-level scoring call — it decides which drawings the linter calls
+wrong — and `RULES.md`'s north star rule says such calls are *parked against
+that sentence, not guessed*. It is also not cheap to reverse: once Phase 3
+writes `KI-FLOW-001` against a list, changing the list changes findings on every
+sheet already scored.
+
+**Options:**
+
+1. **Ratify the T5 proposal, which supersedes both.** The lane's measured list
+   (twelve `GND*`/`Earth*` symbols, nine additions to the current three, plus a
+   case ruling on `Earth`) is derived from KiCad 10.0.5's actual library rather
+   than from either document, and adopting it makes both existing lists
+   obsolete rather than making one win.
+2. Declare §11.4's list canonical and correct §4 to match.
+3. Declare §4 canonical, per §11.4's own pointer, and correct §11.4 to match.
+
+**Recommendation: option 1.** It is the only one that resolves the conflict with
+a *measurement* rather than a choice between two unsourced lists, and — as the
+lane notes — **James's ratification of the proposed list clears this at no extra
+cost**, because he is being asked to rule on that list anyway. Options 2 and 3
+each pick a winner between two documents neither of which was measured against
+KiCad.
+
+**Cost of leaving it open:** Phase 3's flow-and-direction rules cannot be written.
+Phase 2 is unaffected.
+
+### BLOCKED 2 — Q2's closing condition has been met, and the ruling that closed it named that condition
+
+**Raised by `lane-t5` as an incidental find; escalated by the orchestrator,
+because it reopens a standing ruling and that is not the orchestrator's to do.**
+
+James's standing round-6 ruling closed Q2: **the Greenberg video is skipped; the
+text sources govern.** It was re-confirmed at this session's plan review, and
+`lane-t5` complied — **the video was not consulted.**
+
+But `research/style-rules.md` §8's Q2 states the condition in full:
+
+> *"This catalogue used the published summaries […] not the video. **If his
+> checklist is published in a citable form, it should be the primary source for
+> the KI-DOC-\* family.** Want me to work through the video?"*
+
+**`lane-t5` found the checklist published as citable text** —
+`docs.google.com/document/d/1gCPILcrdGZJjRzIDSL-b3ezVReeK5S-7raeub1RohyE/`,
+version-dated 2026-02-15.
+
+**So the ruling's premise has changed, and in the direction the ruling
+anticipated.** The video is still skipped and nothing about that is in question;
+the question is whether `KI-DOC-001…004` should now be **rebuilt from a primary
+text source** that did not exist in citable form when the family was written
+from summaries.
+
+**This is the same shape as the obstacle-walk ruling James reversed this
+morning** — *"task text yields to measured reality, rulings included"* — which
+is why it is filed rather than absorbed: the orchestrator does not reverse
+James, and a ruling whose stated condition has been met is exactly the case that
+goes back to him.
+
+**Options:**
+
+1. **Rebuild `KI-DOC-001…004` from the primary text**, as a Phase 3 task with
+   its own entry. The four documentation rules are among the 28 whose provenance
+   T5 just measured, so this would also close part of Q1.
+2. **Leave the family on summaries** and record that the primary source was
+   found and deliberately not used, with the reason.
+3. Defer to the Phase 3 lane that writes the family, as a PROPOSED item.
+
+**Recommendation: option 1, scoped small.** The published-summaries route is
+what produced two of the six unsupported citations T5 found, so the family's
+current sourcing is measurably the weakest in the catalogue. **But note the
+honest counter**: a Google Doc is not an archival citation, it can change under
+us, and it is version-dated rather than immutable — so option 1 should carry a
+retrieval snapshot, not a bare URL.
+
+**Cost of leaving it open:** none until Phase 3. The four rules are not in
+Phase 2.
 
 ---
 
