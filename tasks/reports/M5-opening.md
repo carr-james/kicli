@@ -20,20 +20,33 @@ James. Reached.
 | worked examples become measured output (`opening-3`) | `lane-o3` | the executable twin: two tests in `agent_doc.rs`, `Change::ALL` in `delta.rs`, five `AGENT.md` blocks regenerated | `72ce305`, merged `f69bad6`, ticked `86f1ef9` | **APPROVE** |
 | the M5 plan | orchestrator | `tasks/M5/PLAN.md`, four phases, as a PROPOSAL | `43ab562` | n/a — awaiting James |
 
-### Gates at the `dd6bd23` merge
+### Gates
 
-Six-gate suite plus corpus and environment arms. **Five of six gates green;
-`clean` failed as a phantom** — see §5, PROPOSED 5. All test arms passed:
+Run twice in full, and the difference between the two runs is itself a finding.
 
-- `fmt`, `clippy`, `test`, `doc`, `deny` — pass
+**At the `dd6bd23` merge — five of six.** `fmt`, `clippy`, `test`, `doc`, `deny`
+green; **`clean` failed as a phantom**, because the orchestrator wrote a task
+entry while the check was running. See §6, PROPOSED 5. Every test arm passed.
+
+**At the stop, on a quiescent tree — six of six.**
+
+```
+pass  fmt   pass  clippy   pass  test   pass  doc   pass  deny   pass  clean
+all gates passed
+```
+
 - `corpus`: **115 schematics, 36 library tables, 0 schematics off the pinned
   stamp, verified**
 - `cargo test --features corpus` and `KICLI_TEST_KICAD_CLI=1 cargo test
   --features corpus` — pass
 - **255 test-result lines, every one `0 ignored`. Zero skips**, including the
   `kicad-cli` arm.
-- **netlist oracle: `netlist_partition_matches_kicad` and
-  `corpus::netlist_partition_matches_kicad_corpus` both green** — 35 of 35 holds.
+- **netlist oracle green in all three arms** — `netlist_oracle_is_current`,
+  `netlist_partition_matches_kicad`, and
+  `corpus::netlist_partition_matches_kicad_corpus`. **35 of 35 holds.**
+
+**The two runs differ in one thing: whether anyone was writing.** That is the
+whole of PROPOSED 5, measured rather than argued.
 
 ---
 
