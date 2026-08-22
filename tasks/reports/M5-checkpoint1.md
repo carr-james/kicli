@@ -93,12 +93,62 @@ Four of the ten (3, 5, 9, 10) are the orchestrator's own defects, self-filed.
 
 | Task | Lane | What landed | Evidence | Verdict |
 |---|---|---|---|---|
+| **the rule identity and registration seam** (`phase1-t1-rule-identity-and-registration.md`) | `lane-t1` | **the seam, and its verdict: PASS.** A `build.rs` generates the module list and registry from the rules directory — no new dependency, `Cargo.toml` untouched. Plus five new checks and a measured `fmt` gate loss with its repair | entry "Tick — APPROVE"; lane `749eaae`; merge `ee08396` | **APPROVE** |
 | the seed catalogue and the ground-name list (`phase1-t5-seed-catalogue-and-ground-names.md`) | `lane-t5` | two PROPOSED answers with sources, **awaiting James** — plus two BLOCKED items and a correction to the orchestrator's brief | entry "Tick — APPROVE"; lane `088df33`; merge `0333151` | **APPROVE** |
 | the obstacle walk's missing check (`chore-7-obstacle-walk-check.md`) | `lane-c7` | one test in `route_obstacles.rs`, **no source change** — the third triage class's first worked example | entry "Tick — APPROVE"; lane `94eae37`; merge `5fede1b` | **APPROVE** |
 
 ---
 
 ## 2. Findings, attributed
+
+### A gate classifies by NAME rather than by content, and made a lane triplicate 70 lines — `lane-t1`
+
+**WORKFLOW NOTE, `lane-t1`, verbatim:**
+
+> *"`probe_harness_has_one_home` refuses any test file containing the literal `mod support;`, which forbids a shared test-helper module by name rather than by content — I followed the convention and triplicated ~70 lines of drawing builder across three test files rather than rename around a textual gate; if shared test helpers are wanted, that gate needs re-scoping by ruling, not by evasion. Second: the brief's scope list omitted `crates/kicli/build.rs` while the task entry's own mechanism table named a build script as a candidate, so the list and the goal state disagreed from the start — a brief that derives scope from an enumeration should say which wins, and this one did, which is the only reason it cost nothing."*
+
+**The first half is this session's sharpest layer finding, because the project
+already wrote down the lesson and then shipped a gate that violates it.**
+
+`tasks/M5/carried-4-handle-lint.md` is three rejections' worth of evidence about
+exactly this failure. Its own rejection table, rejection 1:
+
+> *the evasion: a parameter named `id`; a method on a type named `Ident` — what
+> it was blind to: **it classified by name, against a closed word list.***
+
+`probe_harness_has_one_home` classifies by name against a closed word list of
+one: the literal string `mod support;`. **A lane that wanted a shared helper
+could satisfy the gate by calling it `mod helpers;`** — the gate's entire force
+is over authors who follow the convention it names.
+
+**And note what the lane did with that.** It could have renamed and passed. It
+**triplicated ~70 lines instead, and reported the gate**. That is the behaviour
+the project wants and it should not be punished by silence: *"a textual gate
+needs re-scoping by ruling, not by evasion."*
+
+**The cost is real and is now in the tree**: ~140 duplicated lines of drawing
+builder across three test files, introduced not because duplication was cheaper
+than the wrong abstraction — `ENGINEERING.md`'s actual rule — but because a gate
+forbade the right one by spelling.
+
+*Filed as PROPOSED 9.* And the irony is the argument: **`carried-4` was cut from
+M5 this morning on the grounds that "its lesson is available without it".** This
+is the lesson arriving, in a live gate, on the same day — which is evidence for
+the ruling rather than against it, but only if the lesson is actually applied
+somewhere rather than merely available.
+
+### `inventory` and `linkme` were rejected on a measurement, not a preference — `lane-t1`
+
+Worth recording because the brief told the lane to **stop and ask** before
+adding a dependency, and it did not need to:
+
+> **a distributed slice does not remove the per-rule `mod` line.**
+
+So `inventory`/`linkme` would have bought a Constitution §9 licence question and
+a new dependency **for nothing** — the `mod` line, which is the entire thing the
+mechanical check counts, survives them. The build script removes it; the crates
+do not. The lane did not stop to ask because the answer had become a fact rather
+than a judgement, and that is the right reason not to escalate.
 
 ### Two blind instruments in the existing suite, found by breaking things — `lane-o1b`
 
@@ -285,6 +335,26 @@ unrelated commit, not through the check.
 
 *Recommendation: accept, together with item 1 — one section, both effects.*
 **Not applied.**
+
+**9. `probe_harness_has_one_home` classifies by name, not by content, and it
+cost 140 duplicated lines this stop.** The gate refuses any test file containing
+the literal `mod support;`. It is evaded by renaming and binding only on authors
+who follow its own convention — which is precisely the failure
+`carried-4-handle-lint.md` documents across three rejections (*"it classified by
+name, against a closed word list"*).
+
+`lane-t1` followed the convention rather than evading it, triplicating ~70 lines
+of drawing builder across three test files, and reported the gate instead of
+routing around it.
+
+*Recommendation: accept as a ruling item, and note that the lane's choice —
+comply and report, rather than rename and pass — is the behaviour to reinforce.*
+Two directions are available and they are genuinely different: **re-scope the
+gate to classify by what a file does rather than by what it spells**, or
+**declare that shared test helpers are forbidden on purpose** and accept the
+duplication as the price, saying so in the gate's own rustdoc. The present
+state — a rule whose stated intent is defeated by a rename — is the worst of the
+three, which is the same shape as PROPOSED 1's hook.
 
 **8. A brief that lists the guards says where there are none.** `lane-o1b`'s
 brief named `command_surface.rs:403` as the guard that would catch a mistake on

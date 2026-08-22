@@ -1,4 +1,4 @@
-# The finding, the rule identity, and the registration seam (Phase 1, T1)
+# The finding, the rule identity, and the registration seam (Phase 1, T1) ✅ **PASS**
 
 **Provenance: `tasks/M5/PLAN.md` Phase 1, RATIFIED by James's ratification and
 advisor rulings, M5 plan review.** The plan's own words: *"the first task is not
@@ -516,3 +516,88 @@ asserting a lower bound.
   this file and no code, was made with `--no-verify`. The gates were green on
   the commit before it and are green on the commit after it, and no code changed
   in between.
+
+
+---
+
+## Tick — APPROVE, 2026-08-22. The seam verdict is PASS.
+
+**Reviewer verdict: APPROVE.** Lane `lane-t1`, head `749eaae`, base `d4c0eb8`,
+merged to `main` as `ee08396`.
+
+**The reviewer re-measured rather than read**, and its method is worth recording
+because it is the right one for a task whose whole output is a claim about
+`git status`:
+
+> `git archive lane-t1 | tar -x` into a `mktemp -d`, fidelity verified by file
+> count (**330**, matching `git ls-tree -r lane-t1 --name-only | wc -l`) and two
+> files spot-diffed byte-identical **before reading anything**. Every build and
+> test ran only in that copy.
+
+**It also declined to run `cargo xtask check` at all**, because it observed the
+live checkout carrying a modified file from concurrent orchestrator work — *"which
+is exactly why I stayed out of it."* That is `tick-reviewer.md`'s quiescent-tree
+rule doing its job unprompted.
+
+### The mechanical check, independently reproduced
+
+| Arm | Reviewer's own result |
+|---|---|
+| one new file, nothing else touched | confirmed — the throwaway rule was the **only** new path, verified by diffing against the source tree (the archive has no `.git`) |
+| the rule actually runs | confirmed — its findings appear in engine output via `--nocapture` |
+| removal returns the output | confirmed — empty → one rule → empty |
+| **the two arms are independent** | confirmed by reading both implementations: the test's own `std::fs::read_dir` in `files_on_disk` versus `build.rs`'s separate `rule_files()` writing to `OUT_DIR`. **No shared code path** — the check is not comparing a thing with itself. |
+
+### Every new check falsified by the reviewer, not taken on trust
+
+- **the `fmt` finding** — mangled whitespace in `tests/specimen_rules/wires.rs`:
+  `cargo fmt --check` **exit 0, no diff shown**; `rustfmt --check` directly
+  **exit 1**; `cargo test --test rule_files_are_formatted` **FAILED, quoting the
+  exact diff**. File restored byte-identical. **Both the blind spot and its
+  repair reproduce.**
+- **`the_linter_holds_no_write_path`** — injected a real
+  `use std::fs::OpenOptions;` into `src/lint/rule.rs`; the sweep failed with
+  `"rule.rs: std::fs"`.
+- **`lint_findings_sort_by_their_key`** — `every_term_of_the_key_decides_some_pair`
+  genuinely census-checks all five terms **including a second-object tiebreak**,
+  so it is not one-fixture vacuity.
+- **`lint_findings_are_bit_identical`** — crosses a real process boundary
+  (different working directory, `TZ`, `LC_ALL`), with **both** an
+  empty-agreement control and a different-drawing-differs control.
+- **`the_linter_iterates_no_hash_map`** — carries its own
+  `the_sweep_can_see_what_it_is_looking_for` self-falsification.
+
+### Contract and Constitution, checked
+
+No `f32`/`f64` anywhere in the new lint code or the specimen rules —
+**Constitution §4 held**, and `score()` is not this task. `Tier` has exactly
+`One`/`Two`: **Tier 3 does not exist as a variant**, per §11.4's "cut from
+scoring entirely". `Finding`'s fields match §11.3 exactly.
+
+### Scope, and the one disclosed deviation
+
+Every named merge hotspot verified **empty** in the diff: `Cargo.toml`,
+`lib.rs`, fixture `MANIFEST`, `AGENT.md`, `spec/SPEC.md`, `command_surface.rs`,
+`PLAN.md`. `lib.rs` already declared `pub mod lint;` at `d4c0eb8`.
+
+`crates/kicli/build.rs` was outside the brief's IN list. **Disclosed in the
+first paragraph of the entry's scope section**, as the brief required. The
+reviewer verified both factual halves: it is genuinely new, and `Cargo.toml` is
+genuinely untouched because cargo auto-detects `build.rs` at the package root.
+**This is CLAUDE.md's disclosed-deviation path, not the undisclosed-excess
+reversal trigger** — and the entry's own candidate-mechanism table named a build
+script, so the goal state contemplated what the enumeration missed.
+
+> **WORKFLOW NOTE, T1's reviewer, verbatim:** *"The review brief was thorough and
+> its six "where to look hardest" pointers mapped cleanly onto verifiable actions
+> — no gaps in the brief itself. One friction: the brief's step 1 says to use
+> `git status --porcelain`, but a `git archive` scratch copy (the method the
+> skill mandates) has no `.git`, so that literal command doesn't apply —
+> reviewers following this brief should be told to substitute a file-list diff
+> against the source tree instead, to avoid a reviewer either improvising badly
+> or reaching for a live checkout out of habit."*
+
+**Accepted, and it is the orchestrator's defect.** The brief named a command
+that cannot run under the method the brief itself required. The reviewer
+improvised correctly; the next one might reach for the live checkout instead,
+which is the failure the note names and is worse than the friction.
