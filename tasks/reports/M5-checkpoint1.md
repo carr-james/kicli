@@ -102,6 +102,71 @@ Four of the ten (3, 5, 9, 10) are the orchestrator's own defects, self-filed.
 
 ## 2. Findings, attributed
 
+### THE NORTH STAR IS ALREADY VIOLABLE, AND THE NUMBERS ARE MEASURED — `lane-t3`
+
+**Pending its tick review at the time of writing. This is the most consequential
+finding of the session and it is arithmetic, not speculation.**
+
+The T3 brief asked the lane to *state* the north-star exposure with real numbers
+rather than let Phase 4 discover it. It did, and the exposure is real. It is now
+executable, as `a_normalised_rule_cannot_take_off_more_than_its_ceiling`.
+
+**The mechanism.** A normalised rule contributes `w · n · reference /
+max(reference, N)`. If a rule can fire **at most once per object it counts** — a
+crossing per wire, a bad field per symbol — then `n ≤ N`, and the contribution
+is **capped at `w · reference` whatever `N` is.** The cap does not fall as the
+drawing grows.
+
+**Measured, with the implementation, at weight 1:**
+
+| Drawing | Raw penalty | Score |
+|---|---|---|
+| 10 wires, **every wire crosses another** | 10.0 | **67** |
+| 200 wires, every wire crosses another | 10.0 | **67** |
+| 10 000 wires, every wire crosses another | 10.0 | **67** |
+| 20 symbols, **every symbol's fields wrong** | 20.0 | **45** |
+| 200 symbols, every symbol's fields wrong | 20.0 | **45** |
+| 10 000 symbols, every symbol's fields wrong | 20.0 | **45** |
+
+**A sheet on which every single wire crosses another with no junction scores
+67** — and scores 67 at ten thousand wires just as at ten. That is not a
+readable drawing by any standard, and 67 is not a punishment.
+
+**The second half is sharper, because it is an inversion.** `per_sheet` rules are
+not normalised at all, so they overtake normalised ones as a sheet grows. On a
+202-wire sheet:
+
+- twenty unresolved crossings cost `1 × 20 × 10 / 202` = **0.99** raw points;
+- an incomplete title block (`KI-DOC-003`, weight 2, `per_sheet`) costs **2**.
+
+**A missing title block is scored at twice the cost of twenty wires that cross
+without junctions.** And note what makes this hard: *no single weight is wrong
+for it to happen.* It is the normaliser's structure, not a mis-set number, so no
+amount of Phase 4 weight-tuning finds it by looking at weights.
+
+**The lane did not make the value call, correctly.** `K` and the weights are
+`RULES.md`-governed and Phase 4's, and *"tuning either to hide this would be
+exactly the invisible failure Phase 4 exists to prevent."* Three options are
+recorded in the entry; the lane recommends **option 2**, and so does the
+orchestrator:
+
+1. Leave it and let Phase 4 measure it — the ceilings bind only when a rule
+   fires on nearly every object, and set B may never reach that.
+2. **Give the gate the job the score cannot do.** A **saturating** rule — one
+   firing on more than some fraction of the objects it counts — becomes a
+   **blocking** finding rather than a scored one. *"The north star's second
+   sentence is about rewarding, and a drawing that fails the gate is not
+   rewarded whatever it scores."*
+3. Cap the normaliser's reach so `norm` never falls below a floor — the option
+   that **changes the published formula**, and not to be taken without a
+   measurement.
+
+**Option 2 needs no weight to move and no formula to change.** It is a *tier*
+decision — which is **T4's subject**, undispatched at the time of writing — and
+it uses a mechanism `spec/SPEC.md` already has. *Escalated to James as BLOCKED 3,
+because it is a value-level scoring call and `RULES.md` says those are parked
+against the north star rather than guessed.*
+
 ### A gate classifies by NAME rather than by content, and made a lane triplicate 70 lines — `lane-t1`
 
 **WORKFLOW NOTE, `lane-t1`, verbatim:**
@@ -337,6 +402,49 @@ unrelated commit, not through the check.
 *Recommendation: accept, together with item 1 — one section, both effects.*
 **Not applied.**
 
+**11. The normaliser belongs on the rule, not in a table in the scorer** —
+`lane-t3`. `Normaliser::of(RuleId)` reads the family out of the rule code, which
+works only because the published table is stated in the same vocabulary the
+codes use. **It is already wrong for two catalogue rules whose nature disagrees
+with their family:**
+
+| Rule | Its own definition | Family gives it | Nature suggests |
+|---|---|---|---|
+| `KI-LAY-003` | *"W 1 per unaligned **symbol**"* | `per_sheet` | `per_object` |
+| `KI-JCT-001` | four-way junction, a **wire** feature | `per_sheet` | `per_wire` |
+
+**The consequence is not small**: `KI-LAY-003` un-normalised costs one point per
+unaligned symbol **with no ceiling**, so a 200-symbol sheet with every symbol
+unaligned reaches 200 raw points and **scores 0**, while every other
+symbol-shaped rule on that sheet is divided by ten.
+
+**And the third row of the lane's table is the argument, precisely because it is
+NOT a defect.** `KI-DNP-001` counts symbols and is still right at `per_sheet`,
+because **its own detection already divides by symbol count** — its allowance is
+`max(2, 0.05·N_sym)`. Normalising again would divide twice. As the lane puts it:
+*"the answer depends on what the rule's detection already does, which is
+knowledge the rule has and the scorer does not."*
+
+*Recommendation: accept — a `Rule::normaliser()` with a default, stamped onto
+the finding by `Findings::of` exactly as tier and weight already are.* **It is
+the same argument the generated registry already won**: a new rule carries its
+normaliser in its own file and no central table needs two authors at once.
+
+**Correctly not taken in T3**, because it changes `rule.rs` and `finding.rs`,
+which are T1's files and **T4's next**. The lane pinned current behaviour with
+`each_family_takes_the_normaliser_the_catalogue_gives_it` so the change is
+visible when made. **This goes into T4's brief.**
+
+**10. Three Tier 2 families are named nowhere in `spec/SPEC.md` §11.5's
+normaliser table** — `JCT`, `LBL` and `DNP`. They default to `per_sheet`, which
+divides by nothing. *Lane's recommendation, accepted: keep the strict default.*
+An unlisted rule keeping its whole weight can only make a bad drawing score
+worse, **which is the direction the north star points**; the other default would
+quietly reduce penalties nobody decided to reduce. Measured on both densities by
+`an_unlisted_family_keeps_its_whole_weight`, so the default is visible rather
+than implied. **The spec's table is incomplete and that is a §11.5 gap for
+James**, not just an implementation choice.
+
 **9. `probe_harness_has_one_home` classifies by name, not by content, and it
 cost 140 duplicated lines this stop.** The gate refuses any test file containing
 the literal `mod support;`. It is evaded by renaming and binding only on authors
@@ -499,6 +607,45 @@ KiCad.
 
 **Cost of leaving it open:** Phase 3's flow-and-direction rules cannot be written.
 Phase 2 is unaffected.
+
+### BLOCKED 3 — a drawing that is impossible to read can score 67, and the north star forbids exactly that
+
+**Raised by `lane-t3`, measured with the shipped implementation, escalated by
+the orchestrator.** Full numbers in Findings, above.
+
+**Why this is BLOCKED and not PROPOSED.** It is a value-level scoring call, and
+`RULES.md`'s north-star rule says those are *parked against that sentence, not
+guessed*. It is also not cheap to reverse: option 3 changes the published
+formula in `spec/SPEC.md` §11.5, and options 1 and 2 send Phase 2 and Phase 3
+down different roads — option 2 makes "saturating" a **tier** property, which
+changes what T4 builds and what every Tier 1 rule author must know.
+
+**The one-line version:** a sheet where *every* wire crosses another scores
+**67**, at any size; and a missing title block is scored at **twice** the cost of
+twenty wires crossing without junctions.
+
+**Options, with the lane's recommendation and the orchestrator's agreement on
+option 2:**
+
+1. **Leave it; Phase 4 measures it.** Cheapest now. The risk is that set B's
+   programmatic degradations may never saturate a rule, so **the property would
+   pass calibration and still be false** — which is the failure mode M4's
+   calibration row already taught this project once.
+2. **A saturating rule becomes a blocking finding.** ★ *Recommended.* Needs no
+   weight to move and no formula to change; it is a tier decision using a
+   mechanism §11.5 already has. The north star's second sentence forbids
+   *rewarding* an unreadable drawing, and **a drawing that fails the gate is not
+   rewarded whatever it scores.** Cost: it makes "saturating" a rule property
+   that T4 must carry and every Tier 1 rule author must understand, and the
+   fraction that counts as saturation is itself a value call.
+3. **Floor the normaliser.** Changes `spec/SPEC.md` §11.5, which is the
+   published contract, and should not be done without the measurement Phase 4
+   would provide.
+
+**Cost of leaving it open:** **T4 is the task that would implement option 2**,
+and T4 is Phase 1. Left open, T4 ships tier separation without the saturation
+concept and option 2 becomes a retrofit across every Tier 1 rule rather than a
+property built in. **This is the item with the shortest fuse in this report.**
 
 ### BLOCKED 2 — Q2's closing condition has been met, and the ruling that closed it named that condition
 
@@ -901,6 +1048,33 @@ stands; the standing instruction that the next dogfood run gets *"a clean shell
 environment"* is **still unmet**, and this is the third independent sighting.
 
 ### 6. Budget
+
+**The `clean` gate failed on the orchestrator's own commit, for the third
+repeat of a rule promoted this morning.** PROPOSED 5 was promoted into
+`orchestrator.md` at the start of this session: *"The merged check runs on a
+quiescent tree, which means the record commit precedes it."*
+
+The `clean` gate compares the working tree before and after the gates run. The
+orchestrator started a background commit of the report, **then edited the report
+again while that commit's own pre-commit hook was still running**, and `clean`
+correctly reported that the tree had moved under it. Five gates green, one
+phantom red — **the identical signature of the incident that produced PROPOSED 5
+in the first place.**
+
+**The rule as written did not cover this, and that is the finding.** It names
+*the merged check*. This was *a commit's pre-commit hook* — the same gate, in a
+different context — and the orchestrator was not running a merged check at all.
+The rule's shape assumed the orchestrator's dangerous moment is when it verifies
+a merge; **the real dangerous moment is any time a gate runs, which is every
+commit, and the orchestrator commits the record continuously by design.**
+
+*Recommendation, folded into PROPOSED 4's rewording:* the rule should bind on
+**any gate run**, not the merged check specifically — and the practical form is
+that the orchestrator does not touch the working tree while a commit or check is
+in flight, background or foreground. Backgrounding the commits (which the
+growing suite forced this session — foreground commits now exceed the two-minute
+tool timeout) made this failure *more* likely, not less, because it removed the
+natural block that used to stop the orchestrator typing.
 
 **A corpus run was reported FAILED by the orchestrator's own shell, and it had
 passed.** The command ended `…; grep -cE 'test result: FAILED' "$f"`, and
