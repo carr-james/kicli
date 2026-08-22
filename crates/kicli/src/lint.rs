@@ -12,6 +12,13 @@
 //! the module list and the registry, so a new rule is a new file and nothing
 //! else. [`registry`] holds the generated list.
 //!
+//! # The electrical layer is KiCad's, and this module layers on it
+//!
+//! KiCad's own rule check already implements 47 electrical checks. kicli runs
+//! it, maps what it says into kicli findings, and repeats none of it
+//! (`spec/SPEC.md` §11.1). [`erc`] is the seam that arrives on: pure data,
+//! handed in by [`crate::kicad`], read by a rule off its [`Drawing`].
+//!
 //! # What this module may not do
 //!
 //! The module knows nothing of the command line, files on disk, or
@@ -22,6 +29,8 @@
 pub mod drawing;
 
 pub mod engine;
+
+pub mod erc;
 
 pub mod finding;
 
@@ -35,6 +44,7 @@ pub mod score;
 
 pub use drawing::Drawing;
 pub use engine::Engine;
+pub use erc::{KicadSeverity, RuleCheck};
 pub use finding::{Finding, Penalty, RuleId, Severity, Tier};
 pub use gate::{Blocker, Counted, Gate, Report, Saturation};
 pub use rule::{Findings, Rule};

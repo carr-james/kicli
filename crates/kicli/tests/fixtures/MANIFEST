@@ -68,3 +68,11 @@ text/calibration.textlength - oracle - kicad-cli
 sch/routing/calibration.kicad_sch 20260306 normal yes kicad-cli
 sch/routing/calibration.netlist - oracle - kicad-cli
 sch/score/high_and_blocked.kicad_sch 20260306 normal yes kicad-cli
+erc/canary/canary.kicad_sch 20260306 normal yes hand
+erc/canary/canary.kicad_pro - json no hand
+erc/canary/canary.erc.json - oracle - kicad-cli
+erc/canary/canary.erc.txt - oracle - kicad-cli
+erc/precision/precision.kicad_sch 20260306 normal yes hand
+erc/precision/precision.kicad_pro - json no hand
+erc/precision/precision.erc.json - oracle - kicad-cli
+erc/precision/precision.erc.txt - oracle - kicad-cli

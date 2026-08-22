@@ -11,6 +11,7 @@
 
 use kicli_sexpr::Doc;
 
+use crate::lint::erc::{RuleCheck, not_run};
 use crate::model::items::{Schematic, SheetPath, Symbol};
 use crate::model::library::{LibrarySymbol, definition_of, read_library};
 
@@ -23,6 +24,7 @@ pub struct Drawing<'a> {
     doc: &'a Doc,
     schematic: &'a Schematic,
     library: Vec<LibrarySymbol>,
+    rule_check: Option<&'a RuleCheck>,
 }
 
 impl<'a> Drawing<'a> {
@@ -38,7 +40,21 @@ impl<'a> Drawing<'a> {
             doc,
             schematic,
             library,
+            rule_check: None,
         }
+    }
+
+    /// The same drawing, with what KiCad's own rule check said about it.
+    ///
+    /// The caller supplies it because running `kicad-cli` is a file-on-disk
+    /// concern and this module has none: [`crate::kicad::erc`] produces the
+    /// reading and hands it in. A drawing built without one reports that the
+    /// check has not run, which is not the same answer as KiCad finding
+    /// nothing — see [`RuleCheck::covers`].
+    #[must_use]
+    pub const fn with_rule_check(mut self, rule_check: &'a RuleCheck) -> Self {
+        self.rule_check = Some(rule_check);
+        self
     }
 
     /// The sheet path of this placement.
@@ -63,6 +79,19 @@ impl<'a> Drawing<'a> {
     #[must_use]
     pub fn library(&self) -> &[LibrarySymbol] {
         &self.library
+    }
+
+    /// What KiCad's own rule check said about this drawing.
+    ///
+    /// A drawing nobody ran the check over answers [`RuleCheck::NOT_RUN`],
+    /// so a rule that duplicates a KiCad check still asks one question and
+    /// still gets a usable answer.
+    #[must_use]
+    pub fn rule_check(&self) -> &'a RuleCheck {
+        match self.rule_check {
+            Some(reading) => reading,
+            None => not_run(),
+        }
     }
 
     /// The definition a placed symbol draws, when the file embeds one.

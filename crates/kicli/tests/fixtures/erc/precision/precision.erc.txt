@@ -1,0 +1,22 @@
+ERC report (2026-08-22T21:55:22, Encoding UTF8)
+Report includes: Errors, Warnings, Exclusions
+
+***** Sheet /
+[pin_not_connected]: Pin not connected
+    ; error
+    @(25.432 mm, 21.59 mm): Symbol R1 Pin 1 [Passive, Line]
+[pin_not_connected]: Pin not connected
+    ; error
+    @(25.432 mm, 29.21 mm): Symbol R1 Pin 2 [Passive, Line]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(25.432 mm, 21.59 mm): Symbol R1 Pin 1 [Passive, Line]
+
+ ** ERC messages: 3  Errors 2  Warnings 1
+
+ ** Ignored checks:
+    - Global label only appears once in the schematic
+    - Four connection points are joined together
+    - SPICE model issue
+    - Library symbol issue
+    - Assigned footprint doesn't match footprint filters

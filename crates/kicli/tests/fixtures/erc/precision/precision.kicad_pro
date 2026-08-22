@@ -1,0 +1,13 @@
+{
+  "board": {},
+  "erc": {
+    "rule_severities": {
+      "lib_symbol_issues": "ignore"
+    }
+  },
+  "meta": {
+    "filename": "precision.kicad_pro",
+    "version": 3
+  },
+  "schematic": {}
+}
