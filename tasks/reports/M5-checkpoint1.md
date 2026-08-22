@@ -503,6 +503,15 @@ the run, per the other rule promoted this morning):
 | `cargo test -p kicli --features corpus`, `KICLI_TEST_KICAD_CLI=1` | **71 binaries, 535 passed, 0 failed, 0 ignored, 0 skip markers** |
 | netlist oracle, `--nocapture` | **`hierarchies matched: 35/35`**, 5 tests, 16.09s |
 
+**At the `lane-t5` merge (`0333151`)**, on a quiescent tree after record commit
+`a1d31ef`: `cargo xtask check` **6 of 6**; corpus arm **71 binaries, 535 passed,
+0 failed, 0 ignored**. That merge changed one markdown file and nothing else —
+the corpus arm was run anyway, because `CLAUDE.md` says *at every lane merge*
+and *never skipped*, and a rule with a "when it obviously matters" exemption is
+a rule the orchestrator decides case by case. Cost: ~16 minutes of background
+wall-clock against zero risk. Recorded so the judgement is visible rather than
+assumed.
+
 **The oracle is 35/35 with zero skips**, which is the `/goal`'s clause — and see
 Verification integrity for why the obvious way of asking that question returns a
 green that means nothing.
