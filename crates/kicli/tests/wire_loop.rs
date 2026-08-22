@@ -248,6 +248,20 @@ fn wire(result: &Value) -> &Value {
     &result["wire"]
 }
 
+/// The net a `wire connect` claims it joined, as the route contract holds it.
+///
+/// **Presence before value.** The contract carries the key at every status, so
+/// a run that dropped it would be a contract break — and `as_str()` cannot
+/// tell an absent key from a null one, so the key is asked for first.
+fn joined_net(result: &Value) -> Option<&str> {
+    let contract = wire(result).as_object().expect("the contract is an object");
+    assert!(
+        contract.contains_key("joined_net"),
+        "the contract dropped the joined net instead of nulling it: {result}"
+    );
+    contract["joined_net"].as_str()
+}
+
 /// The identifiers of the junctions one run wrote.
 fn junctions(result: &Value) -> Vec<String> {
     wire(result)["added"]["junctions"]
@@ -421,7 +435,7 @@ fn an_agent_wires_a_sheet_and_kicad_agrees() {
     );
     let named = project.net_of("R1", "1");
     assert_eq!(
-        pins["net"].as_str(),
+        joined_net(&pins),
         Some(named.as_str()),
         "the net the command claimed is not the net the file holds: {pins}"
     );
@@ -446,7 +460,7 @@ fn an_agent_wires_a_sheet_and_kicad_agrees() {
         "the answer does not say which point of SIG it joined: {to_net}"
     );
     assert_eq!(
-        to_net["net"].as_str(),
+        joined_net(&to_net),
         Some("SIG"),
         "the connection did not land on the net it was asked for: {to_net}"
     );

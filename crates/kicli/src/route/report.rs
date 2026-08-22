@@ -11,6 +11,12 @@
 //! The module knows nothing of exit codes. `Status` says whether a request
 //! succeeded and the command layer maps that to a number, because nothing below
 //! the command layer may depend on it.
+//!
+//! **Two fields are the caller's to fill, not the search's.** `Crossing::net`
+//! and [`Report::joined_net`] are both connectivity's answers, and the search
+//! never learns a net name. They are declared here because the output contract
+//! prints them; they are attributed at the seam that already sorts a wire into
+//! the route's own net or another's.
 
 use crate::geometry::{Iu, Point};
 use crate::model::items::Uuid;
@@ -144,6 +150,18 @@ pub struct Report {
     pub crossings: Vec<Crossing>,
     /// What was written.
     pub added: Added,
+    /// The net the two ends are on now, when the request was to join them.
+    ///
+    /// **Read back out of the written file, never predicted**, so it is what
+    /// the drawing says rather than what the arithmetic that produced it
+    /// expected. It is therefore not derivable from any other field here, and
+    /// the module's no-stored-derivative rule still holds.
+    ///
+    /// `None` when nothing was joined: a proposal that wrote no wire, a
+    /// connection between ends that name no pin, and a request that was never
+    /// asked to join anything — `wire draw` takes the corners it was given and
+    /// reports no net.
+    pub joined_net: Option<String>,
     /// The labels proposed, when the status is `labels`.
     pub labels: Option<LabelPair>,
     /// What stood in the way, when the status is `blocked`.
@@ -177,6 +195,7 @@ impl Report {
             cost: Cost::default(),
             crossings: Vec::new(),
             added: Added::default(),
+            joined_net: None,
             labels: None,
             blocked_by: Vec::new(),
             adjusted: Vec::new(),
@@ -275,6 +294,10 @@ mod tests {
         assert_eq!(report.added, Added::default());
         assert_eq!(report.segments(), 0, "a proposal draws no wire");
         assert_eq!(report.cost.total(), 0);
+        assert_eq!(
+            report.joined_net, None,
+            "a report that wrote no wire joined no net"
+        );
     }
 
     #[test]

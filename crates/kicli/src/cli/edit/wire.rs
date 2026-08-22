@@ -83,7 +83,9 @@ fn draw_wire(global: &Global, args: &DrawArgs) -> Result<Report, Failure> {
     // an agent may draw.
     if args.auto_labels {
         if let Some(proposed) = proposed(&editing, &request, &routing, grid) {
-            return perform(&mut editing, &request, &proposed, &routing, grid);
+            // `wire draw` was not asked to join anything: it draws the corners
+            // it was given. It reports no net, and the contract carries a null.
+            return perform(&mut editing, &request, &proposed, &routing, grid, None);
         }
     }
 
@@ -143,7 +145,9 @@ fn connect_wire(global: &Global, args: &ConnectArgs) -> Result<Report, Failure> 
     if let Some(proposed) = proposed_for(&editing, &request, &far, &planned, &routing, grid) {
         if !args.auto_labels {
             // A proposal is an answer rather than a failure, so it succeeds and
-            // writes nothing. The caller decides whether to perform it.
+            // writes nothing. The caller decides whether to perform it. Nothing
+            // was written, so `joined_net` stays null — and the key is still
+            // there, because the contract carries every key at every status.
             let mut route = proposed.proposal.report(&proposed.source, &proposed.target);
             route.blocked_by.clone_from(&planned.blocked_by);
             return Ok(unwritten(
@@ -159,18 +163,27 @@ fn connect_wire(global: &Global, args: &ConnectArgs) -> Result<Report, Failure> 
             to: far.clone(),
             via: Vec::new(),
         };
-        let performed = perform(&mut editing, &ends, &proposed, &routing, grid)?;
-        return Ok(joined(performed, &root, &request, &far));
+        return perform(
+            &mut editing,
+            &ends,
+            &proposed,
+            &routing,
+            grid,
+            Some([&request.from, &far]),
+        );
     }
 
-    let drawn = {
+    let mut drawn = {
         let (hierarchy, target, taken) = editing.tree_parts();
         draw_plan(hierarchy, &planned, &routing, &target, taken).map_err(|error| refused(&error))?
     };
+    // Filled before the render, because the renderer is the one place either
+    // form is written and it can only print what the report holds.
+    drawn.report.joined_net = joined_net(&root, [&request.from, &far]);
     let rendered = contract::render(&drawn.report, grid);
     let mut result = report(&drawn.mutation, Some(("wire", rendered.json)), &[]);
     result.text = format!("{}{}", rendered.text, result.text);
-    Ok(joined(result, &root, &request, &far))
+    Ok(result)
 }
 
 /// Is this planned connection one kicli proposes as a pair of labels?
@@ -226,8 +239,9 @@ fn proposal_note() -> Note {
 /// The result of a command that answered without writing anything.
 ///
 /// It carries the same keys a written answer does, minus the mutation's own:
-/// the noun's key, the notes, and the net — null, because nothing was joined.
-/// A caller parses one shape whichever answer it got.
+/// the noun's key and the notes. The net a connection joined is inside the
+/// noun's key with the rest of the route contract, and is null here because
+/// nothing was written. A caller parses one shape whichever answer it got.
 fn unwritten(rendered: &Report, notes: &[Note]) -> Report {
     let mut text = rendered.text.clone();
     for note in notes {
@@ -235,40 +249,32 @@ fn unwritten(rendered: &Report, notes: &[Note]) -> Report {
     }
     Report {
         text,
-        json: with_net(
-            json!({
-                "wire": rendered.json.clone(),
-                "notes": notes
-                    .iter()
-                    .map(|note| json!({ "name": note.name, "message": note.message }))
-                    .collect::<Vec<serde_json::Value>>(),
-            }),
-            None,
-        ),
+        json: json!({
+            "wire": rendered.json.clone(),
+            "notes": notes
+                .iter()
+                .map(|note| json!({ "name": note.name, "message": note.message }))
+                .collect::<Vec<serde_json::Value>>(),
+        }),
     }
 }
 
-/// The net the two ends are on now, added to a result that wrote something.
+/// The net the ends of a connection are on now, read back from the written
+/// file.
 ///
 /// Read from the file on disk rather than from the tree in memory, because the
-/// claim is about what the drawing now says. A connection between two ends that
-/// name no pin has no net to report and says so with a null rather than by
-/// leaving the key out, so one parse covers both.
-fn joined(mut result: Report, root: &Path, request: &Connection, far: &End) -> Report {
-    let net = joined_net(root, request, far);
-    if let Some(name) = &net {
-        result.text = format!("joined: net {name}\n{}", result.text);
-    }
-    result.json = with_net(result.json, net);
-    result
-}
-
-/// The net an end of the connection is on, read back from the written file.
-fn joined_net(root: &Path, request: &Connection, far: &End) -> Option<String> {
+/// claim is about what the drawing now says. `None` when neither end names a
+/// pin: there is no net to report, and the contract prints a null rather than
+/// dropping the key, so one parse covers both.
+///
+/// **There is one of these and one only.** The answer goes into
+/// [`crate::route::report::Report::joined_net`] before the render, so both
+/// forms are written by [`contract`] from the same value. A second place to
+/// emit it would be a second answer waiting to disagree with the first.
+fn joined_net(root: &Path, ends: [&End; 2]) -> Option<String> {
     let hierarchy = Hierarchy::load(root).ok()?;
     let nets = extract(&hierarchy);
-    [&request.from, far]
-        .into_iter()
+    ends.into_iter()
         .filter_map(|end| match end {
             End::Pin(pin) => Some(pin),
             _ => None,
@@ -277,22 +283,6 @@ fn joined_net(root: &Path, request: &Connection, far: &End) -> Option<String> {
             nets.net_of(&pin.reference.0, &pin.number)
                 .map(|net| net.name.clone())
         })
-}
-
-/// One result, with the net it joined beside it.
-///
-/// The key is a sibling of the noun's own rather than a field inside the route
-/// contract: `crate::route::report` is frozen, and the shape
-/// [`contract`] renders is that contract. What net a connection produced is the
-/// command's answer, not the router's.
-fn with_net(mut json: serde_json::Value, net: Option<String>) -> serde_json::Value {
-    if let Some(fields) = json.as_object_mut() {
-        fields.insert(
-            "net".to_owned(),
-            net.map_or(serde_json::Value::Null, serde_json::Value::String),
-        );
-    }
-    json
 }
 
 /// A connection kicli proposes as a pair of labels, and the ends it joins.
@@ -431,6 +421,7 @@ fn perform(
     proposed: &Proposed,
     routing: &Routing,
     grid: Iu,
+    joins: Option<[&End; 2]>,
 ) -> Result<Report, Failure> {
     let before = editing
         .state()
@@ -480,6 +471,9 @@ fn perform(
         wires,
         junctions: Vec::new(),
     };
+    // After the commit and before the render: the net is a property of the
+    // file kicli has just written, and the renderer prints what it is handed.
+    route.joined_net = joins.and_then(|ends| joined_net(&editing.root(), ends));
 
     let rendered = contract::render(&route, grid);
     let notes = vec![Note::new(

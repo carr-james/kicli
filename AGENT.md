@@ -578,6 +578,7 @@ back.
             "text": 0, "proximity": 4 },
   "crossings": [], "adjusted": [],
   "added": { "wires": ["…","…","…"], "junctions": [] },
+  "joined_net": null,
   "labels": null, "blocked_by": [], "reason": null,
   "alternatives_considered": 0 }
 ```
@@ -601,8 +602,9 @@ router's to pick, and if you want to pick them yourself the verb is `wire draw`.
 The answer is the same route contract, with the same four statuses and the same
 cost breakdown, so everything above applies.
 
-One extra line sits on top of it, and in JSON it is a top-level `"net"` key
-beside `"wire"` — `null` when nothing was joined:
+One extra line sits on top of it, and in JSON it is the `"joined_net"` field of
+the route contract — inside `"wire"` with the rest of it, `null` when nothing
+was joined:
 
 ```
 joined: net #n5
@@ -610,6 +612,12 @@ joined: net #n5
 
 That name is **read back out of the file kicli has just written**, not predicted
 from the route, so it is what the drawing now says.
+
+`"joined_net"` is a key of the contract like any other, so it is there at every
+status and under every verb. It is `null` on a proposal, which wrote nothing to
+join anything into, and `null` under `wire draw`, which takes the corners you
+gave and is not asked to join two ends. The text line follows the usual rule and
+is printed only when there is a name to print, so `wire draw` never shows it.
 
 **A successful connect writes immediately.** There is no dry run: if you decide
 against the route, delete the wires the report just named you.

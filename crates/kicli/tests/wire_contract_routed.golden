@@ -45,6 +45,7 @@ routed R1.1 -> R2.1   via 3 segments, 2 corners, 35.56mm
     ],
     "junctions": []
   },
+  "joined_net": null,
   "labels": null,
   "blocked_by": [],
   "reason": null,

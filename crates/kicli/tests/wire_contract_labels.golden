@@ -24,6 +24,7 @@ labels U1.14 -> U7.3
     "wires": [],
     "junctions": []
   },
+  "joined_net": null,
   "labels": {
     "name": "SPI_SCK",
     "at": [
