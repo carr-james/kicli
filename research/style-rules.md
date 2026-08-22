@@ -256,13 +256,26 @@ something outside the score, the shared key wins and is named here — see
 #### KI-FLOW-001 — power symbol direction
 - **T** 2. **W** 3. **Source**: Olin Lathrop (canon); Greenberg.
 - **Rule**: positive-supply symbols point **up**, ground/negative point **down**.
+- **Names**: `research/power-name-catalogue.md` — **the canonical and only
+  list**, RATIFIED by James's ruling on BLOCKED 1 at the M5 checkpoint 1 review.
+  **This section states no list**, deliberately: the list it used to state
+  disagreed with `spec/SPEC.md` §11.4's while §11.4 declared this section
+  canonical, which is the conflict BLOCKED 1 recorded and the ratified catalogue
+  closes. It also carries the rule's **precondition** and the deliberate
+  canon-versus-KiCad conflict; read it before writing this rule.
 - **Detect**: for each power symbol `s` with its single pin `p`:
   `d = dir(s, p)` after transform. Classify `s` as *positive* or *ground* from
-  its `Value` (ground set: `GND`, `GNDA`, `GNDD`, `AGND`, `DGND`, `VSS`,
-  `0V`, `EARTH`, and anything matching `^-?V?SS$`; negative set: value starts
-  with `-`). Finding if a positive symbol's pin does not point up (screen −Y) or
-  a ground symbol's pin does not point down (+Y). Negative supplies (`-12V`)
-  behave like grounds.
+  its `Value`, **case-insensitively**, against the catalogue's ground set;
+  negative is "value starts with `-`", plus `VEE`; `PWR_FLAG` is exempt.
+  **Positive is the complement** — there is no positive list, and that is why a
+  name missing from the ground set is a **false finding on a correct drawing**
+  rather than an unchecked symbol. Finding if a positive symbol's pin does not
+  point up (screen −Y) or a ground symbol's pin does not point down (+Y).
+  Negative supplies (`-12V`) behave like grounds.
+- **Precondition**: the classifier reads a power symbol's `Value` and is
+  **never** applied to net names. KiCad's own `API_Series-500.kicad_sch` carries
+  the labels `-IN+4`, `-IN-2`, `-OUT`; a sheet carrying a net labelled `-OUT`
+  must produce **no** finding, and that check is owed by this rule's author.
 - **Note**: the pin direction is what is visually meaningful, not the symbol's
   rotation value, because the library symbol may already be drawn pointing down.
 - **Knob**: `flow.power_direction = 3`, `flow.ground_names = [...]`.
@@ -585,9 +598,12 @@ named in §4. Unknown keys are an error, not a warning (agents typo silently).
   starting point, and the rule that Tier 1 failures do not reduce the score but
   fail the gate independently.
 
-- **Q5 — Ground-name list.** KI-FLOW-001 needs a project-configurable ground/
-  negative-supply name set. Confirm the default list in §4 covers your Eurorack
-  conventions (`-12V`, `+12V`, `AGND`, `DGND`…).
+- **Q5 — Ground-name list. ANSWERED and RATIFIED**, James's ruling on BLOCKED 1,
+  M5 checkpoint 1 review. The answer is `research/power-name-catalogue.md`,
+  measured from KiCad 10.0.5's library rather than recalled. The question's own
+  framing was wrong and the measurement says so: a name absent from the ground
+  set is not an unchecked symbol, it is a symbol **checked backwards**. Nine of
+  the twelve names KiCad draws pointing down were missing.
 
 ---
 

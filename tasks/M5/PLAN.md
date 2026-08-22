@@ -66,8 +66,8 @@ Phase 1 than at the third merge conflict.
 ### ANSWERED: PASS. The lane table stands. ✅
 
 **Verdict: PASS**, `phase1-t1-rule-identity-and-registration.md`, tick APPROVE,
-merged `ee08396`. **Awaiting James's ratification at the checkpoint** — no Phase
-2 lane is dispatched until then.
+merged `ee08396`. **RATIFIED by James at the checkpoint 1 review** — the lane
+table is confirmed as cut and Phase 2 is dispatchable.
 
 Adding a rule is **one new file under `crates/kicli/src/lint/rules/` and no edit
 to any existing file.** The mechanism is a `build.rs` that reads the rule
@@ -112,7 +112,9 @@ bytes of output while `rustfmt --check` on the same file exits 1. **One of the
 six gates loses its reach over `src/lint/rules/`**, repaired by
 `crates/kicli/tests/rule_files_are_formatted.rs`, which the reviewer confirmed
 fails on badly formatted input. **A repaired gate loss is still a gate loss and
-it goes to James at the checkpoint.**
+it goes to James at the checkpoint** — where it was ratified with the verdict.
+**A rule author's file is formatted by `crates/kicli/tests/rule_files_are_formatted.rs`
+and by nothing else**, which every Phase 2 and Phase 3 brief now says.
 
 ---
 
@@ -194,9 +196,9 @@ in**. Confirmed by the reviewer against the built binary, byte for byte.
 | # | State |
 |---|---|
 | **T1** the seam | ✅ **PASS**, ticked APPROVE, merged `ee08396`. See the verdict above. |
-| **T2** ERC and the canary | **NOT DISPATCHED.** Held by sequencing only — it and T4 both edit `lint.rs`, and running it before a checkpoint that may change T4 would mean running it twice. **No finding blocks it.** |
+| **T2** ERC and the canary | **DISPATCHABLE at checkpoint 2**, after T4 merges. Held by sequencing only — it and T4 both edit the lint seam, and running it before a checkpoint that may change T4 would mean running it twice. **No finding blocks it.** |
 | **T3** the formula | ✅ ticked APPROVE, merged `327c033`. **No floating point at all**, not even the `exp` the Constitution permits. Filed BLOCKED 3. |
-| **T4** tier separation | **HELD on BLOCKED 3**, deliberately. BLOCKED 3's recommended resolution — a saturating rule becomes blocking — **is a tier decision, which is T4's subject.** Building T4 first turns a property into a retrofit across every Tier 1 rule. |
+| **T4** tier separation | **UNBLOCKED and dispatched at checkpoint 2**, carrying the saturating-rule-blocks property (BLOCKED 3 ruled, option 2) and `Rule::normaliser()` (PROPOSED 11 promoted). Previously **HELD on BLOCKED 3**, deliberately. BLOCKED 3's recommended resolution — a saturating rule becomes blocking — **is a tier decision, which is T4's subject.** Building T4 first turns a property into a retrofit across every Tier 1 rule. |
 | **T5** the research | ✅ ticked APPROVE, merged `0333151`. Two PROPOSED answers awaiting James. |
 | **carried-2** where a pin is | ✅ ticked APPROVE, merged `d031bed`. `kicli sch pins` ships. |
 
@@ -221,12 +223,17 @@ these wrong is the expensive kind of wrong.
 
 **Dependency:** everything. Phases 2 and 3 do not start until Phase 1 merges.
 
-**And Phase 2 is gated on more than the merge.** Ruling, M5 plan review: the
+**And Phase 2 was gated on more than the merge.** Ruling, M5 plan review: the
 **seam verdict** (T1's mechanical check, PASS or FAIL) and the **T5 research
 proposals** both go to James at the checkpoint, and **no Phase 2 lane is
-dispatched until he ratifies both.** A FAIL on T1 re-cuts the lane table and this
-plan, and that is a finding rather than a setback — see the design question
-above.
+dispatched until he ratifies both.**
+
+**BOTH ARE RATIFIED. The gate is lifted.** Provenance: James's rulings (BLOCKED
+1, 2, 3; seam; Q1/Q5) and advisor rulings, checkpoint 1 review. The seam verdict
+**PASS** stands and **the lane table is confirmed as cut**; Q1 and Q5 are
+ratified as measured, with the ground catalogue landed as
+`research/power-name-catalogue.md` and the six unsupported-citation repairs
+scheduled in `RULES.md`. Phase 2 is dispatchable.
 
 ---
 

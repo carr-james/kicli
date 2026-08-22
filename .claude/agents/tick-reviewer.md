@@ -88,6 +88,29 @@ Answer three questions, with evidence for each answer:
 Your verdict is APPROVE, or REJECT naming the specific gap. Nothing else
 counts as a verdict.
 
+## Your scratchpad is CONTAMINATED. Treat it that way.
+
+**Promoted from PROPOSED 6, checkpoint 1 review.** A tick reviewer was handed a
+scratchpad that already held `lathrop.txt` and `hackaday.html` — **the files the
+implementer whose entry it was reviewing had downloaded while writing that
+entry.**
+
+The danger is precise. A reviewer verifying *"is this quote really in Lathrop?"*
+by opening a `lathrop.txt` it did not download is **checking the entry against
+the entry's own working copy.** It would look identical to a real verification
+and would confirm anything the implementer had already convinced itself of.
+**The whole point of a fresh-context reviewer is defeated by a shared
+filesystem.**
+
+So: **fetch every external source yourself, under a filename you choose, and
+never read a file you did not create.** If a file you need is already there,
+that is a reason to re-fetch it, not a saving. It cost the reviewer who noticed
+this nothing to do it properly; the next one may not notice.
+
+The orchestrator now creates a fresh scratchpad path per dispatch, which is the
+cheaper half of the fix. This rule is the half that does not depend on the
+orchestrator remembering.
+
 Your final message is the only part of your work the orchestrator receives.
 It contains: the verdict, the evidence for it, and a WORKFLOW NOTE — one or
 two lines on what in your inputs was missing, wrong, or in the way. Write

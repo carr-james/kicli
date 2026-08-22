@@ -44,6 +44,22 @@ before dispatching work.
   nothing telling it how. Say it in the brief, and require the deviation to be
   disclosed in the lane's first paragraph — CLAUDE.md's reversal trigger governs
   *undisclosed* excess, and that is only fair if the brief asked for disclosure.
+- **A brief's completion check and its scope must be SATISFIABLE TOGETHER, in
+  both directions.** Promoted from PROPOSED 12 at checkpoint 1, which is
+  PROPOSED 9 inverted and caught by nothing the earlier wording said. `lane-pin`'s
+  brief named `cargo test --test agent_doc` as its completion check **while
+  putting `AGENT.md` out of scope as a merge hotspot** — and `agent_doc` fails
+  precisely because `AGENT.md` lacks a section naming the new verb. **The two
+  halves of the brief could not both be satisfied**, and the lane had to either
+  skip the pre-commit hook or disobey. It chose correctly, reported the skip per
+  the hook's own instruction, pasted the measured green, reverted `AGENT.md` and
+  banked the owed block in its entry — the maximum a lane can do inside a
+  contradictory brief. **The cost was a written sanction that should never have
+  been needed.** Check both directions before dispatch: can the check run
+  everything the scope permits, and can the scope reach everything the check
+  requires? Second, smaller, and mine to fix rather than a rule: **a scope list
+  granting a new module includes the module list that reaches it** (`view.rs`,
+  `cli.rs`) — a lane cannot declare a module without one.
 - **A brief's completion check must be able to run everything its scope
   permits.** Promoted from PROPOSED 9 at the M5 opening. The `opening-3` entry
   allowed its check to live in "a new test file beside `agent_doc.rs`" while
@@ -74,6 +90,22 @@ before dispatching work.
   form, and the lane had to deviate or write something false. It deviated, and
   was right to. The `mutation-run` skill now carries the third class; the general
   rule is this line.
+- **A brief that enumerates the checks protecting a change also names the parts
+  of the change that NOTHING protects.** Promoted from PROPOSED 8 at checkpoint 1.
+  `lane-o1b`'s brief named `command_surface.rs:403` as the guard that would catch
+  a mistake on one arm and was **silent about the `--auto-labels` arm having no
+  behavioural check at all** — while the change put a live decision on that arm.
+  The lane found it by breaking the code and watching the whole repository stay
+  green. An enumeration of guards reads as a map of the guarded surface; the
+  blank parts of that map are the parts a lane most needs pointed out.
+- **Briefs carry absolute paths.** Applied, not a ruling — brief prose is the
+  orchestrator's own instrument. Four briefs in one session all said *"your
+  pinned path is your whole world"*; the one whose **example commands** used bare
+  relative paths is the one that went astray. **An instruction to stay somewhere
+  is weaker than every command in the brief naming where.**
+- **Each subagent gets a scratchpad path the orchestrator creates fresh for that
+  dispatch.** Applied, not a ruling. See `tick-reviewer.md` for why a shared
+  scratchpad defeats a fresh-context review.
 - Parallelise only where file scopes are disjoint and neither task blocks on
   the other. You sequence merge-hotspot and shared-file edits. You run the
   full check, corpus included, at every lane merge.
@@ -83,8 +115,15 @@ before dispatching work.
 Three rules, all promoted from the M5 opening, all of them defects this
 orchestrator committed and self-filed.
 
-- **Name the checkout explicitly. `git -C <root> …`, every time.** Promoted from
-  PROPOSED 10. The Bash tool's working directory persists between calls; reading
+- **Do not `cd` out of the main checkout. Ever.** And name the checkout
+  explicitly — `git -C <root> …` — every time. **Reworded from "name the
+  checkout" to a prohibition, promoted from PROPOSED 4 at checkpoint 1**, because
+  the orchestrator violated the original within the hour *while obeying its
+  letter*: an instruction to name the checkout is satisfied by naming it in
+  **most** commands, and the one that omits it is the one that bites. A
+  prohibition on `cd` has no such gap. Read a lane's diff with `git -C <lane
+  path>`, never by walking into it. The same fact bit in three directions in one
+  session. Original provenance: PROPOSED 10. The Bash tool's working directory persists between calls; reading
   a lane's diff involves a `cd` into its worktree; the **next** `git merge --no-ff`
   therefore ran inside the lane's own worktree. It was a no-op only because git
   refuses to merge a branch that is checked out — a protection, not a rule of

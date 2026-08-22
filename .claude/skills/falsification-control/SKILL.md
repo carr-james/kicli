@@ -21,9 +21,37 @@ than four appends, and truer.*
    test that restates the implementation passes just as happily when both are
    wrong.
 2. Break the thing the check watches, in the source, deliberately.
-3. Watch the check fail. If it stays green, **see "Green is a finding" below.**
+3. Watch the check fail — **run the suite with `--no-fail-fast`.** If it stays
+   green, **see "Green is a finding" below.**
 4. Restore the source; record in the task entry WHAT was broken and WHICH
    assertion caught it.
+
+**`cargo test --no-fail-fast`, always, at step 3.** Promoted from PROPOSED 7,
+checkpoint 1 review. Cargo stops after the first failing *target*, so a break's
+caught-by list **silently truncates**: one break was recorded as caught by 2
+checks when the true number was **15**. This skill has always mandated recording
+which assertions caught a break and has never said how to run the suite to see
+all of them. **The error is conservative, which is why it never failed loudly**
+— an under-count of catchers reads as a thinner safety net than you have, and
+nothing goes red to tell you the list is short.
+
+**Two checks in one test binary must never share a probe name.** Promoted from
+PROPOSED 14, checkpoint 1 review. `cargo test` runs one binary's checks **in
+parallel**, and the probe harness writes to a **name-keyed path** — so two
+checks sharing a probe name collide, and the result depends on scheduling.
+
+**This is a fifth kind of blind instrument and it is worse than the four below**,
+because those are checks that fail to catch something. This one **passes or
+fails depending on timing**, and the ordinary debugging move — *run the failing
+test alone* — makes the symptom vanish and points the investigator away from the
+cause. It was found only because a lane ran the **whole suite** per falsification
+row, which is what step 3 above now says to do.
+
+The structural fix worth having beside the rule: **make the probe path unique by
+construction** — test name plus a counter — so the collision is impossible
+rather than merely forbidden. Filed against the probe harness rather than left
+as a discipline, because a discipline that only binds authors who have read this
+skill is the same shape as a gate that classifies by spelling.
 
 **Record exactly what you removed, not only where the failure surfaced.** A row
 naming a single line number for what was really a two-assertion removal reads as

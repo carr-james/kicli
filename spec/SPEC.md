@@ -790,7 +790,9 @@ ERC-owned. Absence of `kicad-cli` is a structured error and exit 6 (§6.1, Q31).
 ### 11.4 Rule catalogue
 
 `research/style-rules.md` §4 is the canonical catalogue (Q18 — the pre-research
-draft is retired; no reconciliation work). Tier 1 (blocking): `KI-GRID-001`
+draft is retired; no reconciliation work), **except for the power-direction name
+lists, which are `research/power-name-catalogue.md`'s** — see the Q21 paragraph
+below. Tier 1 (blocking): `KI-GRID-001`
 off-grid connectable geometry, `KI-OVL-001` symbol bodies overlap,
 `KI-WIRE-001` wire crosses a symbol body, `KI-TXT-001` overlapping text,
 `KI-CONN-001` a pin touches a wire's interior with no junction, so it looks
@@ -804,10 +806,18 @@ A "significant net" (used by `KI-LBL-001/002`, `KI-RTE-001/002`) has ≥ 3 pins,
 or a bounding-box diagonal ≥ 20 G, or a user-authored label, or is a power net
 (`style-rules.md` §3.3).
 
-**Power-direction name lists (Q21):** defaults cover standard Eurorack —
-positive `{+12V, +5V, +3V3, …}`, ground/negative `{GND, -12V, AGND, DGND, VSS,
-VEE, GNDA, GNDD, 0V, EARTH}`, plus "value starts with `-`" as negative.
-Per-project override via `kicli.toml`.
+**Power-direction name lists (Q21):** `research/power-name-catalogue.md` is
+the **canonical and only** list, RATIFIED by James's ruling on BLOCKED 1 at the
+M5 checkpoint 1 review. It is measured from KiCad 10.0.5's own library and it
+**supersedes the list this section used to state**, which recognised three of
+the twelve symbols KiCad actually draws pointing down — and, because
+`KI-FLOW-001` defines positive as the *complement* of the ground set, each
+missing name was a **false finding on a correct drawing** rather than a silent
+gap. **There is no positive list**: the classifier never consults one, so the
+one formerly stated here is struck rather than corrected. Matching is
+case-insensitive. Per-project override of the ground set via `kicli.toml`.
+**State no list here.** Two documents stating one list is the defect BLOCKED 1
+recorded.
 
 ### 11.5 Score formula, with density normalisation (C9, Q20)
 
@@ -816,8 +826,25 @@ raw_penalty(sheet) = Σ_rules  w_r · n_r · norm_r
 score(sheet)       = round( 100 · exp( −raw_penalty / K ) ),   K = 25
 ```
 
-Normalisers — a sheet with 4 symbols and one crossing is worse than a sheet with
-200 symbols and one crossing, so absolute counts will not survive calibration:
+Normalisers — absolute counts will not survive calibration, because the same
+count means different things on a sparse sheet and a crowded one. **Each
+normaliser is justified by an example its own row produces:**
+
+- `per_object` — a sheet with **4 symbols** and one misplaced field is worse
+  than a sheet with **200 symbols** and one misplaced field.
+- `per_wire` — a sheet with **10 wires** and one crossing is worse than a sheet
+  with **200 wires** and one crossing.
+
+*Corrected at the M5 checkpoint 1 review, PROPOSED 13, on a measurement by
+`lane-t3`. This section previously justified normalisation with "a sheet with 4
+symbols and one crossing is worse than a sheet with 200 symbols and one
+crossing" — but **a crossing is normalised `per_wire`**, so holding the wire
+count fixed and changing only the symbol count changes nothing. **The spec's own
+justifying example did not exercise the mechanism it justified**, and an
+orchestrator brief then demanded that sentence as a literal executable check,
+which invites a fixture that cannot pass. Recorded rather than silently fixed,
+because the sentence had been read and repeated by several readers without the
+arithmetic being done.*
 
 | Normaliser | Applies to | Definition |
 |---|---|---|
@@ -827,6 +854,32 @@ Normalisers — a sheet with 4 symbols and one crossing is worse than a sheet wi
 
 `N_sym` excludes power symbols. Project score = symbol-count-weighted mean of
 sheet scores.
+
+**A rule declares its own normaliser; the table above is the default.** The
+family a rule's code belongs to is a good default and is not always right,
+because **what normalising is correct depends on what the rule's own detection
+already does** — knowledge the rule has and the scorer does not. `KI-DNP-001`
+counts symbols and is nonetheless correct at `per_sheet`, because its allowance
+is already `max(2, 0.05·N_sym)` and normalising again would divide twice.
+
+**The table is incomplete, and the default for an unlisted family is strict.**
+`JCT`, `LBL` and `DNP` appear in no row. They take `per_sheet`, which divides by
+nothing, and that is deliberate: **an unlisted rule keeping its whole weight can
+only make a bad drawing score worse**, which is the direction the north star
+points, whereas the lenient default would quietly reduce penalties nobody
+decided to reduce. Measured on both densities by
+`an_unlisted_family_keeps_its_whole_weight`, so the default is visible rather
+than implied. *Recorded at the M5 checkpoint 1 review, PROPOSED 10.*
+
+**A rule that saturates blocks.** A rule firing at or above its declared
+**saturation fraction** of the objects it counts sets `"gate": "fail"`, on the
+tier mechanism above. The provisional fraction is **1/2** and is provisional:
+M5 Phase 4 is authorised to move it on measurement. *Ruled by James on BLOCKED 3
+at the M5 checkpoint 1 review.* The reason is arithmetic: a normalised rule that
+can fire at most once per object it counts has `n ≤ N`, so its contribution is
+capped at `w · reference` **whatever the sheet's size** — a sheet on which every
+wire crosses another scores **67** at ten wires and at ten thousand. The score
+cannot express that, and the gate can.
 
 **Tier 1 findings do not reduce the score.** They set `"gate": "fail"`
 independently. A schematic can score 96 and still fail the gate; that is
