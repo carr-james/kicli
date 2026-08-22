@@ -743,10 +743,10 @@ Phase 2.
 
 ### 1. Score
 
-**Ticked:** 4 — chore 7, T5, T1, opening-1. **All four APPROVE first time. No
-rejections, and therefore no escalations.**
+**Ticked:** 5 — chore 7, T5, T1, opening-1, carried-2. **All five APPROVE first
+time. No rejections, and therefore no escalations.**
 
-**And all four reviewers re-derived rather than re-read**, which is the number
+**And all five reviewers re-derived rather than re-read**, which is the number
 worth carrying out of this stop. Three took `git archive` into a `mktemp -d` and
 verified fidelity by file count before reading anything; one re-parsed KiCad's
 own library rather than checking the entry's arithmetic; one re-fetched every
@@ -760,8 +760,8 @@ and the change belong to different actors in different trees.
 
 **Phase 0 is closed.** All three `opening-*` tasks are done and ticked.
 
-**Merged:** 4 lanes — `lane-c7` → `5fede1b`, `lane-t5` → `0333151`,
-`lane-t1` → `ee08396`, `lane-o1b` → `e4449ed`. Scope verified before the merge
+**Merged:** 5 lanes — `lane-c7` → `5fede1b`, `lane-t5` → `0333151`,
+`lane-t1` → `ee08396`, `lane-o1b` → `e4449ed`, `lane-pin` → `d031bed`. Scope verified before the merge
 (`git diff --stat d4c0eb8..lane-c7`: exactly the two IN-list files), main
 checkout clean before it began, merge confirmed **by reading the merge commit's
 two parents** rather than `HEAD` — the rule promoted this morning, used the
@@ -776,6 +776,12 @@ the run, per the other rule promoted this morning):
 | `cargo xtask corpus --verify` | 115 schematics, 36 library tables, **0 not at the pinned stamp**, verified |
 | `cargo test -p kicli --features corpus`, `KICLI_TEST_KICAD_CLI=1` | **71 binaries, 535 passed, 0 failed, 0 ignored, 0 skip markers** |
 | netlist oracle, `--nocapture` | **`hierarchies matched: 35/35`**, 5 tests, 16.09s |
+
+**At the `lane-pin` merge (`d031bed`)**, on a quiescent tree after record
+commit `a8bd552`: `cargo xtask check` **6 of 6**; corpus arm **80 binaries, 587
+passed, 0 failed, 1 ignored** (the same self-documenting child-process helper).
+`agent_doc` **10 passed, 0 failed** once the orchestrator applied the owed
+block — closing the sanctioned red exactly as the lane predicted.
 
 **At the `lane-t1` and `lane-o1b` merges (`ee08396`, `e4449ed`)**, on a
 quiescent tree after record commit `a8f2057`: `cargo xtask check` **6 of 6**;
