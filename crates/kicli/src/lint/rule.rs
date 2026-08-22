@@ -10,6 +10,8 @@
 use crate::geometry::Point;
 use crate::lint::drawing::Drawing;
 use crate::lint::finding::{Finding, Penalty, RuleId, Severity, Tier};
+use crate::lint::gate::Saturation;
+use crate::lint::score::Normaliser;
 use crate::model::items::{SheetPath, Uuid};
 
 /// One deterministic check over a drawing.
@@ -67,6 +69,29 @@ pub trait Rule: Sync {
         }
     }
 
+    /// What one of this rule's findings is divided by before it is scored.
+    ///
+    /// The default is what the published catalogue gives the rule's family.
+    /// Override it where the rule's own definition disagrees with its family:
+    /// what a rule counts is the rule's knowledge, and the scorer does not
+    /// have it. A rule whose code says one thing and whose definition counts
+    /// another corrects itself here, in one line, in its own file.
+    fn normaliser(&self) -> Normaliser {
+        Normaliser::of(self.id())
+    }
+
+    /// What this rule counts, and how much of it makes a drawing fail.
+    ///
+    /// A normalised rule cannot cost more than its ceiling however often it
+    /// fires, so cost alone cannot say that a drawing is wrong all over. A
+    /// rule that can be wrong all over declares what it counts and the share
+    /// of it that is too much. The default is a rule that never saturates,
+    /// because a rule that reports at most once about a sheet has no share of
+    /// anything to cover.
+    fn saturation(&self) -> Saturation {
+        Saturation::NEVER
+    }
+
     /// Look at one drawing and record what is wrong with it.
     ///
     /// The method reads and never writes. It sees one sheet placement at a
@@ -84,6 +109,8 @@ pub struct Findings<'a> {
     tier: Tier,
     severity: Severity,
     weight: Penalty,
+    normaliser: Normaliser,
+    saturation: Saturation,
     sheet: &'a SheetPath,
     found: Vec<Finding>,
 }
@@ -97,6 +124,8 @@ impl<'a> Findings<'a> {
             tier: rule.tier(),
             severity: rule.severity(),
             weight: rule.weight(),
+            normaliser: rule.normaliser(),
+            saturation: rule.saturation(),
             sheet,
             found: Vec::new(),
         }
@@ -144,6 +173,8 @@ impl<'a> Findings<'a> {
             message,
             fix,
             penalty: self.weight,
+            normaliser: self.normaliser,
+            saturation: self.saturation,
         });
     }
 }

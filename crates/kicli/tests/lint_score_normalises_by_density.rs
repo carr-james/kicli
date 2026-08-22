@@ -21,7 +21,7 @@ use std::path::{Path, PathBuf};
 
 use kicli::geometry::Point;
 use kicli::lint::score::{Density, Normaliser, RawPenalty, SheetScore, project_score};
-use kicli::lint::{Drawing, Finding, Penalty, RuleId, Severity, Tier};
+use kicli::lint::{Drawing, Finding, Penalty, RuleId, Saturation, Severity, Tier};
 use kicli::model::items::SheetPath;
 use kicli::model::{Hierarchy, LoadedFile};
 use kicli_probe::{Probe, pin, power, rectangle, symbol};
@@ -102,6 +102,10 @@ fn density_of(path: &Path) -> Density {
 }
 
 /// One finding of a named rule, weighing the same as every other here.
+///
+/// The normaliser is the one a rule that declares nothing takes, which is what
+/// the published catalogue gives the rule's family. The scorer reads the
+/// finding's own field, so a finding built by hand must carry it.
 fn finding(rule: &'static str, tier: Tier) -> Finding {
     Finding {
         rule: RuleId(rule),
@@ -113,6 +117,8 @@ fn finding(rule: &'static str, tier: Tier) -> Finding {
         message: "the drawing is wrong here".to_owned(),
         fix: None,
         penalty: Penalty::points(WEIGHT),
+        normaliser: Normaliser::of(RuleId(rule)),
+        saturation: Saturation::NEVER,
     }
 }
 

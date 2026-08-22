@@ -6,6 +6,7 @@
 //! looked the number up would be misled.
 
 use crate::kicad::CliFailure;
+use crate::lint::gate::Gate;
 use crate::route::report::Status;
 
 /// What a kicli run reports to whoever started it.
@@ -126,6 +127,32 @@ impl ExitCode {
             | CliFailure::WrongVersion { .. } => Self::Tool,
             CliFailure::BadInputFile { .. } => Self::File,
             CliFailure::Failed { .. } => Self::Operation,
+        }
+    }
+
+    /// The code a gate reading reports.
+    ///
+    /// **A gate is asked for, and a run that was not asked reports findings and
+    /// exits [`Self::Success`]** — findings are data, not failure. So this
+    /// mapping is reached only when a gate was requested, and its whole job is
+    /// to keep the verdict and the number apart: a drawing that fails the gate
+    /// leaves [`Self::Gate`] whatever it scored, and a drawing that passes
+    /// leaves [`Self::Success`] whatever it scored.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kicli::cli::ExitCode;
+    /// use kicli::lint::Gate;
+    ///
+    /// assert_eq!(ExitCode::for_gate(&Gate::default()), ExitCode::Success);
+    /// ```
+    #[must_use]
+    pub fn for_gate(gate: &Gate) -> Self {
+        if gate.passes() {
+            Self::Success
+        } else {
+            Self::Gate
         }
     }
 

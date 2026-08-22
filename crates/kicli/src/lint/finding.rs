@@ -11,6 +11,8 @@
 use std::cmp::Ordering;
 
 use crate::geometry::Point;
+use crate::lint::gate::Saturation;
+use crate::lint::score::Normaliser;
 use crate::model::items::{SheetPath, Uuid};
 
 /// A rule's code, such as `KI-FLOW-001`.
@@ -194,6 +196,11 @@ impl Penalty {
 /// `penalty` is the rule's weight for one occurrence, before the density
 /// normaliser is applied. The scorer applies the normaliser; the rule does not
 /// know how many symbols the sheet holds.
+///
+/// `normaliser` and `saturation` are the rule's own declarations, stamped here
+/// exactly as the tier, the severity and the weight are. The scorer reads them
+/// from the finding, so it never has to guess what a rule counts from the shape
+/// of the rule's code.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Finding {
     /// Which rule found it.
@@ -214,6 +221,10 @@ pub struct Finding {
     pub fix: Option<String>,
     /// The weight of one occurrence, before normalisation.
     pub penalty: Penalty,
+    /// What the rule's weight is divided by, as the rule declared it.
+    pub normaliser: Normaliser,
+    /// What the rule counts, and the share of it that fails the gate.
+    pub saturation: Saturation,
 }
 
 impl Finding {
@@ -250,6 +261,8 @@ impl Ord for Finding {
                 &self.message,
                 &self.fix,
                 self.penalty,
+                self.normaliser,
+                self.saturation,
             )
                 .cmp(&(
                     other.tier,
@@ -257,6 +270,8 @@ impl Ord for Finding {
                     &other.message,
                     &other.fix,
                     other.penalty,
+                    other.normaliser,
+                    other.saturation,
                 ))
         })
     }

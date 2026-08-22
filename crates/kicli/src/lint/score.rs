@@ -90,7 +90,7 @@ const REFERENCE_WIRES: u32 = 10;
 /// A crossing on a sheet of two hundred wires says less about the drawing than
 /// a crossing on a sheet of four, so the count a rule reports is divided by how
 /// much of that kind of object the sheet holds.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Normaliser {
     /// Divide by the symbol count. Field, symbol and text rules take this.
     PerObject,
@@ -107,11 +107,18 @@ const PER_OBJECT_FAMILIES: [&str; 3] = ["FLD", "SYM", "TXT"];
 const PER_WIRE_FAMILIES: [&str; 2] = ["XING", "RTE"];
 
 impl Normaliser {
-    /// Which normaliser a rule's findings take.
+    /// The normaliser the published catalogue gives a rule's family.
     ///
-    /// The families named in the published catalogue decide it. Every other
-    /// family divides by nothing, which is the strict choice: an unlisted rule
-    /// keeps its full weight rather than quietly losing some of it.
+    /// **This is the default a rule takes, not the answer the scorer uses.**
+    /// The scorer reads what the rule declared, because what a rule counts is
+    /// the rule's knowledge: this table can only read the family out of the
+    /// code, and a rule whose definition disagrees with its family would be
+    /// divided by the wrong thing forever. A rule that disagrees says so in one
+    /// line in its own file, and this table never sees it.
+    ///
+    /// Every family the catalogue does not name divides by nothing, which is
+    /// the strict choice: an unlisted rule keeps its full weight rather than
+    /// quietly losing some of it.
     ///
     /// # Examples
     ///
@@ -242,7 +249,7 @@ impl RawPenalty {
         findings
             .iter()
             .filter(|finding| finding.tier == Tier::Two)
-            .filter(|finding| Normaliser::of(finding.rule) == normaliser)
+            .filter(|finding| finding.normaliser == normaliser)
             .map(|finding| u128::from(finding.penalty.in_thousandths()))
             .sum()
     }
@@ -412,10 +419,19 @@ fn grown_by(exponent: u128) -> u128 {
 mod tests {
     use super::{Density, Normaliser, RawPenalty, SheetScore, project_score, score_of};
     use crate::lint::finding::{Finding, Penalty, RuleId, Severity, Tier};
+    use crate::lint::gate::Saturation;
     use crate::model::items::SheetPath;
 
     /// One finding of a named rule, with a weight in whole points.
+    ///
+    /// The normaliser is the one the rule's family gives it, which is what a
+    /// rule that declares nothing takes.
     fn finding(rule: &'static str, tier: Tier, points: u16) -> Finding {
+        declared(rule, tier, points, Normaliser::of(RuleId(rule)))
+    }
+
+    /// One finding of a named rule, with a normaliser the rule declared.
+    fn declared(rule: &'static str, tier: Tier, points: u16, normaliser: Normaliser) -> Finding {
         Finding {
             rule: RuleId(rule),
             tier,
@@ -426,6 +442,8 @@ mod tests {
             message: String::new(),
             fix: None,
             penalty: Penalty::points(points),
+            normaliser,
+            saturation: Saturation::NEVER,
         }
     }
 
@@ -498,6 +516,10 @@ mod tests {
 
     #[test]
     fn each_family_takes_the_normaliser_the_catalogue_gives_it() {
+        // The catalogue's table, which is now the DEFAULT a rule takes rather
+        // than the answer the scorer uses. It is still pinned, because a rule
+        // that declares nothing gets exactly this and a silent change to the
+        // table would re-normalise every such rule at once.
         for code in ["KI-FLD-001", "KI-SYM-001", "KI-TXT-002"] {
             assert_eq!(
                 Normaliser::of(RuleId(code)),
@@ -511,6 +533,29 @@ mod tests {
         for code in ["KI-FLOW-001", "KI-LAY-001", "KI-DOC-001"] {
             assert_eq!(Normaliser::of(RuleId(code)), Normaliser::PerSheet, "{code}");
         }
+    }
+
+    #[test]
+    fn the_scorer_divides_by_what_the_finding_declares_not_by_its_code() {
+        // The mechanism the catalogue table cannot express. `KI-LAY-003` is
+        // written "1 per unaligned symbol", so it counts symbols, and its
+        // family says otherwise. A rule that declares what it counts is
+        // divided by that, and its code is never read.
+        let sheet = Density::of_counts(200, 0);
+        let by_code = [finding("KI-LAY-003", Tier::Two, 1)];
+        let declared_per_object = [declared("KI-LAY-003", Tier::Two, 1, Normaliser::PerObject)];
+
+        assert_eq!(Normaliser::of(RuleId("KI-LAY-003")), Normaliser::PerSheet);
+        assert_eq!(
+            RawPenalty::of(&by_code, sheet),
+            RawPenalty::billionths(1_000_000_000),
+            "the family table divides by nothing"
+        );
+        assert_eq!(
+            RawPenalty::of(&declared_per_object, sheet),
+            RawPenalty::billionths(100_000_000),
+            "the declaration divides by the symbol count"
+        );
     }
 
     #[test]

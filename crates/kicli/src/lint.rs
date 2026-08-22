@@ -25,6 +25,8 @@ pub mod engine;
 
 pub mod finding;
 
+pub mod gate;
+
 pub mod registry;
 
 pub mod rule;
@@ -34,5 +36,6 @@ pub mod score;
 pub use drawing::Drawing;
 pub use engine::Engine;
 pub use finding::{Finding, Penalty, RuleId, Severity, Tier};
+pub use gate::{Blocker, Counted, Gate, Report, Saturation};
 pub use rule::{Findings, Rule};
 pub use score::{Density, Normaliser, RawPenalty, SheetScore};
