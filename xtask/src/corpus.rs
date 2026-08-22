@@ -27,13 +27,45 @@ const EXPECTED_SCHEMATICS: usize = 115;
 const MINIMUM_LIBRARY_TABLES: usize = 36;
 
 /// Where the corpus lives, relative to the workspace root.
-fn corpus_root() -> PathBuf {
+#[must_use]
+pub fn root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../target/corpus")
+}
+
+/// The directories the corpus tests read, each with what reads it.
+///
+/// A corpus test that finds no files prints one line and returns. So a run
+/// asking for the corpus and getting none passes on nothing, which is the
+/// defect the third verdict exists to prevent, wearing a flag. `check
+/// --corpus` calls this first and refuses to start when a directory is
+/// missing.
+const READ_BY_TESTS: &[(&str, &str)] = &[
+    ("demos", "the canonicalised demo schematics"),
+    ("qa", "KiCad's regression data"),
+    ("kicad/demos", "the demo tree as KiCad ships it"),
+];
+
+/// Is the corpus there? Say what is missing when it is not.
+///
+/// # Errors
+///
+/// Names the first missing directory and what reads it.
+pub fn fetched(root: &Path) -> Result<(), String> {
+    for (directory, read_by) in READ_BY_TESTS {
+        let path = root.join(directory);
+        if !path.is_dir() {
+            return Err(format!(
+                "{} is not there, so the tests cannot read {read_by}",
+                path.display()
+            ));
+        }
+    }
+    Ok(())
 }
 
 /// Run the fetch, or the verification when `--verify` is given.
 pub fn run(verify_only: bool) -> ExitCode {
-    let root = corpus_root();
+    let root = root();
 
     if verify_only {
         return verify(&root);
@@ -186,7 +218,8 @@ fn verify(root: &Path) -> ExitCode {
 }
 
 /// Find an executable on `PATH`.
-fn which(program: &str) -> Option<PathBuf> {
+#[must_use]
+pub fn which(program: &str) -> Option<PathBuf> {
     let path = std::env::var_os("PATH")?;
     std::env::split_paths(&path)
         .map(|dir| dir.join(program))
@@ -236,4 +269,58 @@ fn copy_tree(from: &Path, to: &Path) -> std::io::Result<()> {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{READ_BY_TESTS, fetched, root};
+    use std::path::PathBuf;
+
+    /// A scratch directory of this name, empty, under `target/`.
+    fn scratch(name: &str) -> PathBuf {
+        let path = root().join("../xtask-scratch").join(name);
+        let _ = std::fs::remove_dir_all(&path);
+        std::fs::create_dir_all(&path).expect("a scratch directory under target/");
+        path
+    }
+
+    #[test]
+    fn an_empty_corpus_is_not_fetched() {
+        let path = scratch("corpus-empty");
+        let error = fetched(&path).expect_err("an empty directory is not a corpus");
+        assert!(error.contains("demos"), "{error}");
+    }
+
+    #[test]
+    fn every_directory_the_tests_read_is_required() {
+        // Each directory is required on its own. A check that looked at only
+        // one of the three would pass two of these three cases, so the loop
+        // is what makes the check discriminating rather than decorative.
+        let path = scratch("corpus-partial");
+        for (index, (missing, _)) in READ_BY_TESTS.iter().enumerate() {
+            for (other, _) in READ_BY_TESTS {
+                if other == missing {
+                    continue;
+                }
+                std::fs::create_dir_all(path.join(other)).expect("a scratch directory");
+            }
+            let _ = std::fs::remove_dir_all(path.join(missing));
+            let error = fetched(&path).unwrap_err();
+            assert!(
+                error.contains(missing),
+                "case {index}: {missing} is missing and the answer was `{error}`"
+            );
+        }
+    }
+
+    #[test]
+    fn a_corpus_holding_all_three_directories_is_fetched() {
+        // The presence control for the two checks above: they must be able to
+        // say yes, or "not fetched" would be their only answer.
+        let path = scratch("corpus-whole");
+        for (directory, _) in READ_BY_TESTS {
+            std::fs::create_dir_all(path.join(directory)).expect("a scratch directory");
+        }
+        assert!(fetched(&path).is_ok(), "{:?}", fetched(&path));
+    }
 }
