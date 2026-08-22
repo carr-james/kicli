@@ -475,6 +475,49 @@ fn one_off_grid_pin_fails_the_gate_and_leaves_the_score_alone() {
     );
 }
 
+/// The two off-grid points of the committed score fixture, in internal units.
+///
+/// Both are `104.14 mm` across and `98.29 mm` / `105.91 mm` down. They are
+/// **KiCad's numbers, not ours**: `kicad-cli sch erc --severity-all` on the
+/// committed bytes reports `endpoint_off_grid` at both, and the fixture's own
+/// entry (`tasks/M5/phase1-t4-tier-separation.md`) records the same three
+/// violations from an independent run.
+const LADDER_UPPER: Point = Point::new(1_041_400, 982_900);
+/// The lower of the two, one pin length below.
+const LADDER_LOWER: Point = Point::new(1_041_400, 1_059_100);
+
+#[test]
+fn the_rule_finds_what_kicad_found_in_a_committed_drawing() {
+    // The one check here over a drawing KiCad wrote and canonicalised rather
+    // than one this file built. `sch/score/high_and_blocked.kicad_sch` is a
+    // two-rail ladder whose last resistor sits off the connection grid, and
+    // KiCad's own rule check reports it. The expected points below are read
+    // out of that report, so nothing here is hand-asserted.
+    //
+    // The rule reports FOUR findings where KiCad reports three, and the
+    // difference is granularity rather than disagreement: KiCad reports once
+    // per item and names R8's pin 1, while this rule reports once per
+    // connectable point and so names both pins. The two points are the same.
+    let path = fixture("sch/score/high_and_blocked.kicad_sch");
+    let mut seen: Vec<(String, Point)> = findings(&path)
+        .iter()
+        .map(|one| (one.message.clone(), one.pos))
+        .collect();
+    seen.sort();
+
+    let pin = "the pin sits off the connection grid".to_owned();
+    let wire = "the wire endpoint sits off the connection grid".to_owned();
+    assert_eq!(
+        seen,
+        vec![
+            (pin.clone(), LADDER_UPPER),
+            (pin, LADDER_LOWER),
+            (wire.clone(), LADDER_UPPER),
+            (wire, LADDER_LOWER),
+        ]
+    );
+}
+
 /// Every class, with the drawing that displaces it and the point it lands on.
 ///
 /// One table, read by the oracle check below, so the overlap with KiCad's own
@@ -535,16 +578,31 @@ fn kicad_agrees_where_its_own_check_reaches() {
         );
     }
 
-    // And where the two do overlap, they name the same point. The coordinate
-    // is read out of KiCad's report text, not out of anything kicli computed.
+    // Where the two overlap on a PIN they name the same point, exactly. The
+    // coordinate is read out of KiCad's report text, not out of anything kicli
+    // computed.
     let pin = drawing_with("oracle-pin-position", Class::Pin);
-    let report = kicad.rule_check(&pin);
-    let found = findings(&pin);
-    let position = format!("({} mm, {} mm)", found[0].pos.x, found[0].pos.y);
+    let pin_report = kicad.rule_check(&pin);
+    let pin_found = findings(&pin);
+    let at = format!("({} mm, {} mm)", pin_found[0].pos.x, pin_found[0].pos.y);
     assert!(
-        report.text().contains(&position),
-        "KiCad puts the off-grid pin at {position}:\n{}",
-        report.text()
+        pin_report.text().contains(&at),
+        "KiCad puts the off-grid pin at {at}:\n{}",
+        pin_report.text()
+    );
+
+    // **And where they overlap on a WIRE they do not.** KiCad reports the
+    // violation at the wire's own anchor, which is on the grid, and never
+    // names the end that is off it. A non-double-counting seam that joined the
+    // two reports by position would therefore suppress nothing for wires and
+    // everything for pins. Measured, not assumed: the assertion above is the
+    // presence control for the matcher this one uses.
+    let wire = drawing_with("oracle-wire-position", Class::WireEnd);
+    let wire_report = kicad.rule_check(&wire);
+    assert!(
+        !wire_report.text().contains(&format!("({} mm,", WIRE_END.x)),
+        "KiCad does not name the off-grid end of a wire:\n{}",
+        wire_report.text()
     );
 
     // The other half of the pin measurement, confirmed by the other
