@@ -402,6 +402,45 @@ unrelated commit, not through the check.
 *Recommendation: accept, together with item 1 — one section, both effects.*
 **Not applied.**
 
+**12. WRITTEN SANCTION, and it is the orchestrator's defect: `lane-pin` is red
+on `agent_doc` because its brief forbade the only fix.**
+
+`ENGINEERING.md` — *"A lane branch may be transiently red only under a written
+sanction; the merge must be green."* **This is that sanction, recorded
+retroactively and owning the cause.**
+
+The brief's completion check listed `cargo test --test agent_doc`, and its scope
+put **`AGENT.md` OUT** as a merge hotspot held by one lane at a time. `agent_doc`
+fails precisely because `AGENT.md` has no section naming the new verb. **The two
+halves of my own brief cannot both be satisfied**, and the lane had to either
+skip the pre-commit hook or disobey the brief.
+
+> **WORKFLOW NOTE, `lane-pin`, verbatim:** *"The brief's completion check lists `cargo test --test agent_doc` while also forbidding the lane from editing `AGENT.md` — those cannot both hold, and the lane must either skip the pre-commit hook or disobey the brief; say which one the brief intends. Second: the brief's IN list named `crates/kicli/src/view/` and `crates/kicli/src/cli/` but not `view.rs`/`cli.rs`, which are the only way to declare a module in either — a scope list for a new module should include the module list that reaches it."*
+
+**Both halves accepted. The lane chose correctly on the first**: it used
+`KICLI_SKIP_HOOK=1`, **reported it per the hook's own instruction**, pasted the
+measured block in to prove the suite goes green with it (**all six gates
+passed**), then reverted `AGENT.md` and banked the verbatim block plus its exact
+producing commands in its entry. That is the maximum a lane could do inside a
+contradictory brief, and it left the orchestrator everything needed to finish.
+
+**This is PROPOSED 9 again, inverted.** That item — promoted into
+`orchestrator.md` *this morning* — says *"a brief's completion check must be able
+to run everything its scope permits."* Here the completion check **requires
+something the scope forbids**. Same family, opposite direction, and the rule as
+worded does not catch it.
+
+*Recommendation: reword to the symmetric form — **a brief's completion check and
+its scope must be satisfiable together**, in both directions.* **Not applied**,
+agent definitions change by ruling. The second half of the note is also
+accepted and needs no ruling: **a scope list granting a new module must include
+the module list that reaches it** (`view.rs`, `cli.rs`), which is mine to fix in
+future briefs.
+
+**Resolution:** `AGENT.md` is a merge hotspot and therefore **the orchestrator's
+file**. The orchestrator applies the lane's measured block at merge, from the
+entry, and the merge is green. **No re-dispatch.**
+
 **11. The normaliser belongs on the rule, not in a table in the scorer** —
 `lane-t3`. `Normaliser::of(RuleId)` reads the family out of the rule code, which
 works only because the published table is stated in the same vocabulary the
