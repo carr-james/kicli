@@ -475,7 +475,7 @@ on the `wire draw --auto-labels` arm, and is also unchanged and passing.
 | `edit_wire_connect.rs` `Connected::claimed_net` (helper for three assertions) | `self.object()["net"].as_str()` — the top-level sibling key | asserts `wire()["joined_net"]` is **present**, then reads it. Presence and value are separate, because `as_str()` answers `None` for a null and for an absent key alike |
 | `edit_wire_connect.rs` `a_route_joins_the_two_pins_it_names` | `claimed_net() == Some(found)` where `found = net_name_of(sheet,"R1","1")` | unchanged in form; the shared-ancestor analysis is now written into the test beside it (below) |
 | `edit_wire_connect.rs` `a_connection_over_the_threshold_is_proposed_and_not_drawn` | `claimed_net() == None` — could not tell null from absent | `claimed_net() == None` **through the presence assertion**, plus `wire()["joined_net"] == Value::Null` |
-| `edit_wire_connect.rs` `a_route_reaches_a_net_by_name` (line ~786) | `claimed_net() == Some("SIG")` | same literal, through the migrated helper |
+| `edit_wire_connect.rs` `connecting_to_a_net_takes_the_nearest_terminal` (line ~786) | `claimed_net() == Some("SIG")` | same literal, through the migrated helper |
 | `wire_loop.rs` step 2 | `pins["net"].as_str() == Some(named)` — top-level | `joined_net(&pins) == Some(named)`, a new helper that asserts key presence first |
 | `wire_loop.rs` step 3 | `to_net["net"].as_str() == Some("SIG")` | `joined_net(&to_net) == Some("SIG")` |
 | `wire_output_contract.rs` `KEYS` | 15 keys, no joined net | 16 keys, `"joined_net"` among them. The list is written out rather than derived, so a dropped key fails at every status |
@@ -504,7 +504,7 @@ fails on exactly the breaks the equality cannot see. The analysis is now written
 into the test as a comment, so the next reader does not have to redo it.
 
 The second do-nothing arm the skill asks for is already in the file and across
-it: `a_route_reaches_a_net_by_name` asserts `Some("SIG")` and `wire_loop.rs`
+it: `connecting_to_a_net_takes_the_nearest_terminal` asserts `Some("SIG")` and `wire_loop.rs`
 step 3 asserts `Some("SIG")` against a different drawing, so a `joined_net` that
 returned a constant fails one of the three.
 
@@ -582,3 +582,110 @@ re-measured at `d4c0eb8`. All of it held, with one correction:
   did not assert the joined net before this change and does now, so it was in
   scope under "files whose checks assert the joined net" — it just could not be
   found by grepping for the old key.
+
+### Falsification table
+
+Good state committed before the first break, per `falsification-control` rule 1.
+Anchored to content hashes, not SHAs: `crates/kicli/src/cli/edit/wire/contract.rs`
+`8aac8d457bd9a46d3192a06d3b204c7d4130661a`,
+`crates/kicli/src/cli/edit/wire.rs` `78f744c3c3b6d08f5de7aa3237338b7f1260a5a2`,
+`crates/kicli/tests/edit_wire_connect.rs`
+`7d5858a2d454fd80815b9be669a35ac95913f6ca`. Every restore was checksummed
+against those before the next break; `cargo xtask check` is green on the
+restored tree.
+
+Run with `cargo test --no-fail-fast` — without it cargo stops after the first
+failing target and the table under-counts.
+
+| # | what was broken, exactly | what caught it |
+|---|---|---|
+| B1 | `contract.rs::to_json`: the whole line `"joined_net": report.joined_net,` deleted, so the key never appears | **15**, over five binaries: `every_status_answers_with_the_same_key_set`; all six golden checks; `contract.rs`'s two renderer tests; `a_route_joins_the_two_pins_it_names`, `a_connection_over_the_threshold_is_proposed_and_not_drawn`, `a_performed_proposal_reports_the_net_its_labels_made`, `connecting_to_a_net_takes_the_nearest_terminal`; `an_agent_wires_a_sheet_and_kicad_agrees`; `a_drawn_wire_answers_in_the_contract_and_in_the_mutation_result` |
+| B2 | same line, value replaced by `serde_json::Value::Null` — **the do-nothing arm**: key present, never a name | **6**: `a_joined_net_matches_the_golden`; `contract.rs::a_joined_net_leads_the_text_and_names_itself_in_json`; `a_route_joins_the_two_pins_it_names`; `a_performed_proposal_reports_the_net_its_labels_made`; `connecting_to_a_net_takes_the_nearest_terminal`; `an_agent_wires_a_sheet_and_kicad_agrees`. **The presence assertions do not fire**, which is why presence and value are asserted separately rather than through one `as_str()` |
+| B3 | two changes together in `contract.rs`: `to_json`'s value → the constant `Some("SIG_A".to_owned())`, and `text`'s conditional `writeln!` → an unconditional `writeln!(out, "joined: net SIG_A")` | **15**, including `only_the_joined_net_may_come_before_the_status_word`, `the_status_word_starts_the_first_line_of_every_form`, `an_empty_report_still_names_both_ends`, `auto_labels_writes_the_pair_and_says_so`, `command_surface`'s presence-and-null pair, and every null golden. **See the row below it: two checks stayed green and that is the finding** |
+| B4 | `contract.rs::text`: the `if let Some(net) … writeln!` block deleted; JSON untouched | **3**: `a_joined_net_matches_the_golden`, `contract.rs::a_joined_net_leads_the_text_and_names_itself_in_json`, `only_the_joined_net_may_come_before_the_status_word` |
+| B5 | `contract.rs::text`: the same block moved to **after** `headline` — exactly the position change `AGENT.md` would notice | the same **3**. This is goal-state item 4's guard, and it is the reason no `AGENT.md` text block had to be regenerated |
+| B6 | `wire.rs::draw_wire`: `perform(…, None)` → `perform(…, Some([&request.from, &request.to]))` — `wire draw` reporting a net through the shared renderer | **1**: `route_labels::auto_labels_writes_the_pair_and_says_so`, on `starts_with("labels U1.1 -> U2.2\n")`. `command_surface.rs`'s `starts_with("routed …")` did **not** fire, and that is correct rather than a hole: it drives the plain `wire draw` path, which never enters `perform` |
+| B7 | `wire.rs::connect_wire`: `drawn.report.joined_net = joined_net(…)` → `let _ = joined_net(…)` | **3**: `a_route_joins_the_two_pins_it_names`, `connecting_to_a_net_takes_the_nearest_terminal`, `an_agent_wires_a_sheet_and_kicad_agrees` |
+| B8 | `wire.rs::perform`: `route.joined_net = joins.and_then(…)` → `let _ = joins.and_then(…)` — the `wire connect --auto-labels` arm | **1, and only 1**: `a_performed_proposal_reports_the_net_its_labels_made`, added by this task. See below |
+
+#### B3's two green checks, diagnosed rather than skipped
+
+`falsification-control` says green is never good news. Two checks stayed green
+under B3 and they are different cases.
+
+- **`a_route_joins_the_two_pins_it_names` — case 2, the dangerous one, and it is
+  the degenerate-equality prediction confirmed by measurement.** That check
+  compares the reported net with `net_name_of(sheet,"R1","1")`, and the constant
+  the break substituted is `SIG_A`, which is that fixture's own answer. A
+  reported-equals-extractor check on one fixture cannot see a constant. What
+  does see it: `connecting_to_a_net_takes_the_nearest_terminal` and `wire_loop` step 3, which
+  assert the literal `"SIG"` on a different drawing, and
+  `a_performed_proposal_reports_the_net_its_labels_made`, which asserts `R1_1`
+  on a third. **The equality is only sound because those three literals stand
+  beside it**, and that is now written into the test as a comment.
+- **`a_joined_net_matches_the_golden` — case 1, a genuine no-op.** The new
+  golden's own value is `SIG_A`, so substituting the constant `SIG_A` changed
+  nothing that golden asserts. It fires on B1, B2, B4 and B5, so it is not a
+  blind instrument; it is simply the one case B3 could not move.
+
+#### B8 is the reason a check was added rather than only migrated
+
+**`wire connect --auto-labels` had no behavioural check at all** before this
+task — `route_labels.rs` drives `wire draw --auto-labels`, and
+`command_surface.rs` only reads the two `--help` texts. The migration put a
+decision on that arm (`perform`'s `joins` parameter), and B8 measured that
+deleting it left **every check in the repository green**. That is why
+`a_performed_proposal_reports_the_net_its_labels_made` exists, and its own
+falsification is B8: with it, the break fails; without it, the break is
+invisible.
+
+#### The environment break class
+
+The new golden `wire_contract_routed_joined.golden` derives from a probe drawing
+and therefore consumes generated identifiers — the class `falsification-control`
+says is not covered by source breaks. Second-directory run, by the skill's own
+recipe (`git archive HEAD | tar -x -C "$(mktemp -d)"`), of
+`wire_output_contract`, `edit_wire_connect` and `command_surface`: **11, 15 and
+22 tests, all passing**, under a scratch path this worktree never saw. The
+existing `without_generated_identifiers` normalisation is what makes that true,
+and the new golden inherits it unchanged.
+
+#### What is NOT watched by a committed check, said plainly
+
+**The `AGENT.md` JSON example block.** `agent_doc.rs` compares the document's
+command surface against `clap`, not its example output, so a wrong example
+passes every gate. This block was verified once, mechanically, against a real
+run (`keys equal: True`, `values equal: True`) — but that verification is a
+measurement in this entry and not a check in the tree. It is precisely what
+`tasks/M5/chore-8-agent-example-recipe.md` is for, and this is evidence for it.
+
+### Completion check, run in the lane worktree
+
+```
+cargo xtask check   ->  fmt pass, clippy pass, test pass, doc pass,
+                        deny pass, clean pass — all gates passed
+cargo test --test agent_doc        ->  10 passed; 0 failed
+cargo test --test command_surface  ->  22 passed; 0 failed
+```
+
+Corpus- and environment-gated arms do not count from inside a lane worktree;
+the orchestrator's merged run is what counts. The oracle arms in
+`edit_wire_connect.rs` were exercised here without `KICLI_TEST_KICAD_CLI`, so
+they skipped, and `the_oracle_says_when_it_did_not_run` is the check that says
+so rather than letting a silent run read as a passing one.
+
+### Scope, measured at hand-off
+
+`git diff --stat d4c0eb8 HEAD` names 16 files, every one on the brief's IN list:
+`AGENT.md`, `research/wire-routing.md`, `crates/kicli/src/route/report.rs`,
+`crates/kicli/src/cli/edit/wire.rs`, `crates/kicli/src/cli/edit/wire/contract.rs`,
+six files and five goldens under `crates/kicli/tests/`, one new golden, and this
+entry. **`.claude/hooks/frozen-paths.txt` does not appear**, which is the
+freeze-cycle evidence this task owes from the lane's side: the lift is
+`d4c0eb8`, the change is on top of it, and the restore is the orchestrator's
+first commit after the merge. `spec/SPEC.md` does not appear either, for the
+reason recorded above.
+
+The scope enumeration did **not** prove wrong: nothing outside the IN list was
+needed. One file the enumeration did not anticipate — `wire_output_contract.rs`
+— is inside it, under `crates/kicli/tests/**`.
