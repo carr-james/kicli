@@ -554,3 +554,97 @@ fn a_sheet_becomes_the_lists_the_search_reads() {
     );
     assert_eq!(Uuid(wire.0.clone()).short(), handle.as_str());
 }
+
+#[test]
+fn the_obstacle_walk_is_direction_blind() {
+    // The obstacle walk produced by Obstacles::lay must not depend on which end
+    // of a wire was written first. Two match guards at obstacles.rs:354 and :356
+    // pick the walk direction from the segment endpoints; both survived mutation
+    // killing and lived in the suite because nothing asserts this property. This
+    // check builds probe drawings differing only in wire order and compares their
+    // obstacle maps.
+    //
+    // Two probe drawings identical but for the written order of one horizontal
+    // wire's two (xy …), then two more for a vertical wire; each read through
+    // SheetObjects::read and Obstacles::build over the same Window; assert the
+    // same occupied cells with the same features.
+
+    /// Extract all (cell, features) pairs from an obstacle map.
+    fn extract_cells(map: &Obstacles) -> Vec<(Cell, Vec<Feature>)> {
+        let window = map.window();
+        let area = window.area();
+        let width = area.width().0 / GRID.0;
+        let height = area.height().0 / GRID.0;
+        let mut cells = Vec::new();
+        for column in 0..=width {
+            for row in 0..=height {
+                let cell = Cell { column, row };
+                let features = map.features(cell);
+                if !features.is_empty() {
+                    cells.push((cell, features.to_vec()));
+                }
+            }
+        }
+        cells
+    }
+
+    // Horizontal wire, written left-to-right.
+    let forward_h = drawing("direction-horizontal-forward", |probe| {
+        probe.wire(("96.52", "101.6"), ("106.68", "101.6"));
+    });
+    let forward_h_objects = objects(&forward_h, &Routed::default());
+    let forward_h_map = map(&forward_h_objects, at("88.9", "88.9"), at("114.3", "114.3"));
+
+    // Horizontal wire, written right-to-left (same endpoints, opposite order).
+    let reversed_h = drawing("direction-horizontal-reversed", |probe| {
+        probe.wire(("106.68", "101.6"), ("96.52", "101.6"));
+    });
+    let reversed_h_objects = objects(&reversed_h, &Routed::default());
+    let reversed_h_map = map(
+        &reversed_h_objects,
+        at("88.9", "88.9"),
+        at("114.3", "114.3"),
+    );
+
+    // Vertical wire, written top-to-bottom.
+    let forward_v = drawing("direction-vertical-forward", |probe| {
+        probe.wire(("101.6", "96.52"), ("101.6", "106.68"));
+    });
+    let forward_v_objects = objects(&forward_v, &Routed::default());
+    let forward_v_map = map(&forward_v_objects, at("88.9", "88.9"), at("114.3", "114.3"));
+
+    // Vertical wire, written bottom-to-top (same endpoints, opposite order).
+    let reversed_v = drawing("direction-vertical-reversed", |probe| {
+        probe.wire(("101.6", "106.68"), ("101.6", "96.52"));
+    });
+    let reversed_v_objects = objects(&reversed_v, &Routed::default());
+    let reversed_v_map = map(
+        &reversed_v_objects,
+        at("88.9", "88.9"),
+        at("114.3", "114.3"),
+    );
+
+    // Compare horizontal maps: anti-vacuity control and equality.
+    let forward_h_cells = extract_cells(&forward_h_map);
+    assert!(
+        !forward_h_cells.is_empty(),
+        "horizontal forward map is non-empty"
+    );
+    let reversed_h_cells = extract_cells(&reversed_h_map);
+    assert_eq!(
+        forward_h_cells, reversed_h_cells,
+        "horizontal wire maps differ in occupied cells"
+    );
+
+    // Compare vertical maps: anti-vacuity control and equality.
+    let forward_v_cells = extract_cells(&forward_v_map);
+    assert!(
+        !forward_v_cells.is_empty(),
+        "vertical forward map is non-empty"
+    );
+    let reversed_v_cells = extract_cells(&reversed_v_map);
+    assert_eq!(
+        forward_v_cells, reversed_v_cells,
+        "vertical wire maps differ in occupied cells"
+    );
+}
