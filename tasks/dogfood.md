@@ -467,8 +467,8 @@ than a patch; note the router already resolves pins internally (`route::terminal
 `Terminal::of_pin`), so the answer exists and is simply not exposed.
 
 **D2 — CARRIED INTO M5, 2026-08-21.** The ratified promotion is executed: the
-entry now also lives at `tasks/M5.md`. Closed for M4 by being carried, not by
-being done — it is a design decision about the agent-facing surface, and M4 ships
+entry now also lives at `tasks/M5/carried-2-pin-location.md`. Closed for M4 by
+being carried, not by being done — it is a design decision about the agent-facing surface, and M4 ships
 no read-only pin query. Defect 6 travels with it, being the same wound from the
 other side.
 
