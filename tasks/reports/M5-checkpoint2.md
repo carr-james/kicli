@@ -18,8 +18,8 @@ state in their entries, and every touched entry is true-stated.
 | `lane-snap` | the vendored checklist snapshot | ✅ **MERGED** `18ab930`, REJECT → APPROVE |
 | `lane-gate` | `chore-9`, the gate's arms | ⏸ **APPROVED, AWAITING MERGE.** Head `d083f9e`, base `047783b`. Scope verified: 4 files, nothing under `crates/` |
 | `lane-b` | `KI-CONN-001` | ⏸ **APPROVED, AWAITING MERGE.** Head `0968365`, base `18ab930`. Scope verified: 4 files, one disclosed additive edit to `lint/drawing.rs` |
-| `lane-a` | `KI-GRID-001` | ⏸ **PARKED, UNREVIEWED.** Head `0351d00`. The lane committed but had not reported at the stop |
-| `lane-t2` | ERC consumption + canary | ⏸ **PARKED, UNREVIEWED.** Head `cd5810e`. The lane committed but had not reported at the stop |
+| `lane-a` | `KI-GRID-001` | ⏸ **PARKED, UNREVIEWED.** Head **`0351d00`**. Cut off mid-task by the weekly limit, its last words *"Each class break is caught by its own named check. Waiting for the remaining nine."* — so **nine falsification rows were still outstanding.** **Tree clean, nothing uncommitted.** |
+| `lane-t2` | ERC consumption + canary | ⏸ **PARKED, UNREVIEWED.** Head **`eafd946`**. Cut off mid-task by the weekly limit, its last words *"All six gates pass. Now the named completion checks, then the final commit."* — so the gates passed but the named completion checks were never run. **Tree clean, nothing uncommitted.** |
 
 **Not dispatched:** `KI-OVL-001`, `KI-WIRE-001`, `KI-TXT-001` (lane A's remaining
 three), `KI-HIER-001` (blocked on T2's merge), `carried-3` reader strictness, and
