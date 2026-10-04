@@ -498,7 +498,8 @@ owes, and is green.
 |---|---|
 | base | `25aea90`, verified clean as the lane's first action |
 | `7991647` | the rule, the checks and this evidence — the **good state** every break was made against and restored to |
-| `febda2d` | the two checks break B4 asked for (`text_outside_the_body_does_not_make_a_crossing`, `a_wire_across_two_bodies_is_one_finding_that_counts_the_others`) and this section |
+| `febda2d` | the two checks break B4 asked for (`text_outside_the_body_does_not_make_a_crossing`, `a_wire_across_two_bodies_is_one_finding_that_counts_the_others`) and the falsification section above |
+| the commit after it | this closing section, which cannot name its own hash. `git log --oneline 25aea90..` is the whole list. |
 | gate | `cargo xtask check` on `febda2d`: **6 pass, 0 fail**, `corpus` and `kicad-cli` skip |
 
 Content hashes of the final state, for evidence that survives a merge-forward:
