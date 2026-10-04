@@ -363,7 +363,7 @@ fn shared_area(one: Rect, two: Rect) -> Option<Rect> {
     };
     // Before `Rect::new`, which normalises its corners and would hide an
     // inverted region as a valid one.
-    if start.x >= end.x || start.y >= end.y {
+    if start.x > end.x || start.y > end.y {
         return None;
     }
     Some(Rect::new(start, end))

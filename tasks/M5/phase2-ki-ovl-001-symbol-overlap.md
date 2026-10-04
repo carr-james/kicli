@@ -118,11 +118,19 @@ action, no fast-forward needed).** Written as the work was done.
 | `crates/kicli/tests/lint_symbol_overlap.rs` | **new**, the written-file checks |
 | this file, below the brief | the evidence |
 
-**No existing file was edited, and no fixture was committed**, so no `MANIFEST`
-line is owed. Every drawing is built by the probe harness into
-`CARGO_TARGET_TMPDIR`. The registration seam held exactly as T1's PASS said it
-would: `build.rs` found `overlap.rs` and registered it with nothing else
-touched.
+**No existing file was edited and no merge hotspot was touched.**
+`git diff --name-status 25aea90 HEAD` reports two additions and this file, and
+nothing else. **No fixture was committed, so no `MANIFEST` line is owed** —
+every drawing is built by the probe harness into `CARGO_TARGET_TMPDIR`, which
+also keeps the `clean` gate arm satisfied by construction. The registration
+seam held exactly as T1's PASS said it would: `build.rs` found `overlap.rs` and
+registered it with nothing else touched.
+
+**None of the twenty probe directory names is `src`** — they are `x-edge-2` …
+`x-edge2`, `y-edge-2` … `y-edge2`, `corner`, `corner-in`, `turned-over`,
+`turned-clear`, `three`, `non-adjacent`, `power`, `gate`, `gate-clean` — so the
+`the_four_way_rule_has_one_home` trap the brief named is avoided, and all twenty
+are distinct, so no two checks of one binary share a name-keyed path.
 
 ## 1. The tier, argued from the north star
 
@@ -233,12 +241,30 @@ capability gaps were measured, and neither was worked around.
 **(a) No rule can hold runtime configuration, so `--allow` cannot be wired.**
 `Rule::examine` receives a `Drawing` and nothing else, and `Engine::of` takes
 `Vec<&'static dyn Rule>` — so a value a command line chose cannot reach a rule
-at all. Independently, the lint engine **has no command surface yet**:
-`grep -rn "of_every_rule\|Engine::of"` over `crates/` finds callers in
-`crates/kicli/tests/` only, `kicli.toml` has no `[rules]` section
-(`src/model/config.rs:188-200` lists every section), and `cli/check.rs` is the
-project health check rather than the linter. **The `--allow` mechanism is built
-and measured; the wiring is one edit in files this lane may not touch.**
+at all, whatever the command line is. Three independent measurements of how far
+the gap runs:
+
+- **The lint engine has no caller outside the tests.**
+  `grep -rn "of_every_rule\|Engine::of"` over `crates/` finds callers in
+  `crates/kicli/tests/` only. `cli/check.rs` is the project health check, not
+  the linter, and there is no `sch score` verb yet.
+- **`kicli.toml`'s `[rules]` section is validated and not read.** *(Correcting
+  my own earlier draft of this paragraph, which said there was no such section
+  — measured against `src/model/config.rs` rather than assumed.)* The section
+  exists at `config.rs:224-227` with `default_tier2_enabled`, `gate_on_tier1`
+  and `consume_erc`, plus per-rule tables `[rules."KI-…-001"]` whose keys are
+  `RULE_KEYS = ["enabled", "weight", "free_allowance"]` (`config.rs:233-234`).
+  **`Config` has no `rules` field at all** (`config.rs:147-163`), so every one
+  of those keys is type-checked on the way in and then discarded. The purpose
+  is stated in that file's header — catch a typo in the milestone that writes
+  the file, not the one that reads it.
+- **There is no `allow` key, and the catalogue's own knob name is not there
+  either.** `research/style-rules.md` §4 names `overlap.symbol = "error"`;
+  `RULE_KEYS` has no `allow` and no `severity`. Adding either is a `config.rs`
+  change and a `kicli.toml` change, both merge hotspots.
+
+**The `--allow` mechanism is built and measured; the wiring is an edit in files
+this lane may not touch.**
 
 **(b) A rule's own type is unreachable from `tests/`.** The seam puts a rule
 file behind a private `mod` the build script writes, so `tests/` can reach
@@ -285,15 +311,26 @@ Recommendation: whoever writes the second one lifts `shared_area` rather than
 copying it, and deletes this copy in the same commit. Revisit trigger: the
 `KI-WIRE-001` or `KI-TXT-001` merge.
 
-## 7. No fix command is emitted, deliberately
+## 7. No fix command is emitted — **PROPOSED (lane ovl)**
 
 `KI-CONN-001` offers `kicli junction add --at <p>` because the repair is
-determinate. This rule's repair is not: the least move that clears a pair is
-computable (four candidates, integer, deterministic) and **may create a new
-overlap with a third symbol**, and which of the two symbols should move is a
-judgement about the drawing. `record` is used rather than `record_with_fix`.
-A fix that is wrong a fraction of the time trains an agent worse than no fix
-at all, and the dogfood gate is where that cost shows up.
+determinate: one junction at one point, and it joins every line through that
+point. This rule's repair is **not** determinate, and the command it would use
+exists — `kicli sym move <ref> --by x,y` (`cli/args.rs:484-485, 585`), so the
+choice is deliberate rather than forced.
+
+The least move that clears a pair **is** computable: four candidates, integer,
+deterministic, pick the smallest. Two things make it the wrong thing to print.
+It **may create a new overlap with a third symbol**, which the rule cannot see
+from one pair; and **which of the two symbols should move is a judgement about
+the drawing**, which the rule does not have. So `record` is used rather than
+`record_with_fix`.
+
+Recommendation: keep it. A fix that is wrong a fraction of the time trains an
+agent worse than no fix at all, and Constitution §6's reader is an agent that
+will run what it is given. Revisit trigger: a dogfood run where the absence of
+a suggested move costs the agent a turn — that would be evidence, and this
+paragraph is not.
 
 ## 8. Checks, and the falsification of each
 
@@ -350,11 +387,17 @@ transition and fails it.
 no-op.** `geometry::symbol_box::symbol_boxes` already transforms the body's two
 corners by `Transform::from_file(angle, mirror)` before offsetting to the
 anchor, so a rule that calls the primitive gets the rotation for free; the trap
-only bites a rule that computes a box itself. The two rotated pairs are kept
-anyway, because they are what would catch a later author who reached for
-`definition.units_for(...)` directly: with the anchors chosen as they are, the
-turned and the unturned hypothesis give **opposite** answers on both drawings,
-so such an author fails both checks rather than half of one.
+only bites a rule that computes a box itself.
+
+**The check is kept anyway, and break B6 is why it earns its place.** B6 drops
+the rotation at the rule's own call site — `drawn.angle = Angle(0);
+drawn.mirror = None;`, which is exactly what a later author who reached for
+`definition.units_for(...)` directly would produce — and
+`a_turned_body_is_compared_where_it_is_actually_drawn` is the **only** check in
+the suite that fails. Both of its arms fail, because the two anchors are chosen
+so the turned and the unturned hypothesis give **opposite** answers: on one the
+rule stops reporting an overlap that is there, and on the other it starts
+reporting one that is not.
 
 ### No oracle check is owed, and the derivation's own provenance
 
@@ -390,9 +433,79 @@ transition by `2 · TALL` and fail.
 
 ### Falsification table
 
-Breaks were made against the committed good state and restored with
-`git checkout --`. Content hash of the rule file in its good state:
+**Method.** Twelve breaks, each made against the **committed** good state —
+`1d437e3` — and restored with `git checkout --`, with the restored file's
+**content hash** checked after every row rather than trusting the command's exit
+code. Content hash of the rule file in its good state:
 `shasum crates/kicli/src/lint/rules/overlap.rs` =
-`PLACEHOLDER_HASH`.
+`c10701b4582cd5427b6b62141fe29a72e4775146`. Evidence is anchored to that hash
+rather than to a commit SHA, per the falsification-control skill: these commits
+will be merged forward.
 
-PLACEHOLDER_TABLE
+Each row ran `cargo test -p kicli --no-fail-fast --lib --test lint_symbol_overlap`.
+**Why those two targets are the complete catcher set, and how that was
+checked**: no other test target can see a behavioural change in this rule —
+`lint_findings_are_bit_identical`, `lint_scores_are_bit_identical` and
+`lint_findings_sort_by_their_key` run `specimens::all()` rather than the crate
+rules; `lint_gate_separates_the_tiers` builds explicit rule lists;
+`lint_pin_on_wire` filters to `KI-CONN-001`; and
+`lint_rules_register_from_their_own_files` asserts nothing about what a crate
+rule reports (its own comment says so). **That reasoning was verified rather
+than trusted**: break B3 was re-run over the whole suite, and the row below
+records whether the catcher list changed.
+
+| # | What was broken, exactly | The defect it models | Caught by |
+|---|---|---|---|
+| **B1** | `shared_area`: the **x** half of the region guard, `start.x >= end.x` → `start.x > end.x`. The y half left alone. | a shared edge on x fires — the one-character defect | **6** — `a_box_of_no_size_shares_nothing_even_with_itself` **(unit)**; `a_shared_edge_is_not_a_shared_area_and_one_unit_in_is` **(unit)**; `the_lookalike_disagrees_exactly_where_a_box_has_no_size` **(unit)**; `a_shared_edge_does_not_fire_and_one_internal_unit_of_overlap_does`; `exactly_the_overlapping_pair_is_named`; `one_overlapping_pair_fails_the_gate_whatever_the_sheet_holds` |
+| **B2** | `shared_area`: the **y** half only, `start.y >= end.y` → `start.y > end.y`. | the same defect on the other axis | **4** — `a_box_of_no_size_shares_nothing_even_with_itself` **(unit)**; `a_shared_edge_is_not_a_shared_area_and_one_unit_in_is` **(unit)**; `the_lookalike_disagrees_exactly_where_a_box_has_no_size` **(unit)**; `the_same_boundary_holds_on_the_other_axis` |
+| **B3** | `shared_area`: **both** halves relaxed to `>`. | `<=` everywhere: every edge and corner touch fires | **9** — `a_box_of_no_size_shares_nothing_even_with_itself` **(unit)**; `a_corner_touch_shares_nothing` **(unit)**; `a_shared_edge_is_not_a_shared_area_and_one_unit_in_is` **(unit)**; `the_lookalike_disagrees_exactly_where_a_box_has_no_size` **(unit)**; `a_corner_touch_is_not_an_overlap`; `a_shared_edge_does_not_fire_and_one_internal_unit_of_overlap_does`; `exactly_the_overlapping_pair_is_named`; `one_overlapping_pair_fails_the_gate_whatever_the_sheet_holds`; `the_same_boundary_holds_on_the_other_axis` |
+| **B4** | `bodies_of`: `if symbol.is_power() { continue; }` inserted after the definition guard. | power symbols exempted — the quiet 'fix' the catalogue forbids | **1** — `power_symbols_are_not_exempt` |
+| **B5** | `bodies_of`: `symbol_boxes(...).body` → `symbol_boxes(...).full`. | the `KI-TXT-001` box used instead of this rule's | **7** — `a_corner_touch_is_not_an_overlap`; `a_pair_that_is_not_adjacent_in_file_order_is_still_found`; `a_shared_edge_does_not_fire_and_one_internal_unit_of_overlap_does`; `a_turned_body_is_compared_where_it_is_actually_drawn`; `exactly_the_overlapping_pair_is_named`; `one_overlapping_pair_fails_the_gate_whatever_the_sheet_holds`; `the_same_boundary_holds_on_the_other_axis` |
+| **B6** | `bodies_of`: `let drawn` → `let mut drawn`, then `drawn.angle = Angle(0); drawn.mirror = None;`. | the body measured **unrotated** — the rotated-symbol trap | **1** — `a_turned_body_is_compared_where_it_is_actually_drawn` |
+| **B7** | `examine`: `bodies.iter().skip(place + 1)` → `…skip(place + 1).take(1)`. | nearest neighbour only, instead of every pair | **1** — `a_pair_that_is_not_adjacent_in_file_order_is_still_found` |
+| **B8** | `Allowed::permits`: the second disjunct — the `pair.one == two && pair.two == one` half — removed, leaving only `pair.one == one && pair.two == two`. | the allow pair becomes **ordered** | **2** — `an_allow_entry_exempts_only_the_pair_it_names` **(unit)**; `an_allow_entry_is_two_names_and_one_colon` **(unit)** |
+| **B9** | `examine`: the whole three-line guard `if self.allowed.permits(&one.name, &two.name) { continue; }` removed. | the allow list never consulted at all | **1** — `an_allow_entry_exempts_only_the_pair_it_names` **(unit)** |
+| **B10** | `tier`: `Tier::One` → `Tier::Two`. | the rule stops blocking | **1** — `one_overlapping_pair_fails_the_gate_whatever_the_sheet_holds` |
+| **B11** | `saturation`: `Saturation::NEVER` → `Saturation::of(Counted::Symbols)`. | the false, inert denominator of §3 | **1** — `one_overlapping_pair_fails_the_gate_whatever_the_sheet_holds` |
+| **B12** | `examine`: `shared.centre()` → `Point::default()` as the finding's position. | the marker moved off the overlap to the origin | **1** — `exactly_the_overlapping_pair_is_named` |
+
+**Twelve breaks, twelve caught, no green row.** The restored file's content hash was `c10701b4582cd5427b6b62141fe29a72e4775146` after **every** row, checked by `shasum` rather than inferred from `git checkout --`'s exit code.
+
+### Four things the table says that prose would have hidden
+
+**B4 and B6 are caught by exactly one check each, and that is the argument for
+those two checks existing.** Nothing else in the suite sees a power exemption,
+and nothing else sees a body measured unrotated. A rule file reviewed by reading
+would have both defects available to a later editor with no instrument pointing
+at them.
+
+**`power_symbols_are_not_exempt` survived B5**, and that is a limit of that
+check rather than a surprise: it asserts that a finding *exists* and names the
+two power symbols, and the full box is *larger* than the body box, so a break
+that enlarges every box leaves it green. Recorded rather than smoothed over —
+the check's claim is "power symbols are included", and it does not and should
+not also claim which box was used. B5's seven catchers are where that claim
+lives.
+
+**B1 against B2 is the axis contrast.** B1 fires the x sweep and leaves the y
+sweep green; B2 does the reverse. A single square fixture would have been caught
+by neither in a way that distinguished them, and a rule relaxed on one axis only
+is the shape a careless edit makes.
+
+**B7 measured the design reasoning that produced
+`a_pair_that_is_not_adjacent_in_file_order_is_still_found`, and confirmed it.**
+The check was written *before* B7 ran, on the prediction that
+`exactly_the_overlapping_pair_is_named` — three symbols in a row, one pair
+sharing an area, one pair merely meeting — **cannot** tell a full pair walk from
+a nearest-neighbour one, because the only overlapping pair in it is adjacent.
+B7 (`.take(1)`) is caught by the new check and by **nothing else in the suite**,
+including that one. Had the check not been added, B7 would have been a green row
+and the entry would have had to record a blind instrument.
+
+**B10 and B11 land on the same single check, which is the honest cost of a tier
+that is one line.** `one_overlapping_pair_fails_the_gate_whatever_the_sheet_holds`
+is the only thing standing between `Tier::One` and `Tier::Two`, and the only
+thing standing between `Saturation::NEVER` and the false denominator §3 argues
+against. Both are one-token edits in a file `cargo fmt --check` cannot see. That
+check is therefore load-bearing out of proportion to its length, and it is named
+here so a later reader does not treat it as a formality.
