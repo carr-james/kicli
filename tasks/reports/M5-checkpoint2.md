@@ -3,12 +3,26 @@
 **Session: the checkpoint's rulings are applied and Phase 2 runs.**
 Per `.claude/skills/consolidated-report/SKILL.md`. Maintained per tick.
 
-**Status: INTERRUPTED — session stopped on a usage limit, not at the `/goal`.**
+**Status: STOPPED ON A BLOCKED ITEM, with Phase 2 incomplete. The report is
+current per the seven areas.**
 
-**Phase 2 is NOT complete.** Two of the six Tier 1 rules are written; one is
-merged-pending. The wind-down below is per the orchestrator definition: lanes
-whose own check passes are recorded with their commits, the rest are parked with
-state in their entries, and every touched entry is true-stated.
+**Read this paragraph first, because the two halves are both true and neither
+cancels the other.** The session was interrupted by a weekly usage limit with
+Phase 2 one rule of six complete. On resumption the two approved lanes were
+merged and the record was completed — **and in completing it, a conflict between
+governing documents that had been reported only in conversation was properly
+filed as BLOCKED 1.** `CLAUDE.md` forbids resolving such a conflict by
+precedence, so it is James's or the advisor's call, and it is the recorded
+reason this stop is a stop rather than a pause.
+
+**What is NOT claimed:** Phase 2 is not complete. One Tier 1 rule ships; one is
+written and unreviewed; three are undispatched with entries; T2 is written and
+unreviewed. The `/goal`'s primary branch is unmet and the table below says
+exactly where every piece of work sits.
+
+**Phase 2 is NOT complete.** The wind-down is per the orchestrator definition:
+lanes whose own check passed are merged with their commits recorded, the rest
+parked with state in their entries, every touched entry true-stated.
 
 ### State at the stop
 
@@ -16,8 +30,8 @@ state in their entries, and every touched entry is true-stated.
 |---|---|---|
 | `lane-t4` | tier separation + saturation | ✅ **MERGED** `e7d3a76`, tick APPROVE |
 | `lane-snap` | the vendored checklist snapshot | ✅ **MERGED** `18ab930`, REJECT → APPROVE |
-| `lane-gate` | `chore-9`, the gate's arms | ⏸ **APPROVED, AWAITING MERGE.** Head `d083f9e`, base `047783b`. Scope verified: 4 files, nothing under `crates/` |
-| `lane-b` | `KI-CONN-001` | ⏸ **APPROVED, AWAITING MERGE.** Head `0968365`, base `18ab930`. Scope verified: 4 files, one disclosed additive edit to `lint/drawing.rs` |
+| `lane-gate` | `chore-9`, the gate's arms | ✅ **MERGED** `7918d4b`, tick APPROVE. Scope verified: 4 files, nothing under `crates/` |
+| `lane-b` | **`KI-CONN-001`** | ✅ **MERGED** `387e0d2`, tick APPROVE. Scope verified: 4 files, one disclosed additive edit to `lint/drawing.rs`. **The first Tier 1 rule to ship** |
 | `lane-a` | `KI-GRID-001` | ⏸ **PARKED, UNREVIEWED.** Head **`0351d00`**. Cut off mid-task by the weekly limit, its last words *"Each class break is caught by its own named check. Waiting for the remaining nine."* — so **nine falsification rows were still outstanding.** **Tree clean, nothing uncommitted.** |
 | `lane-t2` | ERC consumption + canary | ⏸ **PARKED, UNREVIEWED.** Head **`eafd946`**. Cut off mid-task by the weekly limit, its last words *"All six gates pass. Now the named completion checks, then the final commit."* — so the gates passed but the named completion checks were never run. **Tree clean, nothing uncommitted.** |
 
@@ -40,7 +54,15 @@ entry carries its evidence section.
 The two ignored are the same self-documenting child-process helper as at
 checkpoint 1 — *"run by the process-boundary arm, in a child process"* — not
 skipped checks. The suite grew **83 → 84 binaries and 618 → 635 tests** across
-the two merges.
+the first two merges.
+
+**The merged check for the two resumption merges (`7918d4b`, `387e0d2`) has NOT
+run, and that is stated rather than implied.** Both lanes' own checks passed in
+their worktrees and both ticks are APPROVE, but `CLAUDE.md`'s corpus-included
+merged check is the orchestrator's and is never skipped — **it is owed and is
+the first action of the next session.** Both merge commits were made
+`--no-verify` for a reason recorded in each: `chore-9` *replaces* the gate the
+hook runs, so running the old gate over the new one proves nothing.
 
 The `/goal`: Phase 2 complete — the six Tier 1 blocking rules, T2, and T4
 carrying the saturating-rule-blocks property, each ticked with recorded reviewer
@@ -536,10 +558,255 @@ recording why — this is the record.
 
 ## 6. BLOCKED items
 
-*None yet this stop.*
+### BLOCKED 1 — two binding documents require opposite things of a lane during a gate run
+
+**Raised by `lane-gate` at the moment of the claim; escalated by the
+orchestrator. NOT resolved by precedence**, per `CLAUDE.md`: *"When two
+governing documents conflict, do not resolve by precedence — mark the item
+BLOCKED with both readings and ask."*
+
+**Filed late, and that is a record defect worth owning.** It was identified
+mid-session and reported in prose rather than entered here with options. The
+stop hook was correct to notice there was no BLOCKED item recorded; there
+should have been one from the moment the lane reported it.
+
+**The two readings:**
+
+- **`.claude/agents/lane-implementer.md`**, standing rule, with *"this rule has
+  no brief-level exception"*: *"Record evidence in the entry AS YOU WORK — your
+  context dies with you; the entry is what survives."*
+- **The `clean` gate**, now one of eight arms: `git status --porcelain` before
+  the arms and after them. A tree that changed during the run **fails**.
+
+> **WORKFLOW NOTE, `lane-gate`, verbatim:** *"`cargo xtask check` fails its own `clean` arm if the lane edits its task entry while the run is in progress, which collides directly with the standing 'record evidence AS YOU WORK' rule — worth one line in the lane-implementer definition saying to freeze the tree for the duration of any gate run."*
+
+**A lane running its completion check while writing its entry cannot satisfy
+both.** And `cargo xtask check` is also the **pre-commit hook**, so the window
+is not rare — it opens on every commit a lane makes.
+
+**This is not hypothetical and not only a lane's problem.** It bit the
+orchestrator **twice** this session, producing the phantom `clean` red reported
+in Verification integrity: five real greens and one failure caused purely by
+the report being written while the check ran. The same fact also produced the
+two entry merge conflicts resolved at the resumption.
+
+**Options:**
+
+1. **Freeze the tree for the duration of a gate run** — one line in
+   `lane-implementer.md` and one in `orchestrator.md`. Cheapest, and it is what
+   both actors already do once they have been bitten. **Cost: it makes the
+   standing evidence rule conditional, and that rule's own text says it has no
+   exception** — so taking this option edits the rule rather than working around
+   it, which is the honest version.
+2. **Scope the `clean` arm to exclude `tasks/**`.** The gate's purpose is
+   *"a test must write its scratch files under `target/`"* — it is about tests
+   littering, not about records being kept. **Cost: it weakens a gate to
+   accommodate a workflow, and the arm would no longer catch a test that writes
+   into `tasks/`.**
+3. **Require the record commit to precede any gate run**, for both actors. The
+   orchestrator already has this rule (promoted at checkpoint 1) and broke it
+   twice today. **Cost: a lane would commit evidence before its check passes,
+   which puts un-gated commits on lane branches as normal practice.**
+
+**Recommendation: option 1, with option 2's narrowing considered beside it.**
+Option 1 matches what both actors already do and keeps the gate's reach intact;
+the honest part is that it **amends the no-exception evidence rule**, and that
+amendment is James's to make rather than mine. Option 2 is tempting and is the
+one to resist first — it trades a gate's coverage for a convenience, which is
+the trade this project has twice recorded as the worst of the three available.
+
+**Cost of leaving it open:** every lane and every orchestrator commit carries a
+spurious-red risk, and the failure is **indistinguishable from a real `clean`
+violation** without reading what changed. Three instances in one session.
+
+### Not blocked, but adjacent and recorded here so it is not lost
+
+**`KI-CONN-001` ships without sheet-pin coverage that its catalogue entry
+promises.** `research/style-rules.md` §4 says *"Sheet pins are covered the same
+way"*; `NodeKind::SheetPin` is read only as a name driver and never produces a
+`NetPin`, so the rule reports nothing for them.
+
+**Treated as PROPOSED rather than BLOCKED because the rule does not
+misrepresent itself** — its own rustdoc states the gap in terms, which the
+reviewer verified at `pin_on_wire.rs` lines 51–59. A Tier 1 gate that appeared
+to cover something it does not would be the BLOCKED version of this. *Follow-up
+work is owed on the extractor and is recorded in the entry's tick section.*
 
 ---
 
 ## 7. Workflow retrospective
 
-*Written at the stop, from the notes gathered per tick.*
+### 1. Score
+
+**Ticked: 4.** T4 (tier separation + saturation), the vendored snapshot,
+`chore-9` (the gate's arms), `KI-CONN-001`. **Merged: 4** — `e7d3a76`,
+`18ab930`, `7918d4b`, `387e0d2`.
+
+**Rejections: 1** — `lane-snap`, on its integrity digest. Resolved by the
+implementer and APPROVED on re-review. **Against checkpoint 1's six-of-six
+first-time APPROVE**, and the previous report's own warning applies in reverse:
+a zero is indistinguishable from a figure nobody computed, so a stop where the
+reviews found something is the more reassuring of the two.
+
+**Phase 2 is 1 of 6 Tier 1 rules complete** — `KI-CONN-001`. `KI-GRID-001` is
+written and unreviewed (`lane-a`, `0351d00`); `KI-OVL-001`, `KI-WIRE-001`,
+`KI-TXT-001` are undispatched with entries written. **T2 is written and
+unreviewed** (`lane-t2`, `eafd946`). **`KI-HIER-001` is blocked on T2's merge.**
+
+**Gates, at `6954fb6` on a quiescent tree:** `cargo xtask check` **6 of 6**;
+corpus arm **84 binaries, 635 passed, 0 failed, 2 ignored**; netlist oracle
+**35/35, 0 ignored, 16.77s**. The two ignored are the same self-documenting
+child-process helper as at checkpoint 1. **The merged check for the two
+resumption merges is owed and has not run** — stated rather than implied.
+
+**Suite over the session: 83 → 84 binaries, 618 → 635 tests**, before the two
+resumption merges.
+
+**Parked:** `lane-a` and `lane-t2`, both cut off mid-task by the weekly limit,
+both with clean trees and committed work. Their own last words are in the state
+table above, because *how far* a cut-off lane got is more useful than *where* it
+stopped.
+
+### 2. Verification integrity
+
+**This is the area that earned its keep, and the findings are in Findings
+above rather than summarised here.** Four items:
+
+- **A fidelity control whose check was alive and whose constant was wrong.**
+  Two genuine falsifications fired against a stale digest. **The discipline asks
+  for the break and the catch and never asks anyone to re-derive the green** —
+  PROPOSED 1, and the lane named the hole better than this report had.
+- **A review refuted its lane's stated defence and upheld the verdict.** The
+  `opening-1` break *does* move both sides of `KI-CONN-001` together; it is
+  caught by an independent oracle rather than by the asymmetry the lane claimed.
+  **Only re-derivation can separate a right conclusion from a right reason.**
+- **B1 survived end to end.** `KI-CONN-001`'s 1 IU endpoint exclusion is
+  redundant with the union-find phrasing — quantified at **18,544 of 22,072
+  corpus pins on a wire, exactly 0 on a wire's interior.** Two mechanisms
+  agreeing on 18,544 real cases is why deleting either is invisible from
+  outside. Covered now by unit checks where the break *is* visible.
+- **The phantom `clean` red, three times.** Five real greens and one failure
+  caused by the orchestrator writing the report while the check ran. **BLOCKED 1.**
+
+**And one thing this area must say about itself: the `--corpus` completion
+tally was taken on the entry's word.** The `chore-9` reviewer said so plainly —
+under contention it watched the run track correctly into `kicli-sexpr` but never
+reached the final count. **A reviewer reporting what it could not confirm is
+the behaviour to reinforce**, and the figure is therefore single-sourced.
+
+### 3. Record quality
+
+**Two record defects, both mine, both found by something other than me.**
+
+**BLOCKED 1 was identified mid-session and reported in prose rather than
+entered in section 6.** The stop hook caught it. A conflict between governing
+documents that exists only in conversation is not on the record, and
+`CLAUDE.md` requires it filed with both readings and options — which it now is.
+
+**Tick sections were written onto `main` while the lanes still held the
+files**, which produced **two merge conflicts** at the resumption in exactly the
+two entries that were ticked-but-unmerged. Harmless to resolve and entirely
+self-inflicted: a tick belongs on the lane branch or after the merge, never on
+`main` beside a live lane.
+
+**What the record did well:** all six undispatched Phase 2 items have written
+entries, so the next session briefs from entries rather than from a plan table —
+and two of those entries exist **only** because briefing forced them into
+existence (`KI-TXT-001`'s missing lane, and `sch score` itself).
+
+### 4. Coordination
+
+**Base verification: 4 of 4 lanes pasted it, all matched, no fast-forwards
+needed.** The manual worktree flow held. **Scope verification ran at every
+merge** and every lane's disclosure was complete — `lane-t4` disclosed four
+files including a hotspot, `lane-b` disclosed one, `lane-gate` and `lane-snap`
+none, and in each case the reviewer independently confirmed the disclosed set
+was the **whole** set rather than merely present.
+
+**The reversal trigger did not fire and should not have.** Both deviations were
+disclosed in first paragraphs, which is the control working.
+
+**Sequencing held where it was reasoned and cost where it was not.** T4 before
+the rule lanes was correct — the ruling's own argument — and the three parallel
+lanes after it collided nowhere. **But four lanes against a 2½-minute pre-commit
+gate produced real contention**: two orchestrator record commits were SIGTERM'd
+mid-gate by my own timeouts, and a reviewer could not finish a `--corpus` run.
+
+**The orchestrator became the bottleneck, measurably.** Every merge owes a
+corpus-included check of ~16–20 minutes; four lanes produce faster than one
+check validates. **That is the structural reason Phase 2 did not close**, more
+than the usage limit was.
+
+### 5. Layer and tooling
+
+**Rules that earned their keep:** the measured-examples rule caught
+`KI-CONN-001`'s fix hint naming a command the binary does not accept
+(`kicli sch junction add`) — a hand-written string that would have shipped.
+`tick-reviewer.md`'s new contaminated-scratchpad section was used by every
+reviewer, and **one of them distrusted the orchestrator's own "created fresh and
+empty" claim and checked — correctly, because that claim was false three
+times.**
+
+**Rules I broke, having promoted them hours earlier: three.** PROPOSED 12
+(satisfiability — broken by the next brief written), the per-dispatch scratchpad
+(asserted three times, performed zero), and the quiescent-tree rule (broken
+twice). **A rule in a definition binds when the definition is re-read, and
+nothing in this workflow re-reads a definition per brief.** PROPOSED 7.
+
+**A gate that classifies by name misfired twice, independently.**
+`the_four_way_rule_has_one_home.rs` matches *any* path component named `src` —
+including a reviewer's scratch mount path — and the false failure is
+indistinguishable from a real regression until re-extracted elsewhere. **Two
+different reviewers hit it and both diagnosed it correctly before reporting.**
+This is the third classify-by-spelling gate incident in the project's record
+(`probe_harness_has_one_home` is PROPOSED 9, still unsettled).
+
+**An enumeration undercounted three times, in three documents**: the lane table
+(five of six Phase 2 rules), T4's brief (the `MANIFEST` line), and the corpus
+arm's size (6 where it is 11). **The standing rule catches the consequence, not
+the cause.** PROPOSED 5 asks whether these enumerations can be generated — the
+rule directory already generates its own registry, which is the precedent.
+
+### 6. Budget
+
+**Four `lane-implementer` dispatches, four `tick-reviewer` dispatches, one
+re-review.** Subagent cost ranged from 48k tokens (the snapshot re-review) to
+289k (`KI-CONN-001`, 132 tool calls, 60 minutes) — **and the expensive one
+bought the session's best finding**, since refuting a lane's reasoning requires
+reproducing it.
+
+**Wall-clock was dominated by gates, not by thinking.** The pre-commit gate is
+~2.5 minutes and the orchestrator commits per tick; the corpus arm is ~9–16
+minutes and is owed per merge. **Several runs exceeded 10 minutes under
+contention and had to be backgrounded**, which `lane-gate` also hit and reported.
+
+**What was NOT covered, stated rather than implied:** the merged check for the
+two resumption merges has not run; the `--corpus` completion tally is
+single-sourced; `KI-GRID-001`'s nine outstanding falsification rows were never
+run; T2's named completion checks were never run. **No dogfood run** — the gate
+is milestone-exit and `sch score` does not exist yet. **No mutation run** — that
+is a milestone close.
+
+### 7. User signal
+
+**James's five rulings were applied before any dispatch and all five landed.**
+The record of each is in section 0 with its destination.
+
+**One ruling carried a count I could not reconcile and I recorded the
+discrepancy rather than absorbing it**: *"two via the KI-DOC rebuild"* where
+**four** of the six unsupported citations are Greenberg attributions. The
+KI-DOC task is scoped to re-derive every Greenberg attribution, which covers
+four at no extra cost; if a narrower pairing was meant it is one line to change.
+
+**James also asked, mid-session, how far we are from a demo.** Answered
+honestly: **not demoable** — `sch score` does not exist as a command. The engine
+exists; the verb does not. That exchange is what surfaced the sharpest planning
+finding of the stop, because answering it required noticing that **no task owned
+the command.**
+
+**Going back for a ruling:** BLOCKED 1 (above, with three options and a
+recommendation), and **seven PROPOSED items**. The two with a dated cost are
+PROPOSED 1 (the stale-constant hole, which affects every golden and digest in
+the repository) and the **opt-in corpus arm**, whose deviation from its own
+recorded recommendation is flagged in `chore-9`'s entry and is James's trade to
+make, not mine.
