@@ -1,0 +1,15 @@
+{
+  "board": {},
+  "erc": {
+    "rule_severities": {
+      "four_way_junction": "warning",
+      "single_global_label": "warning",
+      "lib_symbol_issues": "ignore"
+    }
+  },
+  "meta": {
+    "filename": "canary.kicad_pro",
+    "version": 3
+  },
+  "schematic": {}
+}

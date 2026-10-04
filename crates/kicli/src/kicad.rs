@@ -22,6 +22,7 @@
 //! Measured against KiCad 10.0.5 while building the connectivity fixtures.
 
 mod discovery;
+pub mod erc;
 mod runner;
 
 pub use discovery::{Discovery, ENVIRONMENT_VARIABLE, MACOS_INSTALL};
