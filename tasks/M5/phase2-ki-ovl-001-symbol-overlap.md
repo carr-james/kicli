@@ -443,16 +443,17 @@ rather than to a commit SHA, per the falsification-control skill: these commits
 will be merged forward.
 
 Each row ran `cargo test -p kicli --no-fail-fast --lib --test lint_symbol_overlap`.
-**Why those two targets are the complete catcher set, and how that was
-checked**: no other test target can see a behavioural change in this rule —
-`lint_findings_are_bit_identical`, `lint_scores_are_bit_identical` and
-`lint_findings_sort_by_their_key` run `specimens::all()` rather than the crate
-rules; `lint_gate_separates_the_tiers` builds explicit rule lists;
-`lint_pin_on_wire` filters to `KI-CONN-001`; and
+The reasoning for choosing those two targets was: no other target can see a
+*behavioural* change in this rule — `lint_findings_are_bit_identical`,
+`lint_scores_are_bit_identical` and `lint_findings_sort_by_their_key` run
+`specimens::all()` rather than the crate rules; `lint_gate_separates_the_tiers`
+builds explicit rule lists; `lint_pin_on_wire` filters to `KI-CONN-001`; and
 `lint_rules_register_from_their_own_files` asserts nothing about what a crate
-rule reports (its own comment says so). **That reasoning was verified rather
-than trusted**: break B3 was re-run over the whole suite, and the row below
-records whether the catcher list changed.
+rule reports (its own comment says so).
+
+**That reasoning was verified rather than trusted, and it was WRONG — see
+"the two-target claim was short by one" below.** B3 was re-run over the whole
+suite and found a tenth catcher outside both targets.
 
 | # | What was broken, exactly | The defect it models | Caught by |
 |---|---|---|---|
@@ -470,6 +471,81 @@ records whether the catcher list changed.
 | **B12** | `examine`: `shared.centre()` → `Point::default()` as the finding's position. | the marker moved off the overlap to the origin | **1** — `exactly_the_overlapping_pair_is_named` |
 
 **Twelve breaks, twelve caught, no green row.** The restored file's content hash was `c10701b4582cd5427b6b62141fe29a72e4775146` after **every** row, checked by `shasum` rather than inferred from `git checkout --`'s exit code.
+
+### The two-target claim was short by one, and the tenth catcher was a red gate
+
+**This is the most important row in the entry, and it is not in the table.**
+
+Re-running B3 over the whole suite returned **ten** catchers, not nine. The
+tenth was `no_floating_point_appears_under_the_linter`, in
+`crates/kicli/tests/the_linter_holds_no_floating_point.rs` — a target my
+reasoning had ruled out because it is a *textual* sweep and B3 changes no
+arithmetic. The reasoning was right about B3 and wrong about the gate:
+**`overlap.rs` was failing that sweep in its GOOD state, and had been since the
+allow-list check was added.** Measured both ways, at the same content hash the
+whole table was made against:
+
+```
+$ shasum crates/kicli/src/lint/rules/overlap.rs
+c10701b4582cd5427b6b62141fe29a72e4775146     # the good state
+$ cargo test -p kicli --test the_linter_holds_no_floating_point
+no_floating_point_appears_under_the_linter ... FAILED
+the linter's arithmetic must be exact: ["overlap.rs: 000000000000A4Probe",
+  "overlap.rs: 000000000001ReferenceR1ValueSLABprobe",
+  "overlap.rs: 000000000002ReferenceR2ValueSLABprobe"]
+```
+
+**Root cause.** The sweep's `code_of` strips comments and string literals so
+that prose about floating point and a decimal inside a message are not read as
+arithmetic. It understands `"…"` with `\` escapes, line comments, block
+comments and character literals. It does **not** understand a Rust **raw string
+literal**, `r#"…"#` — and the `TWO_OVERLAPPING` schematic fragment I wrote for
+the allow-list check was **the first raw string anywhere under `src/lint/`**
+(`grep -rn 'r#"' crates/kicli/src/lint/` returned exactly one line, mine).
+The lexer opened a string at the fragment's first `"` and closed it at the
+next, which inverts inside-and-outside for the rest of the literal; schematic
+text was then read as code, `a_number` took `000000000000` and swallowed the
+trailing name characters `A4Probe`, and `is_a_float` flagged it because the
+result contains an `e`.
+
+**Fix, in my own file.** `TWO_OVERLAPPING` is now an ordinary string literal
+with `\"` escapes and `\n\` continuations — which is the house pattern
+already used by `geometry/symbol_box.rs`'s `PIN_SOURCE` — and all four arms of
+the sweep pass. `the_linter_holds_no_floating_point.rs` is an **existing** file
+and not this lane's to edit, so the sweep itself is untouched and reported
+instead.
+
+**PROPOSED (lane ovl) — the sharper half, which is a gate defect rather than my
+inconvenience.** The failure I hit is the *safe* direction: a false positive,
+loud, on a file holding no float. The same inversion runs the other way. A raw
+string anywhere under `src/lint/` shifts the lexer's inside/outside state for
+everything after it, so **real arithmetic following a raw string can be stripped
+as though it were string content — and a genuine `f64` would then pass the
+gate silently.** The sweep's own rustdoc states one boundary (*"a textual sweep
+cannot see a float that arrives as another module's return type"*) and does not
+state this one. Recommendation: `code_of` learns raw strings — `r`, then zero or
+more `#`, then `"`, closing on `"` followed by the same number of `#` — and
+`the_sweep_permits_what_integer_arithmetic_looks_like` gains a raw-string row
+plus a row with a float *after* a raw string, which is the case that must go
+red. Until then the honest statement is that **`src/lint/` must hold no raw
+string**, and this entry is the only place that is written down. Revisit
+trigger: the next rule author who wants an inline s-expression fixture.
+
+**And one process finding, recorded because it nearly cost the whole table.**
+The commit `e2f594b` was made with `git add -A` **while the full-suite B3 run
+was mid-flight**, so it captured the applied break: `git show e2f594b --
+crates/kicli/src/lint/rules/overlap.rs` is the one-line `>=` → `>` edit. It was
+caught by the harness's own control — the restored-state content hash printed
+`a8d543b5…` for that row where every other row printed `c10701b4…` — and
+reverted by `git checkout 1d437e3 -- crates/kicli/src/lint/rules/overlap.rs`,
+verified back to `c10701b4…`, in the commit that follows. The
+falsification-control skill warns that *"git will not hold your good state"* in
+the direction **restore-loses-work**; this is the mirror case,
+**commit-captures-break**, which it does not name. Recommendation: add the
+mirror to that skill — *never stage while a break harness is running; a
+`git add -A` is as destructive as a `git checkout --` when something else owns
+the tree* — and keep the harness's per-row hash print, which is what made it a
+five-minute fix instead of a reviewer's finding.
 
 ### Four things the table says that prose would have hidden
 

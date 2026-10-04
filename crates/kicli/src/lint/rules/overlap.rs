@@ -363,7 +363,7 @@ fn shared_area(one: Rect, two: Rect) -> Option<Rect> {
     };
     // Before `Rect::new`, which normalises its corners and would hide an
     // inverted region as a valid one.
-    if start.x > end.x || start.y > end.y {
+    if start.x >= end.x || start.y >= end.y {
         return None;
     }
     Some(Rect::new(start, end))
@@ -396,30 +396,30 @@ mod tests {
     /// The geometry is therefore kept to the minimum the check needs, and the
     /// boundary it stands on is measured through written files in
     /// `tests/lint_symbol_overlap.rs`.
-    const TWO_OVERLAPPING: &str = r#"(kicad_sch (version 20260306) (generator "eeschema")
-(uuid "00000000-0000-4000-8000-000000000000") (paper "A4")
-(lib_symbols
-(symbol "Probe:SLAB" (pin_names (offset 0))
-(symbol "SLAB_1_1"
-(rectangle (start 0 0) (end 10.16 2.54)
-(stroke (width 0.254) (type default)) (fill (type none)))
-)
-)
-)
-(symbol (lib_id "Probe:SLAB") (at 100 100 0) (unit 1) (body_style 1)
-(uuid "01000001-0000-4000-8001-000000000001")
-(property "Reference" "R1" (at 0 0 0))
-(property "Value" "SLAB" (at 0 0 0))
-(instances (project "probe" (path "/" (reference "R1") (unit 1))))
-)
-(symbol (lib_id "Probe:SLAB") (at 110.1599 100 0) (unit 1) (body_style 1)
-(uuid "01000002-0000-4000-8001-000000000002")
-(property "Reference" "R2" (at 0 0 0))
-(property "Value" "SLAB" (at 0 0 0))
-(instances (project "probe" (path "/" (reference "R2") (unit 1))))
-)
-(sheet_instances (path "/" (page "1")))
-)"#;
+    const TWO_OVERLAPPING: &str = "(kicad_sch (version 20260306) (generator \"eeschema\")\n\
+(uuid \"00000000-0000-4000-8000-000000000000\") (paper \"A4\")\n\
+(lib_symbols\n\
+(symbol \"Probe:SLAB\" (pin_names (offset 0))\n\
+(symbol \"SLAB_1_1\"\n\
+(rectangle (start 0 0) (end 10.16 2.54)\n\
+(stroke (width 0.254) (type default)) (fill (type none)))\n\
+)\n\
+)\n\
+)\n\
+(symbol (lib_id \"Probe:SLAB\") (at 100 100 0) (unit 1) (body_style 1)\n\
+(uuid \"01000001-0000-4000-8001-000000000001\")\n\
+(property \"Reference\" \"R1\" (at 0 0 0))\n\
+(property \"Value\" \"SLAB\" (at 0 0 0))\n\
+(instances (project \"probe\" (path \"/\" (reference \"R1\") (unit 1))))\n\
+)\n\
+(symbol (lib_id \"Probe:SLAB\") (at 110.1599 100 0) (unit 1) (body_style 1)\n\
+(uuid \"01000002-0000-4000-8001-000000000002\")\n\
+(property \"Reference\" \"R2\" (at 0 0 0))\n\
+(property \"Value\" \"SLAB\" (at 0 0 0))\n\
+(instances (project \"probe\" (path \"/\" (reference \"R2\") (unit 1))))\n\
+)\n\
+(sheet_instances (path \"/\" (page \"1\")))\n\
+)";
 
     /// Every message one rule records about [`TWO_OVERLAPPING`].
     fn messages(rule: &dyn Rule) -> Vec<String> {
