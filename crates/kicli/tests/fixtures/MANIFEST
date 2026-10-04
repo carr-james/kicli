@@ -68,3 +68,8 @@ text/calibration.textlength - oracle - kicad-cli
 sch/routing/calibration.kicad_sch 20260306 normal yes kicad-cli
 sch/routing/calibration.netlist - oracle - kicad-cli
 sch/score/high_and_blocked.kicad_sch 20260306 normal yes kicad-cli
+sch/text_overlap/angled.kicad_sch 20260306 normal yes kicad-cli
+sch/text_overlap/hidden.kicad_sch 20260306 normal yes kicad-cli
+sch/text_overlap/visible.kicad_sch 20260306 normal yes kicad-cli
+sch/text_overlap/one_pair.kicad_sch 20260306 normal yes kicad-cli
+sch/text_overlap/boundary.kicad_sch 20260306 normal yes kicad-cli
