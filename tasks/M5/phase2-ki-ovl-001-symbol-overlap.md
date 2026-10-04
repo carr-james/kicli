@@ -609,3 +609,50 @@ thing standing between `Saturation::NEVER` and the false denominator §3 argues
 against. Both are one-token edits in a file `cargo fmt --check` cannot see. That
 check is therefore load-bearing out of proportion to its length, and it is named
 here so a later reader does not treat it as a formality.
+
+## 9. The completion check, run
+
+Both commands the brief and this task name, at `55e8489`, with
+`overlap.rs` = `ff7bb234e6175c046e91a56d472c62db042ebfc3` and
+`lint_symbol_overlap.rs` = `aac9bb739db3463e712ae8c6898e4afcab22f096`:
+
+```
+$ cargo xtask check
+  pass  fmt        cargo fmt --check
+  pass  clippy     cargo clippy --all-targets --all-features -- -D warnings
+  pass  test       cargo test
+  pass  doc        cargo doc --no-deps
+  pass  deny       cargo deny check
+  skip  corpus     --corpus was not given
+  skip  kicad-cli  --corpus was not given
+  pass  clean      git status --porcelain, before the arms and after them
+INCOMPLETE: 2 of 8 arms did not run. 6 passed, 0 failed.
+
+$ cargo test -p kicli --test rule_files_are_formatted
+test result: ok. 1 passed; 0 failed
+```
+
+**`INCOMPLETE` is the expected shape of a lane run, not a failure**: the two
+skipped arms are corpus- and environment-gated, and `CLAUDE.md` says they never
+count toward done from inside a lane worktree. **0 failed** is the number that
+does. Log: `/tmp/kicli-scratch/ovl/gate-final2.log`.
+
+**Two red gate runs preceded this green one, and both are above rather than
+hidden**: `gate-final.log` failed the `clippy` arm on
+`clippy::struct_field_names`, and the raw-string defect was failing the `test`
+arm before that. Each is a defect only `cargo xtask check` could see.
+
+## 10. What the hotspots owe, in one list
+
+Nothing in this list was edited by this lane.
+
+| Hotspot | What it owes, and why this rule did not take it |
+|---|---|
+| `crates/kicli/src/lint/rule.rs` or `lint/engine.rs` | a path for a rule to carry configuration. `Rule::examine` takes a `Drawing`; `Engine::of` takes `Vec<&'static dyn Rule>`. Blocks the `--allow` wiring (§5a) |
+| `crates/kicli/src/lint/registry.rs` or `lint.rs` | a way for `tests/` to reach a rule's own type, if a configured rule is ever to be exercised from an integration test (§5b) |
+| `crates/kicli/src/model/config.rs` + `kicli.toml` | an `allow` key, and the catalogue's own `overlap.symbol` severity knob. `RULE_KEYS` has neither, and `Config` has no `rules` field at all (§5a) |
+| `crates/kicli/src/lint/gate.rs` | a `Counted` variant for *all* symbols, power included. Inert while this rule is Tier 1 (§3) |
+| `crates/kicli/src/geometry.rs` | `Rect::intersection`, with the "≥ 1 IU on each axis" semantics and the degenerate-box case. First strike is local to `overlap.rs`; the second strike is `KI-WIRE-001` or `KI-TXT-001` (§6) |
+| `crates/kicli/tests/the_linter_holds_no_floating_point.rs` | raw-string lexing in `code_of`. **The only one of these that is a live gate defect** rather than a missing feature, because the inversion can also hide a real float (§8) |
+| `crates/kicli/src/lint/drawing.rs` | **nothing.** A pure-geometry rule needs no accessor, and none was added |
+| `Cargo.toml`, `lib.rs`, `build.rs`, `AGENT.md`, `spec/SPEC.md`, `tests/command_surface.rs`, fixture `MANIFEST` | **nothing.** None was touched and none needs to be |
