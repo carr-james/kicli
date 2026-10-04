@@ -413,8 +413,106 @@ pub static RULES: &[&'static dyn Rule] = &[&OVERLAP];
 
 #[cfg(test)]
 mod tests {
-    use super::{Allowed, shared_area};
+    use super::{Allowed, OVERLAP, SymbolBodiesOverlap, shared_area};
     use crate::geometry::{Point, Rect};
+    use crate::lint::{Drawing, Findings, Rule};
+    use crate::model::items::{Schematic, SheetPath};
+    use kicli_sexpr::Doc;
+
+    /// Two placements of one graphic-only part, overlapping by one internal
+    /// unit: `100 .. 110.16` against `110.1599 .. 120.3199`.
+    ///
+    /// **Hand-built, and this is the one place in the rule where that is the
+    /// only option.** The `--allow` list needs a *configured* rule, so it needs
+    /// this file's own type — and the registration seam puts a rule file behind
+    /// a private `mod` the build script writes, so `tests/` can reach
+    /// `&'static dyn Rule` and nothing more. The probe harness cannot be used
+    /// from here either: `tests/the_linter_holds_no_write_path` whitelists the
+    /// roots a file under `src/lint/` may name, and `kicli_probe` is not one.
+    /// The geometry is therefore kept to the minimum the check needs, and the
+    /// boundary it stands on is measured through written files in
+    /// `tests/lint_symbol_overlap.rs`.
+    const TWO_OVERLAPPING: &str = r#"(kicad_sch (version 20260306) (generator "eeschema")
+(uuid "00000000-0000-4000-8000-000000000000") (paper "A4")
+(lib_symbols
+(symbol "Probe:SLAB" (pin_names (offset 0))
+(symbol "SLAB_1_1"
+(rectangle (start 0 0) (end 10.16 2.54)
+(stroke (width 0.254) (type default)) (fill (type none)))
+)
+)
+)
+(symbol (lib_id "Probe:SLAB") (at 100 100 0) (unit 1) (body_style 1)
+(uuid "01000001-0000-4000-8001-000000000001")
+(property "Reference" "R1" (at 0 0 0))
+(property "Value" "SLAB" (at 0 0 0))
+(instances (project "probe" (path "/" (reference "R1") (unit 1))))
+)
+(symbol (lib_id "Probe:SLAB") (at 110.1599 100 0) (unit 1) (body_style 1)
+(uuid "01000002-0000-4000-8001-000000000002")
+(property "Reference" "R2" (at 0 0 0))
+(property "Value" "SLAB" (at 0 0 0))
+(instances (project "probe" (path "/" (reference "R2") (unit 1))))
+)
+(sheet_instances (path "/" (page "1")))
+)"#;
+
+    /// Every message one rule records about [`TWO_OVERLAPPING`].
+    fn messages(rule: &dyn Rule) -> Vec<String> {
+        let doc = Doc::parse(TWO_OVERLAPPING).expect("the fragment parses");
+        let schematic = Schematic::read(&doc).expect("the fragment reads");
+        let sheet = SheetPath("/".to_owned());
+        let drawing = Drawing::read(&doc, &schematic, &sheet);
+        assert_eq!(
+            drawing.schematic().symbols().count(),
+            2,
+            "the fragment holds two placements"
+        );
+        let mut found = Findings::of(rule, &sheet);
+        rule.examine(&drawing, &mut found);
+        found
+            .into_vec()
+            .into_iter()
+            .map(|finding| finding.message)
+            .collect()
+    }
+
+    /// The list exempts the pair it names, both ways round, and nothing else.
+    ///
+    /// The first assertion is the control the other three stand on: without a
+    /// finding to suppress, an allow list that did nothing at all would look
+    /// identical to one that worked.
+    #[test]
+    fn an_allow_entry_exempts_only_the_pair_it_names() {
+        let strict = messages(&OVERLAP);
+        assert_eq!(
+            strict.len(),
+            1,
+            "the pair is reported unexempted: {strict:?}"
+        );
+        assert!(strict[0].contains("R1") && strict[0].contains("R2"));
+
+        for entry in ["R1:R2", "R2:R1"] {
+            let allowed = Allowed::read([entry]).expect("the entry reads");
+            let rule = SymbolBodiesOverlap::allowing(allowed);
+            assert!(
+                messages(&rule).is_empty(),
+                "{entry} exempts the pair whichever way round it is written"
+            );
+        }
+
+        // A list naming other pairs is not an off switch. Both entries are
+        // well formed and neither covers R1 with R2.
+        let other = SymbolBodiesOverlap::allowing(
+            Allowed::read(["R1:R3", "R2:R3"]).expect("the entries read"),
+        );
+        assert_eq!(
+            messages(&other).len(),
+            1,
+            "a list that names other pairs changes nothing"
+        );
+        assert_eq!(other.allowed().pairs().len(), 2);
+    }
 
     /// A box from one corner to another, in internal units.
     fn boxed(start: (i32, i32), end: (i32, i32)) -> Rect {
