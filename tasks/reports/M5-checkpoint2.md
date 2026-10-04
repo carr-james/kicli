@@ -156,6 +156,7 @@ a design decision and `chore-runner.md` says *never design work*.
 | Task | Lane | What landed | Evidence | Verdict |
 |---|---|---|---|---|
 | **tier separation, and the saturating rule** (`phase1-t4-tier-separation.md`) | `lane-t4` | `lint/gate.rs` — `Counted`, `Saturation`, `Blocker`, `Gate`, `Report`. A rule declares what it counts and the share that fails the gate; `Findings::of` stamps it beside tier, severity and weight. **Twelve breaks, none left a check green.** Plus `Rule::normaliser()`, mechanism only | entry "Tick — APPROVE"; lane `c41edd4`; merge `e7d3a76` | **APPROVE** |
+| **`KI-OVL-001`, symbol bodies overlap** (`phase2-ki-ovl-001-symbol-overlap.md`) | `lane-ovl` | exact integer box intersection, power included, `--allow` as a list. **Found a zero-size-box defect in its own first version before any break ran**, and **a demonstrated false negative in the Constitution §4 gate** | entry §§1–10; lane `5435135`; merge `96c8b76` | **APPROVE** |
 | **`KI-CONN-001`, the pin that touches a wire it is not connected to** (`phase2-ki-conn-001-pin-on-wire.md`) | `lane-b` | the rule, four unit + seven end-to-end checks, and **the capability seam** — no rule could ask a connectivity question before this. Fix hint verified by KiCad's own netlist collapsing two nets into one | lane `0968365`; **awaiting merge** | **APPROVE** |
 | **the gate says what it did NOT run** (`chore-9-gate-enumerates-its-arms.md`) | `lane-gate` | eight named arms, three verdicts, and a headline that cannot lie: `INCOMPLETE: 2 of 8 arms did not run` | lane `d083f9e`; **awaiting merge** | **APPROVE** |
 | the vendored checklist snapshot (ruling 3) | `lane-snap` | `research/snapshots/` — the snapshot, the byte-exact source, and the convention. **A second independent reading corrected `lane-t5`'s count and broadened `KI-DOC-004`'s support** | entry `# E7`; lane `326775d`; merge `18ab930` | **REJECT → APPROVE** |
@@ -163,6 +164,58 @@ a design decision and `chore-runner.md` says *never design work*.
 ---
 
 ## 2. Findings, attributed
+
+### THE GATE THAT ENFORCES CONSTITUTION §4 HAS A DEMONSTRATED FALSE NEGATIVE — `lane-ovl`, confirmed by construction by `review-ovl`
+
+**The most serious defect found this session, and it is not in a rule. It is in
+the instrument that enforces the Constitution's core numeric commitment.**
+
+`crates/kicli/tests/the_linter_holds_no_floating_point.rs`'s `code_of` strips
+strings and comments before scanning for floats. It understands `"…"`, `'…'`,
+`//` and `/* */`. **It has no raw-string handling at all.**
+
+**The false-positive half is how it was found**, loudly and harmlessly:
+`lane-ovl`'s rule file was the first `r#"…"#` under `src/lint/`, and its *good
+state was failing the gate*.
+
+**The false-negative half is the defect, and the reviewer built it rather than
+reasoning about it.** Under `src/lint/`:
+
+```rust
+pub const S: &str = r#"a"b"#;
+pub fn smuggled() -> f64 { 3.14159_f64 }
+```
+
+```
+cargo test -p kicli --test the_linter_holds_no_floating_point  →  ok
+```
+
+**The gate passed with a genuine, uncommented `f64` present.** The inner quote
+desynchronises the lexer's string tracking, so everything after it is treated as
+string content and never scanned.
+
+**Constitution §4 is one of four hard numeric commitments, and this test is the
+only thing enforcing it.** T3 shipped the score formula with no floating point
+at all — not even the `exp` §4 permits — and this gate is what keeps it so.
+
+**It is the project's own recorded lesson arriving where it is most expensive.**
+`PLAN.md`'s exit-criteria table: *"a gate presented as measuring something it
+cannot fail on is worse than no gate, since it spends the credibility of a real
+one."*
+
+**And it is the THIRD classify-by-shape instrument defect in this record**, all
+three hand-rolled matchers standing in for a parse:
+
+| Instrument | Defeated by |
+|---|---|
+| `probe_harness_has_one_home` | a rename — it matches the literal `mod support;` (PROPOSED 9, still unsettled) |
+| `the_four_way_rule_has_one_home` | **any** path component named `src`, including a reviewer's scratch mount path — cost two reviewers real time this session |
+| `the_linter_holds_no_floating_point` | a `"` inside a raw string |
+
+*Filed as `tasks/M5/chore-10-float-gate-cannot-lex-raw-strings.md`, scoped
+test-only, with one instruction that is not a chore's call: **if the repair
+reveals a real `f64` under `src/lint/`, stop and report it** — that would be a
+§4 violation that has been shipping invisibly.*
 
 ### A FIDELITY CONTROL WHOSE CHECK WAS ALIVE AND WHOSE CONSTANT WAS WRONG — `lane-snap`, found by review
 
