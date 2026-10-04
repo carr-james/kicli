@@ -221,7 +221,10 @@ fn a_right_angled_box_is_axis_aligned_on_the_page() {
     let mut xs: Vec<i32> = corners.iter().map(|corner| corner.x.0).collect();
     xs.sort_unstable();
     xs.dedup();
-    assert!(xs.len() > 2, "a slanted box is not axis-aligned: {corners:?}");
+    assert!(
+        xs.len() > 2,
+        "a slanted box is not axis-aligned: {corners:?}"
+    );
 }
 
 #[test]
@@ -408,9 +411,7 @@ fn one_internal_unit_more_overlap_crosses_the_published_ratio() {
     let above = written("boundary.kicad_sch");
     assert_eq!(above.len(), 2, "the boundary fixture holds one pair");
 
-    let gap = |pair: &[&Written]| {
-        i64::from(pair[1].at.y.0) - i64::from(pair[0].at.y.0)
-    };
+    let gap = |pair: &[&Written]| i64::from(pair[1].at.y.0) - i64::from(pair[0].at.y.0);
     let below_pair = [&below[0], &below[2]];
     let above_pair = [&above[0], &above[1]];
     assert_eq!(
@@ -483,4 +484,78 @@ fn one_overlapping_pair_fails_the_gate_whatever_the_sheet_holds() {
     let clean = findings_of("angled.kicad_sch");
     assert!(clean.is_empty());
     assert!(Gate::of(&clean, Density::of_counts(0, 0)).passes());
+}
+
+#[test]
+fn the_empty_visible_fields_kicad_writes_into_every_placement_are_not_compared() {
+    // MEASURED, and it fired for real on the first run of this rule.
+    // `kicad-cli sch upgrade` gives every placed symbol a `Footprint`, a
+    // `Datasheet` and a `Description`, leaves all three VISIBLE, leaves all
+    // three EMPTY, and stacks all three on one anchor. The rule reported three
+    // blocking findings per placement on a drawing that draws nothing at those
+    // anchors at all. This is the check that pins the repair.
+    for name in ["hidden.kicad_sch", "visible.kicad_sch"] {
+        let drawn = written(name);
+        let blank: Vec<&Written> = drawn
+            .iter()
+            .filter(|item| item.drawn && item.text.is_empty())
+            .collect();
+        // The presence control. These fields are in no source a person writes
+        // — KiCad's own writer adds them — so without them in the file the
+        // rest of this check is vacuous.
+        assert_eq!(
+            blank.len(),
+            6,
+            "{name} holds three empty visible fields per placement"
+        );
+
+        // Each has a REAL box. An empty string gets the box of its own pen
+        // rather than a box of nothing, which is what `EDA_TEXT::GetTextBox`
+        // returns, so a zero-area guard does not catch these.
+        for field in &blank {
+            assert!(
+                area(field.turned()) > 0,
+                "{name}: an empty string still boxes: {}",
+                field.turned()
+            );
+        }
+
+        // And they are stacked three to an anchor, identically, so every one
+        // of those pairs is over the published ratio.
+        for group in blank.chunks(3) {
+            for other in &group[1..] {
+                assert_eq!(group[0].at, other.at, "{name} stacks them on one anchor");
+                assert_eq!(group[0].turned(), other.turned(), "{name}: one box");
+                assert!(
+                    over_the_ratio(
+                        shared_area(group[0].turned(), other.turned()),
+                        area(group[0].turned())
+                    ),
+                    "{name}: that geometry is over the ratio"
+                );
+            }
+        }
+    }
+
+    // `hidden.kicad_sch` draws nothing BUT those six fields: its references
+    // and values are hidden. A rule that compared them reports six blocking
+    // findings here. It reports none.
+    let blank_only = findings_of("hidden.kicad_sch");
+    assert!(
+        blank_only.is_empty(),
+        "{:?}",
+        blank_only.iter().map(|f| &f.message).collect::<Vec<_>>()
+    );
+
+    // And on the drawing that holds a real pair it reports that pair and names
+    // no empty field, so the skip is not a blanket silence.
+    let findings = findings_of("visible.kicad_sch");
+    assert_eq!(findings.len(), 1);
+    for field in ["Footprint", "Datasheet", "Description"] {
+        assert!(
+            !findings[0].message.contains(field),
+            "no empty field is named: {}",
+            findings[0].message
+        );
+    }
 }

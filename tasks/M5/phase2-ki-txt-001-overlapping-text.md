@@ -189,54 +189,189 @@ overlap ratio sits near 20 % can therefore be decided wrongly until the port
 carries the offset. Every boundary check in this task is built from **one** kind
 at **one** angle for that reason, so no check in it stands on the gap.
 
-## STATUS — INCOMPLETE, paused at a rate-limit window. Do not tick.
+## STATUS — RESUMED and completed. The second implementer's record starts here.
 
 **The lane was wound down mid-task** when the five-hour budget window reached
-its 90 % ceiling and the guard hook blocked every `cargo` invocation. What is
-committed is the state that was **last verified green**; what is outstanding is
-listed under *Falsification still owed* below, and the task is **not** complete
-and **not** tickable.
+its 90 % ceiling and the guard hook blocked every `cargo` invocation. The
+window has since reset and a **second implementer** resumed from this entry.
+Per `CLAUDE.md` — *"a parked lane's draft is reference, not resumption"* — every
+check the first implementer left behind was re-run and every check adopted from
+its *"Falsification still owed"* list was written fresh and falsified here.
 
-**DISCLOSED DEVIATION — the commit used `git commit --no-verify`.** The gates
-run as a pre-commit hook, and the guard hook blocks every `cargo` invocation at
-the 90 % ceiling, so the hook could not run. The alternative was to leave the
-whole task uncommitted, which the wind-down procedure forbids: the entry and
-the branch are the handoff. The commit is `5bd1a93` on `lane-txt`, never on
-`main`, and the gate it skipped is listed as owed below. **The orchestrator's
-merged `cargo xtask check` is the gate that must catch anything this missed,
-and it has not yet been satisfied by this lane.**
+**Base verified as the resume's first action.** `git log --oneline -1` reported
+`668181a tasks: the --no-verify deviation recorded at its commit (M5
+KI-TXT-001)` and `git status --porcelain` was empty, which is the base the
+resume brief names. No fast-forward was needed, and the untracked scratch file
+`crates/kicli/tests/zz_scratch_measure.rs` the first implementer could not
+delete was already gone.
 
-### Verified at the commit
+**DISCLOSED DEVIATION, now closed.** The first implementer's commits used `git
+commit --no-verify`, because the guard hook blocked every `cargo` invocation at
+the 90 % ceiling and the pre-commit hook could not run. So **nothing on this
+branch had ever passed a gate.** The resume's first commit ran the full
+pre-commit `cargo xtask check`, and its result is recorded in *The gates* below.
 
-- `cargo clippy -p kicli --all-targets --all-features` — **clean**, no warning.
-- `cargo test -p kicli --test lint_overlapping_text` — **6 of 6 pass**.
+### Verified at `668181a`, by the first implementer
+
+- `cargo clippy -p kicli --all-targets --all-features` — clean.
+- `cargo test -p kicli --test lint_overlapping_text` — 6 of 6 pass.
 - `cargo test -p kicli --test fixtures_match_manifest --test round_trip
-  --test fixture_handles` — **8 of 8 pass**, with the five new fixtures in the
-  tree. So each fixture is recorded, is a fixed point of its prettifier mode,
-  round-trips byte for byte, and carries object handles distinct from every
-  other committed fixture.
+  --test fixture_handles` — 8 of 8 pass.
 
-### NOT verified at the commit
+### What the resume added
 
-- The **full gate** (`cargo xtask check`) has **not** been run. It is the first
-  thing the resume does.
-- `cargo test -p kicli --test rule_files_are_formatted` has **not** been run,
-  so `crates/kicli/src/lint/rules/text.rs` is **unformatted as far as any check
-  knows**. `cargo fmt --check` cannot see a rule file, so nothing else covers
-  it.
-- The rule file carries **no `#[cfg(test)] mod tests`**. The unit-level checks
-  the falsification obligation names were drafted, and the shell command that
-  would have written them was itself blocked by the guard hook, so **they were
-  never written to the file, never compiled and never run**. **No draft of them
-  exists anywhere** — not in the worktree and not in the scratchpad; the
-  drafting context is gone. The resume writes them from the list under
-  *Falsification still owed*, which is the only record of what they were, and
-  that is the correct starting point in any case: an unfalsified draft carries
-  no evidence standing.
-- `crates/kicli/tests/zz_scratch_measure.rs` is an **untracked scratch file**
-  that `rm` was blocked from deleting. It is not committed and not on the lane
-  branch, so it cannot reach a merge, but it will show in
-  `git status --porcelain` of this worktree until it is removed.
+- **`crates/kicli/src/lint/rules/text.rs` now carries a `#[cfg(test)] mod
+  tests`**, five checks, written from the *"Falsification still owed"* list
+  because no draft of it existed anywhere. They are
+  `the_ratio_boundary_is_one_square_unit_wide`,
+  `a_shared_edge_and_a_touched_corner_hold_no_area_and_one_unit_in_does`,
+  `a_box_of_no_area_shares_none_where_the_extent_lookalike_says_it_does`,
+  `a_relative_angle_that_is_not_a_right_angle_is_declined_rather_than_rounded`
+  and `a_window_wound_the_other_way_is_normalised_rather_than_inverted`.
+- **One new integration check**,
+  `the_empty_visible_fields_kicad_writes_into_every_placement_are_not_compared`,
+  which **pins MEASURED 2** explicitly rather than leaving it to a findings
+  count. See *The empty-field case is pinned* below.
+- **Two corrections to the rule file's own prose, both forced by a check that
+  went red.** MEASURED 3 and MEASURED 4 below.
+- **`rustfmt` over the rule file**, which nothing had ever run: the rule file
+  **was unformatted at `668181a`** (one line at what was then `text.rs:422`
+  exceeded the width), and `crates/kicli/tests/lint_overlapping_text.rs` was
+  unformatted too, which means `cargo fmt --check` would have failed the gate on
+  the committed state. Both are formatted now. This is the checkpoint-1 seam
+  cost biting exactly where it was predicted to.
+
+## MEASURED 3 — the decline is about where two edges cross, NOT about the relative angle, and the rule's own module header said otherwise
+
+**A check written from the owed list went red on its first run, and the code was
+innocent.** The owed item read *"the 45° decline with the `.axis_aligned()`
+substitution shown to answer wrongly where the rule declines"*, and the module
+header's gap bullet claimed *"two boxes at a relative angle that is not a
+multiple of 90 degrees meet at corners whose coordinates are fractions"*.
+
+Asked directly, that is false. `shared_region` of a flat `"Ay"` box against the
+same box turned **45 degrees on the same anchor** returns an **exact** eight
+cornered polygon, every coordinate a whole internal unit:
+
+```
+[(988703,1004680) (988703,997008) (995815,989896) (1005873,989896)
+ (1011297,995320) (1011297,1002992) (1004185,1010104) (994127,1010104)]
+```
+
+The reason is in `Point::rotated`: an eighth turn sends an axis-aligned edge to
+an edge of slope **exactly one** once the rotation has rounded to internal
+units — the diagonal edge above runs `(988703,997008) -> (995815,989896)`, a
+delta of `(+7112, -7112)` — and an edge of slope one crosses an axis-aligned
+edge on a whole unit.
+
+So the check was rewritten as a **sweep over the angles**, and the measurement
+is now the assertion:
+
+| relative angle to a flat box | `shared_region` |
+|---|---|
+| 0, 45, 90, 135 | **exact** |
+| 15, 30, 60, 75, 105, 120, 150, 165 | **declined** |
+
+**What this changes, and what it does not.** It does not change a line of the
+rule's behaviour: `shared_region` already answered this correctly and the
+`crossing` guard is what makes it so. It changes **three pieces of prose that a
+reader would have trusted** — the module header's gap bullet, `crossing`'s
+rustdoc, and the owed item's own framing — all of which are repaired, with the
+sweep cited beside each. Recorded as a measurement rather than a tidy-up
+because the prose was the thing under test and it failed.
+
+The lookalike half of that owed item survives and is kept, built on a
+hand-constructed pair rather than on the 45 degree one: a subject box
+`(0,0)..(21,20)` against a window `[(0,0) (10,5) (5,15) (-5,10)]`, whose first
+edge runs at one in two so the subject's right side crosses it at `y = 10.5`.
+`shared_region` returns `None` there, while the extent lookalike answers 150
+square units against a window of 125 — over the published ratio. **The rule
+declines where the lookalike reports.**
+
+## MEASURED 4 — the convex clip is not symmetric about a box of no area, so `add`'s zero-area guard is load-bearing
+
+The module header claimed *"testing the region states the rule once, for every
+input, and the degenerate cases fall out of it"*. Measured, the second half is
+false in one direction:
+
+| pair | twice the shared area |
+|---|---|
+| a point `(50,50)` clipped by `(0,0)..(100,100)` | **0** |
+| `(0,0)..(100,100)` clipped by that point | **20 000 — the whole subject** |
+| `(0,0)..(100,100)` clipped by the line `(50,10)..(50,90)` | 0 |
+
+A point's four edges all have no length, so every `side` test against them
+answers zero, `was_inside == is_inside` everywhere, and the clip keeps the whole
+subject. A line is different — its two real edges are opposite, so the clip
+collapses the subject onto the line and the area is zero either way.
+
+So the `twice == 0` guard in `add` that drops a zero-area box **before** the
+pair walk is load-bearing rather than defensive, and the header now says so.
+Nothing reaches the asymmetric case because no `Drawn` with zero area is ever
+built — but a future reader removing that guard as redundant would have had the
+header's word for it.
+
+## MEASURED 5 — the first gate run on this branch failed two arms, and both were real
+
+**This is the whole argument for the `--no-verify` deviation being a debt rather
+than a formality.** The resume's first `git commit` ran the pre-commit hook,
+which is `cargo xtask check`, and it came back `FAILED: 2 of 8 arms failed. 4
+passed, 2 skipped.` Neither failure was in the new unit checks.
+
+### Defect A — `clippy::too_many_lines` on `drawn_text`, 63 of 60
+
+```
+error: this function has too many lines (63/60)
+   --> crates/kicli/src/lint/rules/text.rs:434:1
+```
+
+**Caused by the formatting repair, which is the part worth recording.** At
+`668181a` `drawn_text` held one over-long line that `rustfmt` had never been run
+on, because `cargo fmt --check` cannot see a rule file. Formatting it split that
+line into four and pushed the function three lines over the budget. So the two
+owed items were coupled: running the formatter for the first time is what made
+the lint fire.
+
+Repaired by splitting the `match` into one function per item kind —
+`add_symbol`, `add_label`, `add_sheet` — rather than by an `#[allow]`. The four
+arms share no code, so there was nothing to lose.
+
+### Defect B — `angled.kicad_sch` violated `GeometryOnGrid`, and the invariant was right
+
+```
+sch/text_overlap/angled.kicad_sch is not clean: [Outcome { invariant:
+GeometryOnGrid, faults: ["label HHHHHHHHHH is off grid at 100,100",
+"label HHHHHHHHHH is off grid at 96.19,100"] }]
+```
+
+`crates/kicli/tests/invariants.rs::invariants_pass_on_every_fixture` sweeps
+**every** committed fixture, so a new fixture inherits an assertion its author
+never wrote. The two labels sat at 100 mm and 96.19 mm, and the schematic grid
+is 50 mil — `GRID = Iu(12_700)`. `1 000 000 % 12 700 = 9 400`, so **both labels
+were off grid**, and `geometry_on_grid` treats a label as a connection point
+because it is one: KiCad would not join an off-grid label to a wire.
+
+Repaired by **translating both labels by `(−9 400, −9 400)` IU** — `(100,100) ->
+(99.06, 99.06)` and `(96.19,100) -> (95.25, 99.06)`. `990 600` and `952 500` are
+both exact multiples of `12 700`, and the separation is `38 100` IU before and
+after, so **the fixture's geometry is unchanged to the internal unit**. That is
+why `a_turned_label_is_not_compared_where_its_unturned_box_would_be` still
+asserts the same exact `71` and the same exact `0` with no number touched.
+
+**Provenance re-verified rather than assumed.** `kicad-cli sch upgrade --force`
+at KiCad **10.0.5** over the edited file returns it **byte identical**, so the
+`MANIFEST` record `sch/text_overlap/angled.kicad_sch 20260306 normal yes
+kicad-cli` still holds in all five fields. **The `MANIFEST` was therefore not
+edited at all by the resume** — it records no hash, and nothing in the record
+moved.
+
+**Why only this fixture.** `geometry_on_grid` checks wires, junctions,
+no-connects, bus entries, **labels** and sheet pins. It does not check
+`Item::Text` or a field's position. `one_pair` and `boundary` are built from
+**free text**, which is what makes them expressible at all: `boundary` differs
+from `one_pair` by **one internal unit**, which is 1/127 of a grid step, so a
+grid-checked item could not carry that pair. `hidden` and `visible` place
+symbols at 50.8 mm and 76.2 mm, both exact multiples of the grid.
 
 ## MEASURED 2 — a false-finding class on every schematic KiCad has ever written, caught by the fixture before the rule was ticked
 
