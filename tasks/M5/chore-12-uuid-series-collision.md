@@ -376,3 +376,16 @@ available evidence that the renumber changed identity and nothing else.
 
 Per CLAUDE.md this lane-worktree corpus run **does not count toward done**; the
 orchestrator's merged run is the one that does.
+
+### Commits
+
+- `05f0115` — the repair: five fixtures renumbered, the `MANIFEST` header's
+  allocation line, and the evidence above. Branch `lane-uuid`, base `c56f219`.
+
+**Operational note for the orchestrator's merge:** the pre-commit hook runs
+`cargo xtask check` **without** `--corpus`, so the commit's own gate reports
+`INCOMPLETE: 2 of 8 arms did not run. 6 passed, 0 failed.` That is the hook's
+normal behaviour and not a failure. The 8-arm `COMPLETE` above came from an
+explicit `cargo xtask check --corpus` run on byte-identical content — the
+working tree was clean at commit time and `git status --porcelain` is empty
+after it.
