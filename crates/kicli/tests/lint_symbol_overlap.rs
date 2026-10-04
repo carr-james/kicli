@@ -41,8 +41,8 @@
 use kicli::lint::score::Density;
 use kicli::lint::{Drawing, Engine, Finding, Gate, RuleId};
 use kicli::model::Hierarchy;
-use kicli_probe::drawing::{Placed, millimetres, rectangle, symbol};
 use kicli_probe::Probe;
+use kicli_probe::drawing::{Placed, millimetres, rectangle, symbol};
 use std::path::{Path, PathBuf};
 
 /// The rule under test.
@@ -77,7 +77,10 @@ fn slab() -> String {
         false,
         &[(
             "1_1",
-            vec![rectangle(("0", "0"), (&millimetres(WIDE), &millimetres(TALL)))],
+            vec![rectangle(
+                ("0", "0"),
+                (&millimetres(WIDE), &millimetres(TALL)),
+            )],
         )],
     )
 }
@@ -274,7 +277,11 @@ fn a_corner_touch_is_not_an_overlap() {
         slab_body(inside, false)
     ));
     assert_eq!(
-        findings_of(&slabs("corner-in", &[("R1", BASE, "0"), ("R2", inside, "0")])).len(),
+        findings_of(&slabs(
+            "corner-in",
+            &[("R1", BASE, "0"), ("R2", inside, "0")]
+        ))
+        .len(),
         1
     );
 }
@@ -306,10 +313,7 @@ fn a_turned_body_is_compared_where_it_is_actually_drawn() {
             "{name}: the unturned body gives the opposite answer"
         );
 
-        let findings = findings_of(&slabs(
-            name,
-            &[("R1", BASE, "0"), ("R2", anchor, "90")],
-        ));
+        let findings = findings_of(&slabs(name, &[("R1", BASE, "0"), ("R2", anchor, "90")]));
         assert_eq!(
             findings.len(),
             usize::from(turned_shares),
@@ -362,6 +366,41 @@ fn exactly_the_overlapping_pair_is_named() {
         holds(first, i64::from(found.pos.x.0), i64::from(found.pos.y.0)),
         "the finding points at the overlap: {}",
         found.pos
+    );
+}
+
+#[test]
+fn a_pair_that_is_not_adjacent_in_file_order_is_still_found() {
+    // Three symbols where the overlapping pair is the FIRST and the THIRD.
+    // A walk that compared each symbol only with the next one in file order
+    // gives the right answer on three symbols in a row — it would examine
+    // (R1,R2) and (R2,R3) and report the same single finding — so the row
+    // fixture cannot see that defect and this one can.
+    let far = (BASE.0, BASE.1 + 50.0);
+    let over = (BASE.0 + WIDE / 2.0, BASE.1);
+    let (first, middle, last) = (
+        slab_body(BASE, false),
+        slab_body(far, false),
+        slab_body(over, false),
+    );
+    assert!(share_an_area(first, last), "R1 and R3 share an area");
+    assert!(!share_an_area(first, middle), "R1 and R2 do not");
+    assert!(!share_an_area(middle, last), "and neither do R2 and R3");
+
+    let findings = findings_of(&slabs(
+        "non-adjacent",
+        &[("R1", BASE, "0"), ("R2", far, "0"), ("R3", over, "0")],
+    ));
+    assert_eq!(findings.len(), 1, "{findings:?}");
+    assert!(
+        findings[0].message.contains("R1") && findings[0].message.contains("R3"),
+        "the pair the walk had to reach past R2 to find: {}",
+        findings[0].message
+    );
+    assert!(
+        !findings[0].message.contains("R2"),
+        "{}",
+        findings[0].message
     );
 }
 
