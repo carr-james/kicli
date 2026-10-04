@@ -543,6 +543,18 @@ red. Until then the honest statement is that **`src/lint/` must hold no raw
 string**, and this entry is the only place that is written down. Revisit
 trigger: the next rule author who wants an inline s-expression fixture.
 
+**A third thing the full gate caught that no targeted run could.** The `clippy`
+arm failed on `clippy::struct_field_names`: the rule's private
+`struct Body { name, object, body }` has a field named exactly its own struct,
+and `-D warnings` makes that an error. Renamed to `Compared`; the field, the
+function `bodies_of` and every falsification citation are unchanged, and
+`cargo clippy --all-targets --all-features -- -D warnings` is clean. Noted
+because it is the **same class** as the raw-string failure above: a rule file
+is invisible to `cargo fmt`, and it turns out the author's habit of running
+`cargo test -p kicli --test <name>` makes it effectively invisible to `clippy`
+too. **The only instrument that sees a rule file whole is `cargo xtask check`,
+and a lane that runs targeted tests to go fast will hand over a red branch.**
+
 **And one process finding, recorded because it nearly cost the whole table.**
 The commit `e2f594b` was made with `git add -A` **while the full-suite B3 run
 was mid-flight**, so it captured the applied break: `git show e2f594b --

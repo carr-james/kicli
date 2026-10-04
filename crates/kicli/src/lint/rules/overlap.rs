@@ -85,8 +85,11 @@ use crate::model::items::{Item, Uuid};
 #[allow(dead_code, reason = "no caller yet: see SymbolBodiesOverlap::allowing")]
 const SEPARATOR: char = ':';
 
-/// One placed symbol, reduced to what this rule compares.
-struct Body {
+/// One placed symbol, reduced to the three things this rule compares.
+///
+/// Named for the comparison rather than for the box, because `struct Body`
+/// with a `body` field is a `clippy::struct_field_names` error.
+struct Compared {
     /// The reference designator on this sheet, or the short uuid when the
     /// placement records none. An unnamed symbol is still compared; it just
     /// cannot be written in an `--allow` entry.
@@ -292,7 +295,7 @@ impl Rule for SymbolBodiesOverlap {
 ///
 /// **Power symbols are not filtered here, and that is the rule.** Grep this
 /// function for `is_power` and find nothing.
-fn bodies_of(drawing: &Drawing<'_>) -> Vec<Body> {
+fn bodies_of(drawing: &Drawing<'_>) -> Vec<Compared> {
     let sheet = drawing.path();
     let mut bodies = Vec::new();
     for item in &drawing.schematic().items {
@@ -305,7 +308,7 @@ fn bodies_of(drawing: &Drawing<'_>) -> Vec<Body> {
         // The instance record says which unit this placement draws, and a
         // multi-unit part's units have different bodies.
         let drawn = symbol.drawn_on(sheet);
-        bodies.push(Body {
+        bodies.push(Compared {
             name: symbol.reference_on(sheet).map_or_else(
                 || symbol.uuid.short().to_owned(),
                 |reference| reference.0.clone(),
