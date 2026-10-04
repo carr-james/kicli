@@ -113,7 +113,7 @@ registered itself with no edit to `lib.rs`, `registry.rs`, `Cargo.toml` or
 | | |
 |---|---|
 | rule | `crates/kicli/src/lint/rules/wire_body.rs` — `WireCrossesBody`, `KI-WIRE-001`, Tier 1 |
-| checks | 13 in-file unit checks; 6 in `crates/kicli/tests/lint_wire_through_body.rs`, one of them `kicad-cli`-gated |
+| checks | 13 in-file unit checks; 8 in `crates/kicli/tests/lint_wire_through_body.rs`, one of them `kicad-cli`-gated |
 | the seam | **held**. The build registered the rule from the directory; no existing file was edited. `cargo test -p kicli --test lint_rules_register_from_their_own_files` green, and the generated `lint_rules.rs` lists `wire_body` beside `pin_on_wire`. |
 
 ## Goal state 1 — the exclusion, and the check that proves it exists
@@ -360,4 +360,134 @@ which no committed fixture in the tree carries. So nothing was added under
 
 ## Falsification
 
-*(filled from the runs — see the table below)*
+**Good state committed first**, per the `falsification-control` skill: commit
+`7991647`, gate green (6 of 8 arms pass; `corpus` and `kicad-cli` skip, which is
+the correct bare-run output). **That commit is deliberately NOT amended** — the
+two checks added after the sweep land in a second commit instead, so the SHA
+this section names stays valid. The primary anchor is still the **content
+hash**, because a hash survives a merge-forward and a SHA does not:
+
+```
+sha256 crates/kicli/src/lint/rules/wire_body.rs
+  8dbe2ddce57bcf81c77817d4b994a6c5f87dbac2e6b4bc8d269c9ac01f4144bd
+```
+
+Every break was applied to the rule file, every run used `--no-fail-fast`, and
+after every break the file was restored with `git checkout --` on **that one
+pathspec** and the sha256 re-compared with the good state. **All fifteen
+restores matched.** Raw logs: `/tmp/kicli-scratch/wire/falsification/`.
+
+### The target set, and why it is narrower than the whole suite — measured
+
+`cargo test -p kicli --no-fail-fast` runs **659 checks** and, under the
+contention measured during this lane (three other lanes running their own full
+suites concurrently; `ps` showed six concurrent `cargo test` invocations), one
+pass took over twenty minutes. So thirteen targets were used instead of fifty:
+
+- derived, not chosen: `grep -l "kicli::lint" crates/kicli/tests/*.rs` ∪
+  `grep -l "src/lint" crates/kicli/tests/*.rs`, plus `--lib`. A target that
+  neither names the lint engine nor reads `src/lint` as text cannot observe a
+  change in a lint rule. The derivation is in
+  `/tmp/kicli-scratch/wire/lint-targets.txt` and is re-runnable;
+- **validated by measurement, not by that argument.** Break B1 was run **twice**
+  — once over all 659 checks and once over the narrowed 260 — and the catcher
+  lists are **identical, six names each**. The narrowing loses nothing on the
+  break that matters most.
+
+**No break caused a compile failure.** Checked rather than assumed:
+`grep -lE "could not compile|^error\[E"` over all fifteen logs matches nothing.
+(The first sweep's own summary prints `COMPILE ERROR` on every row — that flag
+is a **false positive** in my runner, which matched cargo's own
+`error: test failed, to rerun pass …` line. The flag is wrong; the runs are
+sound.)
+
+### The table
+
+| # | What was broken, exactly | Caught by |
+|---|---|---|
+| **B1** | **the proximity half, entire**: `!body.pins.iter().any(\|pin\| near(from, to, lo, *pin) \|\| near(from, to, hi, *pin))` replaced by `true` | **6** — `a_wire_ending_on_an_inset_pin_is_not_a_crossing`, `the_exclusion_reads_this_symbols_pins_and_no_others`, `the_known_under_report_is_observed_rather_than_unobserved`, `a_wire_that_terminates_on_a_pin_is_not_a_crossing`, `a_wire_drawn_through_a_body_names_that_wire_and_that_symbol`, `the_gate_fails_on_the_first_crossing_whatever_share_was_declared`. Identical over 659 checks and over 260. |
+| **B2** | **the length half**: the three lines `if !lo.is_before(hi) { return false; }` removed — the `if`, the `return` and the closing brace, named in full because one line number would misdescribe it | **2** — `a_wire_that_touches_the_body_at_one_point_is_not_a_crossing`, `a_wire_that_touches_the_body_at_one_point_only_is_not_a_crossing` |
+| | **B1 and B2 have no catcher in common.** That is the independence claim of the two halves, measured rather than argued. | |
+| **B3** | the zero-length guard `if from == to { return false; }` removed (three lines) | **1** — `a_wire_of_no_length_is_never_a_crossing`, and it is the **only** catcher. No fixture carries a zero-length wire, which is exactly why the unit check is there. |
+| **B4** | `.body` replaced by `.full` in `bodies_of` | **3** — `text_outside_the_body_does_not_make_a_crossing`, `a_wire_drawn_through_a_body_names_that_wire_and_that_symbol`, `a_wire_across_two_bodies_is_one_finding_that_counts_the_others`. **See the measured gap below: on the first pass this break had one catcher, and that catcher was a position assertion.** |
+| **B5** | the clip's sign convention: `if p < 0` became `if p > 0` in the Liang–Barsky loop — the sign-inversion control, so no check below is a restatement of the implementation | **10**, including every clip unit check and both integration crossing checks |
+| **B6** | `NEAR_A_PIN` widened from `1` to `100_000` (10 mm) | **7** — including `an_endpoint_is_near_a_pin_at_one_unit_and_not_at_two` and the crossing check, which stops firing because the crossing gets excused |
+| **B7** | `NEAR_A_PIN` tightened from `1` to `0` | **1** — `an_endpoint_is_near_a_pin_at_one_unit_and_not_at_two`. The boundary is at exactly one internal unit and only that check can see it, because a pin that coincides with the endpoint is excluded at either value. |
+| **B8** | `Saturation::of(Counted::Wires)` replaced by `Saturation::NEVER` | **1** — `the_gate_fails_on_the_first_crossing_whatever_share_was_declared`. The declaration is asserted, not merely written. |
+| **B9** | `Tier::One` replaced by `Tier::Two` | **2** — the crossing check's tier assertion and the gate check (`Blocker::Blocking` becomes `Saturated` or absent) |
+| **B10** | `wires_of`'s bus filter removed: `Item::Line(line) if matches!(line.kind, LineKind::Wire)` became `Item::Line(line)` | **1** — `a_wire_drawn_through_a_body_names_that_wire_and_that_symbol`, whose drawing carries a bus clean through the body. Without that bus this break would have been green, and the gap would have been invisible. |
+| **B11** | only one endpoint of the clipped part checked: `\|\| near(from, to, hi, *pin)` removed | **6**, including `every_hidden_rule_file_is_formatted` — incidental, because the break shortened a line rustfmt then wanted to rejoin. Noted so the next reader does not take it for a behavioural catcher. |
+| **B12** | `let others = crossed.len() - 1;` became `let others = 0;` | **1** — `a_wire_across_two_bodies_is_one_finding_that_counts_the_others` |
+| **B13** | `crossed.first()` became `crossed.last()` | **1** — the same check, on the `objects` assertion. "First in file order" is asserted rather than incidental. |
+
+### The measured gap in my own instrument, and the repair
+
+**B4's first run had exactly one catcher, and it was the finding's reported
+position** — the box centre moved, so the `pos` assertion failed. The
+behaviourally important half was **not** caught: with the full box, the three
+legitimate wires are still excused, because the exclusion absorbs them. A
+body-versus-full confusion that produced a *false finding* would have gone
+unobserved.
+
+That is the fourth kind of blind instrument — the check agreed for a reason
+other than the one claimed — and it was found only because the break was made.
+Two checks were added in response and B4 was re-run:
+
+- `text_outside_the_body_does_not_make_a_crossing` — a wire across the symbol's
+  **text** and nowhere near its body reports nothing, with a control asserting
+  that the two boxes really do differ in that drawing and that the wire really
+  is inside one and outside the other;
+- `a_wire_across_two_bodies_is_one_finding_that_counts_the_others` — which also
+  closed a second gap: the **per-wire** decision and the "first in file order"
+  choice were not asserted anywhere, and B12 and B13 exist because of it.
+
+### The environment break — the fifth dimension
+
+My checks consume **probe-generated identifiers**: `wire_between` and
+`symbol_called` take uuids from the loaded drawing and compare them with the
+uuids in the finding. That is a generated value, so the second-directory run is
+owed.
+
+```sh
+scratch="$(mktemp -d /tmp/kicli-scratch/wire/elsewhere-XXXXXX)"
+git archive HEAD | tar -x -C "$scratch"
+( cd "$scratch" && KICLI_TEST_KICAD_CLI=1 cargo test -p kicli \
+    --no-fail-fast --lib lint::registry::wire_body --test lint_wire_through_body )
+```
+
+**Green from the second directory**: 13 unit checks and all integration checks,
+the `kicad-cli` oracle included. Nothing here asserts a property of the
+worktree it was written in.
+
+*The scratch directory is deliberately **not** named `src`: the recorded trap is
+that `the_four_way_rule_has_one_home.rs` matches any path component called
+`src`, and the false failure is indistinguishable from a real regression.*
+
+### Probe-name collision
+
+Nine `Probe::new` names in the binary, **nine distinct**
+(`calibration`, `connected`, `crossing`, `grazing`, `gate-one-of-four`,
+`gate-all`, `pin-oracle`, `text-not-body`, `two-bodies`). Checked rather than
+assumed, because `cargo test` runs one binary's checks in parallel and the probe
+harness writes to a name-keyed path.
+
+### What is NOT covered by a check, said plainly
+
+- **Hidden pins in the exclusion list.** `bodies_of` keeps them, deliberately,
+  and no fixture carries a hidden pin inside a body box. The effect is a
+  suppressed finding, never a false one, so the gap is in the quiet direction —
+  but it is a gap and not a measurement.
+- **A symbol the file embeds no definition for.** Skipped by `bodies_of`'s
+  `let Some(definition) = …` and not exercised.
+
+## Completion check
+
+```
+cargo xtask check                                    # 6 pass, 2 skip (corpus, kicad-cli)
+cargo test -p kicli --test rule_files_are_formatted  # 1 passed
+```
+
+Per `CLAUDE.md`, the two skipped arms are **environment- and corpus-gated and do
+not count toward done from inside a lane worktree**; the `kicad-cli` oracle was
+run by hand, under `KICLI_TEST_KICAD_CLI=1`, to make the measurement this task
+owes, and is green.

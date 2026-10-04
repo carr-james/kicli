@@ -204,6 +204,17 @@ fn only_symbol(hierarchy: &Hierarchy) -> Uuid {
     found.pop().expect("the drawing holds one symbol")
 }
 
+/// The identifier of the symbol with this reference designator.
+fn symbol_called(hierarchy: &Hierarchy, reference: &str) -> Uuid {
+    let path = &hierarchy.placements[0].path;
+    hierarchy.files[hierarchy.placements[0].file]
+        .schematic
+        .symbols()
+        .find(|symbol| symbol.reference_on(path).is_some_and(|r| r.0 == reference))
+        .map(|symbol| symbol.uuid.clone())
+        .expect("the drawing holds that symbol")
+}
+
 #[test]
 fn the_body_box_this_rule_reads_is_where_the_library_puts_it() {
     // The calibration, and the anti-vacuity control for every check below that
@@ -441,4 +452,87 @@ fn kicad_puts_the_pins_where_the_exclusion_expects_them() {
         "KiCad reports the pins where this file's arithmetic puts them:\n{}",
         report.text()
     );
+}
+
+#[test]
+fn text_outside_the_body_does_not_make_a_crossing() {
+    // "body, not full", as behaviour rather than as a position. Swapping
+    // `.body` for `.full` in the rule is otherwise caught only by the
+    // finding's reported position, which is a weak reason to prefer one box —
+    // measured, and this check is the repair.
+    //
+    // The two boxes differ by a knowable amount in this drawing: the probe
+    // writes every visible field at an ABSOLUTE `(at 0 0)`, and the full box
+    // is the body unioned with every visible field's own box, so the full box
+    // reaches the page origin and the body box does not. A wire at 50.8 mm is
+    // therefore well inside the full box and nowhere near the body.
+    let mut probe = Probe::new("text-not-body", scratch());
+    probe.define(inset());
+    probe.place("INSET", "U1", PLACED_AT, &PINS);
+    probe.wire(("38.1", "50.8"), ("63.5", "50.8"));
+    let path = probe.write();
+
+    let hierarchy = loaded(&path);
+    let file = &hierarchy.files[hierarchy.placements[0].file];
+    let sheet = &hierarchy.placements[0].path;
+    let drawing = Drawing::read(&file.doc, &file.schematic, sheet);
+    let symbol = file
+        .schematic
+        .symbols()
+        .next()
+        .expect("the drawing holds a symbol");
+    let definition = drawing
+        .definition_of(symbol)
+        .expect("the file embeds the definition");
+    let boxes = symbol_boxes(&file.doc, &symbol.drawn_on(sheet), definition);
+
+    // The control: the two boxes really do differ here, and the wire really is
+    // inside one and outside the other. Without this the check could pass on a
+    // drawing where no box distinction existed to get wrong.
+    let wire = (Point::new(381_000, 508_000), Point::new(635_000, 508_000));
+    assert_ne!(
+        boxes.full, boxes.body,
+        "the symbol draws text outside its body"
+    );
+    assert!(boxes.full.contains(wire.0) && boxes.full.contains(wire.1));
+    assert!(!boxes.body.contains(wire.0) && !boxes.body.contains(wire.1));
+
+    assert_eq!(
+        findings_of(&path),
+        Vec::new(),
+        "a wire across a symbol's text is not a wire across its body"
+    );
+}
+
+#[test]
+fn a_wire_across_two_bodies_is_one_finding_that_counts_the_others() {
+    // The per-wire decision, as a check. The repair is one re-route, so a wire
+    // drawn across two symbols is one finding — naming the first in file order
+    // and saying how many others it crossed.
+    let mut probe = Probe::new("two-bodies", scratch());
+    probe.define(inset());
+    probe.place("INSET", "U1", PLACED_AT, &PINS);
+    probe.place("INSET", "U2", ("152.4", "101.6"), &PINS);
+    probe.wire(("76.2", "100.33"), ("177.8", "100.33"));
+    let path = probe.write();
+
+    let hierarchy = loaded(&path);
+    let crossing = wire_between(
+        &hierarchy,
+        Point::new(762_000, 1_003_300),
+        Point::new(1_778_000, 1_003_300),
+    );
+    let found = findings_of(&path);
+    assert_eq!(found.len(), 1, "one wire, one finding: {found:?}");
+    assert_eq!(
+        found[0].objects,
+        vec![crossing, symbol_called(&hierarchy, "U1")],
+        "it names the first body in file order"
+    );
+    assert_eq!(
+        found[0].message, "this wire crosses the body of U1 and 1 other",
+        "and says how many others without listing them"
+    );
+    // U1's body centre, not U2's: 86.36 + (109.22 - 86.36) / 2 = 97.79 mm.
+    assert_eq!(found[0].pos, Point::new(977_900, 1_016_000));
 }
