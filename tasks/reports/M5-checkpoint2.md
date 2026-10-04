@@ -156,6 +156,9 @@ a design decision and `chore-runner.md` says *never design work*.
 | Task | Lane | What landed | Evidence | Verdict |
 |---|---|---|---|---|
 | **tier separation, and the saturating rule** (`phase1-t4-tier-separation.md`) | `lane-t4` | `lint/gate.rs` — `Counted`, `Saturation`, `Blocker`, `Gate`, `Report`. A rule declares what it counts and the share that fails the gate; `Findings::of` stamps it beside tier, severity and weight. **Twelve breaks, none left a check green.** Plus `Rule::normaliser()`, mechanism only | entry "Tick — APPROVE"; lane `c41edd4`; merge `e7d3a76` | **APPROVE** |
+| **`KI-GRID-001`, connectable geometry off grid** (`phase2-ki-grid-001-off-grid.md`) | `lane-a` (resumed) | six connectable classes, integer modulus, fields exempt. **Audit: 0 rows recorded, 0 confirmable, 16 newly run.** Measured that an ERC positional join is wrong for wires | entry "Resumption"; lane `93796ee`; merge `c9feb1f` | **APPROVE** |
+| **`KI-WIRE-001`, a wire crosses a symbol body** (`phase2-ki-wire-001-wire-through-body.md`) | `lane-wire` | **falsified the orchestrator's brief** — the exclusion is not needed for symmetric pins, because a wire into one clips to a point. B1 caught by 6, B2 by 2, **non-overlapping** | entry `# Evidence…(lane wire)`; lane `f5f8176`; merge `91a64d7` | **APPROVE** |
+| **ERC consumption and the 100× canary** (`phase1-t2-erc-consumption-and-canary.md`) | `lane-t2` (resumed) | the seam, the canary alive, and **a new KiCad measurement**: the text report rounds to 3 decimals against 1e-4 mm resolution. **Audit: 7 recorded, 0 confirmable, 7 reproduced, 1 added, row 7 corrected 5→8** | entry "Resumption and falsification audit"; lane `f5fa9b0`; merge `98bae84` | **APPROVE** |
 | **`KI-OVL-001`, symbol bodies overlap** (`phase2-ki-ovl-001-symbol-overlap.md`) | `lane-ovl` | exact integer box intersection, power included, `--allow` as a list. **Found a zero-size-box defect in its own first version before any break ran**, and **a demonstrated false negative in the Constitution §4 gate** | entry §§1–10; lane `5435135`; merge `96c8b76` | **APPROVE** |
 | **`KI-CONN-001`, the pin that touches a wire it is not connected to** (`phase2-ki-conn-001-pin-on-wire.md`) | `lane-b` | the rule, four unit + seven end-to-end checks, and **the capability seam** — no rule could ask a connectivity question before this. Fix hint verified by KiCad's own netlist collapsing two nets into one | lane `0968365`; **awaiting merge** | **APPROVE** |
 | **the gate says what it did NOT run** (`chore-9-gate-enumerates-its-arms.md`) | `lane-gate` | eight named arms, three verdicts, and a headline that cannot lie: `INCOMPLETE: 2 of 8 arms did not run` | lane `d083f9e`; **awaiting merge** | **APPROVE** |
@@ -216,6 +219,47 @@ three hand-rolled matchers standing in for a parse:
 test-only, with one instruction that is not a chore's call: **if the repair
 reveals a real `f64` under `src/lint/`, stop and report it** — that would be a
 §4 violation that has been shipping invisibly.*
+
+### TWO REVIEWERS REACHED OPPOSITE VERDICTS ON THE SAME CITED NUMBER, AND THE RESOLUTION IS THE COUNTED QUANTITY'S SHAPE
+
+**Recorded carefully, because left alone the record would carry a precedent that
+is true for one rule and false for another.**
+
+Both `KI-OVL-001` and `KI-WIRE-001` argued Tier 1 from the north star by citing
+BLOCKED 3's measurement — *a sheet scores **67** whatever its size*. Their
+reviewers disagreed:
+
+| Reviewer | Verdict on the citation |
+|---|---|
+| `review-ovl` | **unsound** — 67 comes from a family where `n ≤ N` holds; for pair-counting it fails, since four mutually overlapping symbols give **six pairs against N=4** |
+| `review-wire` | **sound** — 67 illustrates a *general* mechanism: any rule capped at `w · reference` because it fires at most once per counted object, and `WireCrossesBody` is exactly that shape |
+
+**Both are right about their own rule, and the discriminator is the counted
+quantity:**
+
+- **`KI-WIRE-001` is per-wire.** One finding per wire, so `n ≤ N` holds and the
+  cap mechanism applies unchanged. **The citation is valid.**
+- **`KI-OVL-001` is per-pair.** `n ≤ N` fails. **The citation is invalid**, and
+  the lane's own §3 had already surfaced the pairs-vs-symbols mismatch without
+  reconciling it with the number borrowed earlier in the same entry.
+
+**The one thing that must not stand** is `review-wire`'s closing half, that the
+sibling *"cites the identical text for the identical reason — established,
+consistent precedent, not a coincidence worth flagging."* **The reason was not
+identical.** That sentence, unchallenged, would license every future pair-counted
+rule to borrow a per-object number.
+
+**The rule going forward, and it is already in `KI-TXT-001`'s brief because that
+rule is pair-counted and was dispatched before this resolved:** *a tier argument
+that leans on another rule's normaliser output **recomputes** rather than
+reuses, whenever the counted quantity's shape differs.* A borrowed number is
+decoration.
+
+**And the meta-point is the valuable one.** This is the first time in the record
+that **two reviewers examining the same claim in different contexts reached
+opposite conclusions** — and the disagreement is what located the real rule.
+Neither alone would have. A single reviewer would have produced a confident
+verdict and the project would have inherited whichever one it happened to get.
 
 ### A FIDELITY CONTROL WHOSE CHECK WAS ALIVE AND WHOSE CONSTANT WAS WRONG — `lane-snap`, found by review
 
