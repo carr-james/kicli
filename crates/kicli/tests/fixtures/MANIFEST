@@ -76,3 +76,8 @@ erc/precision/precision.kicad_sch 20260306 normal yes hand
 erc/precision/precision.kicad_pro - json no hand
 erc/precision/precision.erc.json - oracle - kicad-cli
 erc/precision/precision.erc.txt - oracle - kicad-cli
+sch/text_overlap/angled.kicad_sch 20260306 normal yes kicad-cli
+sch/text_overlap/hidden.kicad_sch 20260306 normal yes kicad-cli
+sch/text_overlap/visible.kicad_sch 20260306 normal yes kicad-cli
+sch/text_overlap/one_pair.kicad_sch 20260306 normal yes kicad-cli
+sch/text_overlap/boundary.kicad_sch 20260306 normal yes kicad-cli
