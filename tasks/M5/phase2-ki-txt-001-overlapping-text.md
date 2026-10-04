@@ -311,6 +311,11 @@ Nothing reaches the asymmetric case because no `Drawn` with zero area is ever
 built — but a future reader removing that guard as redundant would have had the
 header's word for it.
 
+**Superseded in strength by MEASURED 6**, which is the same point made properly:
+a zero-size text is **reachable** through a drawing, and unguarded it produces a
+false **blocking** finding on a pair that need not be anywhere near each other.
+This measurement is the geometry; MEASURED 6 is what the geometry costs.
+
 ## MEASURED 5 — the first gate run on this branch failed two arms, and both were real
 
 **This is the whole argument for the `--no-verify` deviation being a debt rather
@@ -572,6 +577,20 @@ that keeps the rule's verdict exact, and a `geometry/` version that returned a
 rounded answer instead would silently put a rounding error inside a blocking
 gate.
 
+**Two more things the mover needs, both added by the resume and both measured.**
+
+1. **The decline is not about the angle** — MEASURED 3. An eighth turn crosses
+   on whole units and answers exactly; a twelfth turn declines. A `geometry/`
+   version documented as *"declines off the right angles"* would be documented
+   wrongly, and the sweep that says so is
+   `tests::a_relative_angle_that_is_not_a_right_angle_is_declined_rather_than_rounded`.
+2. **The clip is not symmetric about a degenerate window** — MEASURED 4 and 6.
+   Clipping a real polygon by a *point* keeps the whole subject, because every
+   `side` test against an edge of no length answers zero. A `geometry/` version
+   must either reject a degenerate window or keep the caller-side guard that
+   `add` has, and the caller-side guard is what stops a false blocking finding
+   today.
+
 **PROPOSED 3 — no per-pin text box is reachable.** `geometry/symbol_box.rs`.
 `pin_text_boxes` is private and works in library space; `symbol_boxes` folds
 its results into `full` and discards them. The catalogue's detect list names
@@ -602,8 +621,9 @@ Nothing was edited in any of them. Two owe something:
   configuration file chose. There is no `kicli.toml` in the tree yet.
 
 `Cargo.toml`, `lib.rs`, `build.rs`, `AGENT.md`, `spec/SPEC.md`,
-`tests/command_surface.rs` and `crates/kicli/src/lint/drawing.rs` were not
-touched and owe nothing. The rule registered itself: `build.rs` reads
+`tests/command_surface.rs`, `kicli.toml`, `crates/kicli/src/lint/drawing.rs`
+and `crates/kicli/src/lint/erc.rs` were not touched and owe nothing beyond the
+two items named above. The rule registered itself: `build.rs` reads
 `src/lint/rules/` and the new file needed no list edited anywhere, which is the
 Phase 1 seam verdict holding for a second rule file.
 
@@ -622,6 +642,31 @@ Inside the brief's IN list, with nothing outside it:
 The `MANIFEST` change is five appended records and no edit to any existing
 line.
 
+### What the resume touched, measured rather than asserted
+
+`git diff --stat 668181a HEAD`:
+
+```
+ crates/kicli/src/lint/rules/text.rs                | 570 +++++++++++++---
+ .../fixtures/sch/text_overlap/angled.kicad_sch     |   4 +-
+ crates/kicli/tests/lint_overlapping_text.rs        |  83 ++-
+ tasks/M5/phase2-ki-txt-001-overlapping-text.md     | 265 ++++++--
+ 4 files changed, 814 insertions(+), 108 deletions(-)
+```
+
+All four are on the brief's IN list. The fixture's four changed lines are the
+two `(at …)` records of MEASURED 5 defect B, two lines removed and two added.
+**`crates/kicli/tests/fixtures/MANIFEST` was NOT touched by the resume** — it
+records no hash, the edited fixture is still `20260306 normal yes kicad-cli` in
+all five fields, and `kicad-cli sch upgrade --force` at 10.0.5 returns it byte
+identical. The lane branch's own total against its base `2875806` is the nine
+files of the table above plus nothing.
+
+**No merge hotspot was edited**, and in particular
+`crates/kicli/tests/invariants.rs` was **not** touched: MEASURED 5 defect B was
+repaired by moving the fixture onto the grid rather than by adding an exemption
+to the sweep, because the invariant was right.
+
 ## The fixtures, and why each one exists
 
 All five bytes were written by `kicad-cli sch upgrade` at KiCad **10.0.5**, so
@@ -639,7 +684,7 @@ Identifier series `30`–`34`, above every series the tree already used
 | `one_pair` | five free texts; one firing pair at 53 %, one decoy at **19.997 %**, one at 10 % | pair selection, non-adjacency, and the threshold from below |
 | `boundary` | two free texts at **20.002 %** | the threshold from above, one internal unit from `one_pair`'s decoy |
 
-## Falsification — what is shown, and what is still owed
+## Falsification — what is shown, and nothing is still owed
 
 ### Shown, and passing
 
@@ -686,25 +731,107 @@ Identifier series `30`–`34`, above every series the tree already used
    MEASURED 2, and it is a check demonstrating its capability to fail by doing
    it.
 
-### Still owed, and the resume starts here
+### The resume's five unit checks, in the rule's own `tests`
 
-- **The deliberate-break substitutions have NOT been run.** The brief requires
-  showing the divergence check failing by substituting an AABB implementation
-  and then restoring. The *test-side* control is in place and measured (the
-  lookalike's 71 % is asserted), but the *rule-side* substitution — replacing
-  `boxed.corners()` with `boxed.bounds().corners()` in `add`, confirming
-  `a_turned_label_is_not_compared_where_its_unturned_box_would_be` goes red, and
-  restoring — was not performed.
-- **The rule file's `#[cfg(test)] mod tests` was never written.** It owes: the
-  exactly-20 % / 20 %+1 IU² comparison at unit grain (unreachable through a
-  drawing — the smaller box's area is not a multiple of five, so no arrangement
-  of it lands on the line); the shared-edge/one-unit-in/corner-touch cases on
-  both axes; the zero-area cases; the extent lookalike's disagreement on a
-  box of no area; the 45° decline with the `.axis_aligned()` substitution
-  shown to answer *wrongly* where the rule declines; and the winding
-  normalisation.
-- **`cargo xtask check`** and **`cargo test -p kicli --test
-  rule_files_are_formatted`**, neither run.
-- **The rule file holds no raw string**, which `chore-10` requires — ordinary
-  escaped strings only, as `symbol_box.rs` does. Verified by reading, not by a
-  check, because the check is the one that is broken.
+Written from the *"Falsification still owed"* list, because no draft of them
+existed anywhere. Each is listed with the owed item it discharges.
+
+| check | the owed item |
+|---|---|
+| `the_ratio_boundary_is_one_square_unit_wide` | exactly 20 % and 20 % + 1 IU² at unit grain, unreachable through a drawing |
+| `a_shared_edge_and_a_touched_corner_hold_no_area_and_one_unit_in_does` | shared edge, one unit in, one unit of gap, on **each axis separately**, plus the corner diagonal |
+| `a_box_of_no_area_shares_none_where_the_extent_lookalike_says_it_does` | the zero-area cases and the extent lookalike's disagreement about them |
+| `a_relative_angle_that_is_not_a_right_angle_is_declined_rather_than_rounded` | the fractional-crossing decline, and the lookalike answering where the rule declines — **reframed by MEASURED 3** |
+| `a_window_wound_the_other_way_is_normalised_rather_than_inverted` | the winding normalisation |
+| `a_text_of_no_size_reports_against_nothing_however_far_from_it` | **not on the owed list** — added because break 9 came back green, MEASURED 6 |
+
+### The empty-field case is pinned by a check of its own
+
+MEASURED 2's repair stood only on a findings **count** at `668181a`: remove the
+blank-text skip and `two_hidden_fields_at_one_position_report_nothing_and_the_
+same_two_visible_do` fails because 0 becomes 6. That catches it, and it does not
+*say* what it caught.
+
+`the_empty_visible_fields_kicad_writes_into_every_placement_are_not_compared`
+now pins it directly, over **both** `hidden.kicad_sch` and `visible.kicad_sch`:
+
+1. **the presence control** — exactly **6** empty visible fields per file,
+   three per placement, which are in no source a person writes;
+2. each has a **real box** (`area > 0`), so a zero-area guard cannot be what
+   saves the rule;
+3. the three per placement sit on **one anchor** with **identical** boxes, and
+   that geometry is **over the published ratio** in the test's own arithmetic;
+4. `hidden.kicad_sch` — whose references and values are *all* hidden, so those
+   six fields are its **only** visible text — reports **nothing**;
+5. `visible.kicad_sch` reports its **one** real pair and names no `Footprint`,
+   `Datasheet` or `Description`, so the skip is not a blanket silence.
+
+Break 3 of the table below confirms it: removing the skip fails this check, and
+two others besides.
+
+### The falsification table
+
+**All nine rows were measured against ONE good state** — `text.rs` at
+`sha256 0a938c76e37fcfe04f58e15ff81dd93ff1d48885d454d091d2bc174cf6c732b9`,
+which is `HEAD` at commit `3b352e7`. Hash command:
+`shasum -a 256 crates/kicli/src/lint/rules/text.rs`. Every break was made in
+that file, the suite was run as **`cargo test -p kicli --no-fail-fast`** so no
+catcher list is truncated, and each restore was by `git checkout --` followed by
+**re-checksumming the file against the hash above** — all nine verified back to
+it. Rows 1–8 were first measured at `f83d2573…` (commit `6562753`) and
+**re-measured at `0a938c76…` after the new check landed**, because a table that
+mixes two states is a table about neither.
+
+| # | what was broken, exactly | caught by |
+|---|---|---|
+| 1 | **the task's central break.** `let quad = boxed.corners();` → `let quad = boxed.bounds().corners();` in `add` — the oriented box replaced by the unturned one | `a_turned_label_is_not_compared_where_its_unturned_box_would_be`, `one_overlapping_pair_fails_the_gate_whatever_the_sheet_holds` |
+| 2 | `exceeds_ratio`'s `>` → `>=` — one character, the rule's whole tolerance | `the_ratio_boundary_is_one_square_unit_wide` |
+| 3 | the three lines `if text.trim().is_empty() { return; }` deleted from `add` | `the_empty_visible_fields_kicad_writes_into_every_placement_are_not_compared`, `two_hidden_fields_at_one_position_report_nothing_and_the_same_two_visible_do`, `one_overlapping_pair_fails_the_gate_whatever_the_sheet_holds` |
+| 4 | the three lines `if field.hidden { return; }` deleted from `add_field` | `two_hidden_fields_at_one_position_report_nothing_and_the_same_two_visible_do`, `the_empty_visible_fields_kicad_writes_into_every_placement_are_not_compared` |
+| 5 | the three lines `if step % span != 0 { return None; }` deleted from `crossing`, so a fractional crossing is **truncated** instead of declined | `a_relative_angle_that_is_not_a_right_angle_is_declined_rather_than_rounded` |
+| 6 | `positively_wound`'s whole `if twice_area(&quad) < 0 { … }` block deleted, leaving `quad` | `a_window_wound_the_other_way_is_normalised_rather_than_inverted` |
+| 7 | **two assertions' worth in one edit**, named as such: `clipped`'s `let was_inside = … >= 0;` **and** `let is_inside = … >= 0;` both changed to `> 0`, so a point exactly on an edge counts as outside | `a_box_of_no_area_shares_none_where_the_extent_lookalike_says_it_does`, `a_text_of_no_size_reports_against_nothing_however_far_from_it` |
+| 8 | `for two in drawn.iter().skip(place + 1)` → `… .skip(place + 1).take(1)`, the nearest-neighbour walk `KI-OVL-001`'s `take(1)` was blind to | `exactly_the_overlapping_pair_is_named_and_the_walk_reaches_past_two_others`, `one_internal_unit_more_overlap_crosses_the_published_ratio`, `two_hidden_fields_at_one_position_report_nothing_and_the_same_two_visible_do`, `the_empty_visible_fields_kicad_writes_into_every_placement_are_not_compared`, `one_overlapping_pair_fails_the_gate_whatever_the_sheet_holds` |
+| 9 | the four lines `if twice == 0 { return; }` deleted from `add` | **GREEN on the first run — investigated, see MEASURED 6.** Now `a_text_of_no_size_reports_against_nothing_however_far_from_it` |
+
+**Row 9 is the one worth reading.** It is recorded as case **2** of the skill's
+two cases — *the check does not watch what it claims* — and not as case 1. The
+guard is reachable and its absence is a false blocking finding on a correct
+drawing. The row's entry in the table is the **post-repair** result, with the
+green one named beside it rather than hidden.
+
+### The test side's own controls, carried forward from `668181a` and re-run
+
+The six integration checks the first implementer wrote were re-run by the
+resume, not taken on trust: `cargo test -p kicli --test lint_overlapping_text`
+is **7 of 7** including the new one. Their controls are listed under *Shown, and
+passing* above and are unchanged, with one correction: the `71` and the `0` in
+`a_turned_label_is_not_compared_where_its_unturned_box_would_be` **still hold
+exactly** after `angled.kicad_sch` moved onto the grid, because the move was a
+translation of both labels by the same `(−9 400, −9 400)` IU. See MEASURED 5,
+defect B.
+
+## The gates
+
+| command | result |
+|---|---|
+| `cargo xtask check` | **`INCOMPLETE: 2 of 8 arms did not run. 6 passed, 0 failed.`** — fmt, clippy, test, doc, deny and clean all pass; `corpus` and `kicad-cli` are opt-in via `--corpus`, which is the correct bare-run result and **not** a failure. Run as the pre-commit hook of `3b352e7`. |
+| `cargo test -p kicli --test rule_files_are_formatted` | **passes** — `every_hidden_rule_file_is_formatted ... ok`, inside the gate's `test` arm. It is the only thing that formats a rule file, and **it had never been run on this branch**. |
+| `cargo clippy -p kicli --all-targets --all-features -- -D warnings` | clean, inside the gate's `clippy` arm |
+| `cargo test -p kicli --lib` | **206 of 206** |
+| `cargo test -p kicli --test lint_overlapping_text` | **7 of 7** |
+| `cargo test -p kicli --test invariants --test fixtures_match_manifest --test round_trip --test fixture_handles` | **12 of 12** |
+
+**The corpus and `kicad-cli` arms do not count toward done from this worktree**,
+per `CLAUDE.md`. The orchestrator's merged run with `--corpus` is the gate for
+them.
+
+**The `--no-verify` debt is closed.** Three commits were made by the resume, all
+three through the pre-commit hook, none with `--no-verify`:
+
+| commit | what it carries |
+|---|---|
+| `6562753` | the five unit checks, the integration check, the two prose corrections, the formatting repair, the `drawn_text` split and the fixture's grid move |
+| `3b352e7` | `a_text_of_no_size_reports_against_nothing_however_far_from_it`, the repair for break 9's green |
+| (this entry's final state) | the falsification table and the gate results |
+
