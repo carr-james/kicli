@@ -373,6 +373,46 @@ from `one_pair` by **one internal unit**, which is 1/127 of a grid step, so a
 grid-checked item could not carry that pair. `hidden` and `visible` place
 symbols at 50.8 mm and 76.2 mm, both exact multiples of the grid.
 
+## MEASURED 6 — a falsification came back green, and the instrument was blind rather than the guard redundant
+
+Break 9 of the table below removed `add`'s `if twice == 0 { return; }` and the
+**whole suite stayed green**. Per the falsification skill's *"Green is a
+finding"* rule that was investigated rather than filed as *did not apply*, and
+it resolved as **case 2: the check does not watch what it claims**, not case 1.
+
+**Reachable.** `TextStyle::pen_width` falls back to `DEFAULT_PEN_WIDTH` and then
+passes through `clamp_pen_width`, which caps the pen at a **quarter of the
+smaller text dimension**. A text at `(size 0 0)` therefore gets a pen of
+**nothing**, `string_extents` inflates by nothing, and `text_box` returns a box
+of `0 x 0`. No committed fixture carries a zero-size font, which is the whole
+reason nothing caught the break.
+
+**And not harmless, which is the part that matters.** `examine` calls
+`shared_region(&one.quad, &two.quad)`, so the **later** text in file order is
+the clip **window**. A window of no area has four edges of no length, every
+`side` test against them answers zero, `was_inside == is_inside` everywhere, and
+**the clip keeps the whole subject**. So the earlier text's entire area is
+reported as shared, against a smaller box of zero, and
+`exceeds_ratio(area, 0)` is `area · 100 > 0` — **true**. One blocking finding on
+a pair that need not be anywhere near each other: in the fragment the new check
+uses, the two anchors are **100 mm apart on both axes**.
+
+So the guard is load-bearing in the strong sense — it prevents a false blocking
+finding on a correct drawing — and MEASURED 4's weaker statement of the same
+point is superseded by this one.
+
+Repaired by `a_text_of_no_size_reports_against_nothing_however_far_from_it` in
+the rule's own `tests`, which asserts the mechanism (`twice_area` of the
+sizeless box is 0; the clip by it returns the whole subject; `exceeds_ratio`
+against a smaller of 0 fires) and then that the rule reports nothing, with a
+two-stacked-strings fragment as the harness's presence control. The fragment is
+hand built for the reason `overlap.rs::tests` records — the probe harness cannot
+be reached from `src/lint/` — and because a zero-size font is not a drawing
+KiCad will author.
+
+**Break 9 was re-run against the new check, and it is recorded in the table
+below with that result rather than with the green one.**
+
 ## MEASURED 2 — a false-finding class on every schematic KiCad has ever written, caught by the fixture before the rule was ticked
 
 The `hidden.kicad_sch` fixture was written with two symbols and two hidden

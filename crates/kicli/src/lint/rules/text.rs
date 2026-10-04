@@ -593,9 +593,15 @@ pub static RULES: &[&'static dyn Rule] = &[&TEXT_OVERLAP];
 
 #[cfg(test)]
 mod tests {
-    use super::{clipped, exceeds_ratio, percentage, positively_wound, shared_region, twice_area};
+    use super::{
+        TEXT_OVERLAP, clipped, exceeds_ratio, percentage, positively_wound, shared_region,
+        twice_area,
+    };
     use crate::geometry::text::{TextStyle, text_box};
     use crate::geometry::{Angle, Point, Rect};
+    use crate::lint::{Drawing, Findings, Rule};
+    use crate::model::items::{Schematic, SheetPath};
+    use kicli_sexpr::Doc;
 
     /// An axis-aligned quadrilateral from two opposite corners.
     ///
@@ -891,5 +897,112 @@ mod tests {
             "an un-normalised window does not answer the intersection"
         );
         assert_eq!(twice_area(&inverted).abs(), 0);
+    }
+
+    /// One piece of text at the schematic default size, and one at `(size 0
+    /// 0)` on the far side of the page.
+    ///
+    /// **Hand built, for the reason `overlap.rs::tests` records**: the probe
+    /// harness cannot be reached from `src/lint/`, because
+    /// `tests/the_linter_holds_no_write_path` whitelists the roots a file
+    /// under it may name and `kicli_probe` is not one. No committed fixture
+    /// carries a zero-size font, and the one that would have to be written to
+    /// carry one is a drawing KiCad will not author.
+    const REAL_AND_SIZELESS: &str = "(kicad_sch (version 20260306) (generator \"eeschema\")\n\
+(uuid \"00000000-0000-4000-8000-000000000000\") (paper \"A4\") (lib_symbols)\n\
+(text \"AAAA\" (at 100 100 0)\n\
+(effects (font (size 1.27 1.27)) (justify left bottom))\n\
+(uuid \"40000001-0000-4000-8004-000000000001\"))\n\
+(text \"AAAA\" (at 200 200 0)\n\
+(effects (font (size 0 0)) (justify left bottom))\n\
+(uuid \"40000002-0000-4000-8004-000000000002\"))\n\
+(sheet_instances (path \"/\" (page \"1\")))\n\
+)";
+
+    /// The same two anchors, both at the default size, both reading `AAAA`.
+    ///
+    /// The control for the fragment above: it proves the harness reports at
+    /// all, and that the second anchor is not what silences the first.
+    const TWO_REAL_STACKED: &str = "(kicad_sch (version 20260306) (generator \"eeschema\")\n\
+(uuid \"00000000-0000-4000-8000-000000000000\") (paper \"A4\") (lib_symbols)\n\
+(text \"AAAA\" (at 100 100 0)\n\
+(effects (font (size 1.27 1.27)) (justify left bottom))\n\
+(uuid \"41000001-0000-4000-8004-100000000001\"))\n\
+(text \"AAAA\" (at 100 100 0)\n\
+(effects (font (size 1.27 1.27)) (justify left bottom))\n\
+(uuid \"41000002-0000-4000-8004-100000000002\"))\n\
+(sheet_instances (path \"/\" (page \"1\")))\n\
+)";
+
+    /// Every message this rule records about one fragment.
+    fn messages(source: &str) -> Vec<String> {
+        let doc = Doc::parse(source).expect("the fragment parses");
+        let schematic = Schematic::read(&doc).expect("the fragment reads");
+        let sheet = SheetPath("/".to_owned());
+        let drawing = Drawing::read(&doc, &schematic, &sheet);
+        let mut found = Findings::of(&TEXT_OVERLAP, &sheet);
+        TEXT_OVERLAP.examine(&drawing, &mut found);
+        found
+            .into_vec()
+            .into_iter()
+            .map(|finding| finding.message)
+            .collect()
+    }
+
+    /// A text of no size silences nothing, and reports against nothing.
+    ///
+    /// **This check exists because a falsification came back green and the
+    /// investigation said the instrument was blind, not the guard redundant.**
+    /// Removing `add`'s `twice == 0` guard left the whole suite passing,
+    /// because no committed fixture carries a zero-size font. It is reachable:
+    /// `clamp_pen_width` caps the pen at a quarter of the smaller text
+    /// dimension, so `(size 0 0)` gives a pen of nothing and a box of nothing.
+    ///
+    /// And it is not harmless. A box of no area becomes the **clip window**
+    /// for every text earlier in file order, every `side` test against an edge
+    /// of no length answers zero, and the clip keeps the whole subject — so
+    /// the earlier text's entire area is reported as shared against a smaller
+    /// box of zero. One blocking finding, on a pair that is not even near each
+    /// other: the two anchors below are 100 mm apart on both axes.
+    #[test]
+    fn a_text_of_no_size_reports_against_nothing_however_far_from_it() {
+        // The control first, so the fragment harness is known to report.
+        let stacked = messages(TWO_REAL_STACKED);
+        assert_eq!(stacked.len(), 1, "two stacked strings report: {stacked:?}");
+        assert!(stacked[0].contains("100 %"), "{}", stacked[0]);
+
+        // And the sizeless one reports nothing, at a hundred millimetres.
+        assert!(
+            messages(REAL_AND_SIZELESS).is_empty(),
+            "a text of no size is not a text: {:?}",
+            messages(REAL_AND_SIZELESS)
+        );
+
+        // The mechanism, measured rather than inferred: the sizeless box has
+        // no area, and clipping a real box by it keeps the real box whole.
+        let style = TextStyle::default();
+        let sizeless = TextStyle {
+            size: crate::geometry::Size::new(0, 0),
+            ..TextStyle::default()
+        };
+        let real = text_box("AAAA", Point::new(1_000_000, 1_000_000), Angle(0), &style);
+        let none = text_box(
+            "AAAA",
+            Point::new(2_000_000, 2_000_000),
+            Angle(0),
+            &sizeless,
+        );
+        assert_eq!(twice_area(&none.corners()), 0, "no area at all");
+        assert!(twice_area(&real.corners()) > 0);
+        assert_eq!(
+            shared_region(&real.corners(), &none.corners()).map(|region| twice_area(&region)),
+            Some(twice_area(&real.corners())),
+            "the clip by a box of no area keeps the whole subject"
+        );
+        // Which, unguarded, is a share of a smaller box of zero, and reports.
+        assert!(
+            exceeds_ratio(twice_area(&real.corners()), 0),
+            "so the comparison would fire if the box ever reached it"
+        );
     }
 }
