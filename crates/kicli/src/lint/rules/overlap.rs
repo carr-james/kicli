@@ -82,13 +82,7 @@ use crate::model::items::{Item, Uuid};
 ///
 /// A reference designator cannot hold a colon, so the separator cannot be part
 /// of either name.
-#[allow(
-    dead_code,
-    reason = "the --allow list has no caller: Rule::examine takes only a Drawing and \
-              Engine::of takes &'static dyn Rule, so no rule can hold a value a command \
-              line chose. Reported as a seam finding rather than deleted; the checks in \
-              this file's tests module are the only callers until the wiring exists."
-)]
+#[allow(dead_code, reason = "no caller yet: see SymbolBodiesOverlap::allowing")]
 const SEPARATOR: char = ':';
 
 /// One placed symbol, reduced to what this rule compares.
@@ -143,13 +137,7 @@ impl Allowed {
     /// exactly one colon. An unreadable entry is refused rather than skipped:
     /// an exemption an author believes they wrote and did not is the one
     /// failure mode of an allow list that a blocking rule cannot afford.
-    #[allow(
-        dead_code,
-        reason = "the --allow list has no caller: Rule::examine takes only a Drawing and \
-                  Engine::of takes &'static dyn Rule, so no rule can hold a value a command \
-                  line chose. Reported as a seam finding rather than deleted; the checks in \
-                  this file's tests module are the only callers until the wiring exists."
-    )]
+    #[allow(dead_code, reason = "no caller yet: see SymbolBodiesOverlap::allowing")]
     pub fn read<'a>(entries: impl IntoIterator<Item = &'a str>) -> Result<Self, &'a str> {
         let mut pairs = Vec::new();
         for entry in entries {
@@ -180,26 +168,14 @@ impl Allowed {
 
     /// The pairs the list holds, in the order they were read.
     #[must_use]
-    #[allow(
-        dead_code,
-        reason = "the --allow list has no caller: Rule::examine takes only a Drawing and \
-                  Engine::of takes &'static dyn Rule, so no rule can hold a value a command \
-                  line chose. Reported as a seam finding rather than deleted; the checks in \
-                  this file's tests module are the only callers until the wiring exists."
-    )]
+    #[allow(dead_code, reason = "no caller yet: see SymbolBodiesOverlap::allowing")]
     pub fn pairs(&self) -> &[AllowedPair] {
         &self.0
     }
 
     /// Does the list exempt nothing?
     #[must_use]
-    #[allow(
-        dead_code,
-        reason = "the --allow list has no caller: Rule::examine takes only a Drawing and \
-                  Engine::of takes &'static dyn Rule, so no rule can hold a value a command \
-                  line chose. Reported as a seam finding rather than deleted; the checks in \
-                  this file's tests module are the only callers until the wiring exists."
-    )]
+    #[allow(dead_code, reason = "no caller yet: see SymbolBodiesOverlap::allowing")]
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
@@ -231,26 +207,14 @@ impl SymbolBodiesOverlap {
     /// measured; the wiring is one edit in files this rule may not touch. See
     /// `tasks/M5/phase2-ki-ovl-001-symbol-overlap.md`.
     #[must_use]
-    #[allow(
-        dead_code,
-        reason = "the --allow list has no caller: Rule::examine takes only a Drawing and \
-                  Engine::of takes &'static dyn Rule, so no rule can hold a value a command \
-                  line chose. Reported as a seam finding rather than deleted; the checks in \
-                  this file's tests module are the only callers until the wiring exists."
-    )]
+    #[allow(dead_code, reason = "no caller yet: see SymbolBodiesOverlap::allowing")]
     pub fn allowing(allowed: Allowed) -> Self {
         Self { allowed }
     }
 
     /// The pairs this instance exempts.
     #[must_use]
-    #[allow(
-        dead_code,
-        reason = "the --allow list has no caller: Rule::examine takes only a Drawing and \
-                  Engine::of takes &'static dyn Rule, so no rule can hold a value a command \
-                  line chose. Reported as a seam finding rather than deleted; the checks in \
-                  this file's tests module are the only callers until the wiring exists."
-    )]
+    #[allow(dead_code, reason = "no caller yet: see SymbolBodiesOverlap::allowing")]
     pub fn allowed(&self) -> &Allowed {
         &self.allowed
     }

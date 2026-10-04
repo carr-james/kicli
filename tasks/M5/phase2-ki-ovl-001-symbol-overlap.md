@@ -316,7 +316,7 @@ In `crates/kicli/src/lint/rules/overlap.rs`, `mod tests` (8):
 | `an_unreadable_allow_entry_is_refused_rather_than_skipped` | six malformed entries, each refused |
 | `an_allow_entry_exempts_only_the_pair_it_names` | `examine` consults the list; a list of other pairs is not an off switch |
 
-In `crates/kicli/tests/lint_symbol_overlap.rs` (7):
+In `crates/kicli/tests/lint_symbol_overlap.rs` (8):
 
 | Check | What it holds down |
 |---|---|
@@ -325,6 +325,7 @@ In `crates/kicli/tests/lint_symbol_overlap.rs` (7):
 | `a_corner_touch_is_not_an_overlap` | the corner case through a written file |
 | `a_turned_body_is_compared_where_it_is_actually_drawn` | one rotated overlapping pair and one rotated clear pair, **each chosen so the turned and unturned boxes give opposite answers** |
 | `exactly_the_overlapping_pair_is_named` | three symbols, one pair sharing 1 IU and one pair merely meeting; **which** pair is named, that the third is not, and that the marker sits in the shared area |
+| `a_pair_that_is_not_adjacent_in_file_order_is_still_found` | the overlapping pair is the **first and the third**, so a nearest-neighbour walk misses it. **Added while designing break B7**, on the reasoning that the three-in-a-row fixture gives the same answer under `take(1)`; B7's row below is the measurement of that reasoning |
 | `power_symbols_are_not_exempt` | a power pair reported on a sheet whose `Density::symbols()` is `0` |
 | `one_overlapping_pair_fails_the_gate_whatever_the_sheet_holds` | tier, severity, zero penalty, `Saturation::NEVER` read off a real finding, and the gate failing identically at 2 and at 2,000 symbols |
 
@@ -354,6 +355,38 @@ anyway, because they are what would catch a later author who reached for
 `definition.units_for(...)` directly: with the anchors chosen as they are, the
 turned and the unturned hypothesis give **opposite** answers on both drawings,
 so such an author fails both checks rather than half of one.
+
+### No oracle check is owed, and the derivation's own provenance
+
+This rule **changes no connectivity and writes no file**: it never calls
+`Drawing::nets()`, and `tests/the_linter_holds_no_write_path` is the standing
+enforcement that it cannot write. So the oracle-check skill's trigger does not
+fire.
+
+**But the skill's second rule does apply** — *"established-from-source is not
+measured-against-the-tool"* — to the derivation
+`tests/lint_symbol_overlap.rs::slab_body()` rests on. Its two load-bearing
+facts are **already measured against KiCad**, and the citation is in the
+repository:
+
+- `crates/kicli/tests/fixtures/geometry/asymmetric.expected` states
+  `abs_pin = symbol.at + M · (lib_pin.x, -lib_pin.y)` — the library Y negation
+  and the quarter-turn matrix, composed in that order — for an **asymmetric**
+  four-pin part at all four rotations and both mirrors, with
+  `MANIFEST` provenance `kicad-cli`;
+- `crates/kicli/tests/fixture_oracles.rs::predicted_pin_positions_match_the_rule_check`
+  asserts kicli's predicted positions against **KiCad's own ERC report** on
+  that fixture and on `orientations`.
+
+**Recorded gap, not hidden.** The last step of the derivation — that a
+`rectangle` shape is negated and transformed by the *same* path a pin's `at` is
+— is read from source rather than measured: both go through
+`model::library::named_point` and `Rect::transformed`, which is one function
+each, and **`kicad-cli` exposes no body box at all**, so no oracle of this
+project's established shape can close it. The substitute is the boundary
+**sweep**: it asserts the body box is where the derivation says it is to within
+one internal unit, and a rectangle negated the other way would move the
+transition by `2 · TALL` and fail.
 
 ### Falsification table
 
