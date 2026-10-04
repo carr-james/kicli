@@ -81,3 +81,9 @@ sch/text_overlap/hidden.kicad_sch 20260306 normal yes kicad-cli
 sch/text_overlap/visible.kicad_sch 20260306 normal yes kicad-cli
 sch/text_overlap/one_pair.kicad_sch 20260306 normal yes kicad-cli
 sch/text_overlap/boundary.kicad_sch 20260306 normal yes kicad-cli
+erc/hier/hier.kicad_sch 20260306 normal yes hand
+erc/hier/matched.kicad_sch 20260306 normal yes hand
+erc/hier/mismatched.kicad_sch 20260306 normal yes hand
+erc/hier/hier.kicad_pro - json no hand
+erc/hier/hier.erc.json - oracle - kicad-cli
+erc/hier/hier.erc.txt - oracle - kicad-cli

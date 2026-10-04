@@ -1,0 +1,11 @@
+{
+  "board": {},
+  "erc": {
+    "rule_severities": {}
+  },
+  "meta": {
+    "filename": "hier.kicad_pro",
+    "version": 3
+  },
+  "schematic": {}
+}
