@@ -512,6 +512,13 @@ sha256 crates/kicli/tests/lint_wire_through_body.rs
 ```
 
 **Scope, re-measured at hand-off rather than re-read** (`git diff --stat
-25aea90..HEAD`): three files, **1,524 insertions, 0 deletions, 0 existing files
-touched**. No merge-forward happened during this lane, so no scope or state
-claim above has been across one. Working tree clean.
+25aea90..HEAD`): **three files, all new; 0 deletions; 0 existing files
+touched.** The two code files are **588 + 538 = 1,126 insertions**.
+
+*This entry's own line count is deliberately not claimed: it is the one number
+that moves every time this record is written to, and a figure that goes stale
+while being recorded is worse than no figure. The code scope above is stable and
+is the claim that matters.*
+
+No merge-forward happened during this lane, so no scope or state claim above has
+been across one. Working tree clean.
