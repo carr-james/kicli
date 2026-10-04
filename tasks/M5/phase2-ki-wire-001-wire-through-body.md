@@ -491,3 +491,26 @@ Per `CLAUDE.md`, the two skipped arms are **environment- and corpus-gated and do
 not count toward done from inside a lane worktree**; the `kicad-cli` oracle was
 run by hand, under `KICLI_TEST_KICAD_CLI=1`, to make the measurement this task
 owes, and is green.
+
+## What landed, and the anchors
+
+| | |
+|---|---|
+| base | `25aea90`, verified clean as the lane's first action |
+| `7991647` | the rule, the checks and this evidence — the **good state** every break was made against and restored to |
+| `febda2d` | the two checks break B4 asked for (`text_outside_the_body_does_not_make_a_crossing`, `a_wire_across_two_bodies_is_one_finding_that_counts_the_others`) and this section |
+| gate | `cargo xtask check` on `febda2d`: **6 pass, 0 fail**, `corpus` and `kicad-cli` skip |
+
+Content hashes of the final state, for evidence that survives a merge-forward:
+
+```
+sha256 crates/kicli/src/lint/rules/wire_body.rs
+  8dbe2ddce57bcf81c77817d4b994a6c5f87dbac2e6b4bc8d269c9ac01f4144bd
+sha256 crates/kicli/tests/lint_wire_through_body.rs
+  424c60fc6a314dcf72e3e4e4c07829ae540bd3d92d35651851a3e7e266076acc
+```
+
+**Scope, re-measured at hand-off rather than re-read** (`git diff --stat
+25aea90..HEAD`): three files, **1,524 insertions, 0 deletions, 0 existing files
+touched**. No merge-forward happened during this lane, so no scope or state
+claim above has been across one. Working tree clean.
