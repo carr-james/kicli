@@ -470,7 +470,19 @@ suite and found a tenth catcher outside both targets.
 | **B11** | `saturation`: `Saturation::NEVER` → `Saturation::of(Counted::Symbols)`. | the false, inert denominator of §3 | **1** — `one_overlapping_pair_fails_the_gate_whatever_the_sheet_holds` |
 | **B12** | `examine`: `shared.centre()` → `Point::default()` as the finding's position. | the marker moved off the overlap to the origin | **1** — `exactly_the_overlapping_pair_is_named` |
 
-**Twelve breaks, twelve caught, no green row.** The restored file's content hash was `c10701b4582cd5427b6b62141fe29a72e4775146` after **every** row, checked by `shasum` rather than inferred from `git checkout --`'s exit code.
+**Twelve breaks, twelve caught, no green row.** The restored file's content
+hash was `c10701b4582cd5427b6b62141fe29a72e4775146` after **every** row, checked
+by `shasum` rather than inferred from `git checkout --`'s exit code.
+
+**The file has moved since, and the table was re-anchored rather than left to
+rot.** The raw-string fix below changes `overlap.rs` to
+`7715747ab06d4e1f2eff20137c18af3ee475bd6c`. The edit is confined to the spelling
+of the `TWO_OVERLAPPING` fixture literal — no break in the table touches that
+constant, and the rule's own code is unchanged — so the twelve rows stand. Not
+left as an inference: **B8 and B9, the two rows whose only catchers consume that
+fixture, were re-run at `7715747a…` and returned the identical catcher lists**
+(`an_allow_entry_exempts_only_the_pair_it_names` and
+`an_allow_entry_is_two_names_and_one_colon` for B8; the first alone for B9).
 
 ### The two-target claim was short by one, and the tenth catcher was a red gate
 
