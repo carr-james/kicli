@@ -29,16 +29,45 @@ governing documents that `CLAUDE.md` forbids resolving by precedence, now with
 Plus `chore-9`, the eight-arm gate (`7918d4b`), and `chore-12`, the uuid
 collision repair (`1fef510`).
 
-### What is NOT claimed, stated before anything else
+### Gates on the merged result — RECORDED, and this closes what was owed
 
-**The corpus-included merged check has not completed on `1fef510`.** The bare
-eight-arm run exited **0** — which for `xtask check` means no arm failed — but
-**the guard closed before its summary was read**, so the `COMPLETE: all 8 arms
-passed` line and a fresh `35/35` oracle reading are **owed and unrecorded**.
-`chore-12`'s lane reported that exact line from its own worktree, and per
-`CLAUDE.md` a lane's corpus run never counts toward done. **Treat Phase 2's
-gates as UNVERIFIED on the merged result until that run is in this file.** It
-is the resume's first action.
+**Run by the orchestrator at `1fef510`, on a quiescent tree, after the record
+commit preceded it.** `cargo xtask check --corpus`:
+
+```
+=== summary ===
+  pass  fmt        cargo fmt --check
+  pass  clippy     cargo clippy --all-targets --all-features -- -D warnings
+  pass  test       cargo test
+  pass  doc        cargo doc --no-deps
+  pass  deny       cargo deny check
+  pass  corpus     cargo test --features corpus
+  pass  kicad-cli  KICLI_TEST_KICAD_CLI=1 cargo test --features corpus
+  pass  clean      git status --porcelain, before the arms and after them
+
+COMPLETE: all 8 arms passed. This was a full run.
+```
+
+And the netlist oracle, `KICLI_TEST_KICAD_CLI=1`, `--features corpus`:
+
+```
+hierarchies matched: 35/35
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+```
+
+**`0 ignored` is the zero-skip clause, measured rather than assumed.** Note the
+two self-documenting child-process helpers that appeared as `ignored` at
+checkpoint 1 do not appear here, because the oracle target does not spawn them.
+
+**This took seven attempts and the failures were all mine**, recorded in
+Budget: four killed by the orchestrator's own foreground timeouts, two reaped by
+the background runner, one starved. The run that finally completed used
+`Monitor` with an until-loop — the instrument built for exactly this — after a
+day of improvised waiters. The check was never the problem.
+
+**`COMPLETE: all 8 arms passed` is `chore-9`'s line**, built this same session
+so a summary could not overclaim. Its first real use was reporting
+`FAILED: 3 of 8 arms failed` over the uuid collision; this is its second.
 
 **`sch score` is not built**, so the milestone still has no agent-facing
 command and the dogfood gate has nothing to attempt. That is Phase 2's last
@@ -200,6 +229,8 @@ a design decision and `chore-runner.md` says *never design work*.
 | Task | Lane | What landed | Evidence | Verdict |
 |---|---|---|---|---|
 | **tier separation, and the saturating rule** (`phase1-t4-tier-separation.md`) | `lane-t4` | `lint/gate.rs` — `Counted`, `Saturation`, `Blocker`, `Gate`, `Report`. A rule declares what it counts and the share that fails the gate; `Findings::of` stamps it beside tier, severity and weight. **Twelve breaks, none left a check green.** Plus `Rule::normaliser()`, mechanism only | entry "Tick — APPROVE"; lane `c41edd4`; merge `e7d3a76` | **APPROVE** |
+| **`KI-HIER-001`, sheet pin / label mismatch** (`phase2-ki-hier-001-erc-delegation.md`) | `lane-hier` | a delegation, not a detector — and **the number is the deliverable: a detector's first line inserted, 726 of 727 checks stay green.** Its own sweep is the only instrument defending §11.1. KiCad's agreement measured both directions on a new fixture | entry `# Evidence…(lane hier)`; lane `1d56700`; merge `e06e117` | **APPROVE** |
+| **the uuid series collision** (`chore-12-uuid-series-collision.md`) | `lane-uuid` | `main`'s red repaired. Its control is the elegance: mask every uuid, refuse to write unless the rest is byte-identical — so a coordinate **cannot** have moved. **Corrected the orchestrator's brief twice** | entry "Evidence — `lane-uuid`"; lane `fe20ea9`; merge `1fef510` | **APPROVE** |
 | **`KI-GRID-001`, connectable geometry off grid** (`phase2-ki-grid-001-off-grid.md`) | `lane-a` (resumed) | six connectable classes, integer modulus, fields exempt. **Audit: 0 rows recorded, 0 confirmable, 16 newly run.** Measured that an ERC positional join is wrong for wires | entry "Resumption"; lane `93796ee`; merge `c9feb1f` | **APPROVE** |
 | **`KI-WIRE-001`, a wire crosses a symbol body** (`phase2-ki-wire-001-wire-through-body.md`) | `lane-wire` | **falsified the orchestrator's brief** — the exclusion is not needed for symmetric pins, because a wire into one clips to a point. B1 caught by 6, B2 by 2, **non-overlapping** | entry `# Evidence…(lane wire)`; lane `f5f8176`; merge `91a64d7` | **APPROVE** |
 | **ERC consumption and the 100× canary** (`phase1-t2-erc-consumption-and-canary.md`) | `lane-t2` (resumed) | the seam, the canary alive, and **a new KiCad measurement**: the text report rounds to 3 decimals against 1e-4 mm resolution. **Audit: 7 recorded, 0 confirmable, 7 reproduced, 1 added, row 7 corrected 5→8** | entry "Resumption and falsification audit"; lane `f5fa9b0`; merge `98bae84` | **APPROVE** |
@@ -829,7 +860,23 @@ the trade this project has twice recorded as the worst of the three available.
 
 **Cost of leaving it open:** every lane and every orchestrator commit carries a
 spurious-red risk, and the failure is **indistinguishable from a real `clean`
-violation** without reading what changed. Three instances in one session.
+violation** without reading what changed.
+
+**Updated at the Phase 2 close: FIVE sightings across FOUR actors.** The
+orchestrator twice (one phantom `clean` red, and two entry merge conflicts from
+tick sections written onto `main` beside live lanes), `lane-gate` which raised
+it, plus two more that arrived independently afterwards:
+
+> **WORKFLOW NOTE, `lane-wire`, verbatim:** *"Editing any tracked file while a `git commit` is running fails the gate's `clean` arm — it snapshots `git status --porcelain` before and after the arms — so the pre-commit hook makes the whole working tree read-only for the duration, and no document says so."*
+
+And `lane-txt`'s resumption found the sharper half of the same fact: **`git
+commit` IS `cargo xtask check`**, so the read-only window opens on *every*
+commit a lane makes, not only on explicit gate runs. **That makes the conflict
+unavoidable rather than merely likely**, and it is why this item moved from
+"worth a line" to BLOCKED.
+
+**Four actors, five instances, two of them in the same hour. The options and
+recommendation above are unchanged; the evidence for acting is stronger.**
 
 ### Not blocked, but adjacent and recorded here so it is not lost
 
@@ -850,9 +897,46 @@ work is owed on the extractor and is recorded in the entry's tick section.*
 
 ### 1. Score
 
-**Ticked: 4.** T4 (tier separation + saturation), the vendored snapshot,
-`chore-9` (the gate's arms), `KI-CONN-001`. **Merged: 4** — `e7d3a76`,
-`18ab930`, `7918d4b`, `387e0d2`.
+**Ticked: 10. Merged: 10. Phase 2 is COMPLETE.**
+
+T4, the vendored snapshot, `chore-9`, `KI-CONN-001`, `KI-OVL-001`,
+`KI-GRID-001`, `KI-WIRE-001`, T2, `KI-TXT-001`, `KI-HIER-001`, `chore-12` —
+with `e7d3a76`, `18ab930`, `7918d4b`, `387e0d2`, `96c8b76`, `c9feb1f`,
+`91a64d7`, `98bae84`, `7097a88`, `e06e117`, `1fef510`.
+
+**Gates on the merged result at `1fef510`: `COMPLETE: all 8 arms passed`;
+oracle `35/35`, 5 passed, `0 ignored`.** Full output at the head of this report.
+
+**Two sessions in one**, separated by a weekly limit and a 5-hour window
+ceiling. Three lanes were cut off mid-task (`lane-a`, `lane-t2`, `lane-txt`) and
+one never started (`lane-hier`, blocked on its second call). **All four were
+resumed and all four landed.** Nothing was abandoned and nothing is parked.
+
+**The resumption audits are the number worth carrying out of this stop**, and
+they are why the resumed ticks are trustworthy:
+
+| Resumed task | Rows recorded | Confirmable | Re-run | Added |
+|---|---|---|---|---|
+| `KI-GRID-001` | **0** | 0 | 16 | — |
+| T2 | 7 | **0** | 7 | 1 |
+| `KI-TXT-001` | — | — | 9 | the whole test module |
+
+**`KI-GRID-001`'s predecessor left no falsification table at all**, and the
+orchestrator's brief estimated *"roughly nine rows outstanding"* — which made a
+table of **zero** read as nearly complete. T2's seven rows were all
+unconfirmable from durable evidence, *"a property of the medium, not an
+accusation — a row's evidence is a transcript, and the transcript died with the
+context"* — and **row 7 corrected upward, 5 catchers to 8.**
+
+**Rejections: 1** — `lane-snap`, on its integrity digest. Resolved by the
+implementer and APPROVED on re-review. **Against checkpoint 1's six-of-six
+first-time APPROVE**, and the previous report's own warning applies in reverse:
+a zero is indistinguishable from a figure nobody computed, so a stop where the
+reviews found something is the more reassuring of the two.
+
+**Gate failures found after a tick: 1** — the uuid series collision, the first
+of this milestone. Full account at the head of this report. **Six rules, six
+passing lane checks, six APPROVEs, and a red `main`**, with no lane at fault.
 
 **Rejections: 1** — `lane-snap`, on its integrity digest. Resolved by the
 implementer and APPROVED on re-review. **Against checkpoint 1's six-of-six
@@ -881,8 +965,46 @@ stopped.
 
 ### 2. Verification integrity
 
-**This is the area that earned its keep, and the findings are in Findings
-above rather than summarised here.** Four items:
+**EVERY ONE OF PHASE 2'S SIX RULES FOUND SOMETHING THAT WAS NOT ITS OWN
+SUBJECT.** That is the single most useful observation of this stop, and it is
+countable rather than impressionistic:
+
+| Rule | What it found beyond itself |
+|---|---|
+| `KI-OVL-001` | **the Constitution §4 float gate has a demonstrated false negative** — `code_of` cannot lex raw strings, and a genuine `f64` passed. `chore-10` |
+| `KI-TXT-001` | a falsification row that came back **green**, hiding a **false *blocking* finding on texts 100 mm apart** — a degenerate clip window keeps the whole subject |
+| `KI-GRID-001` | an ERC **positional** join is wrong for wires — KiCad names the on-grid anchor, not the offending end. The join must be by object |
+| `KI-WIRE-001` | **falsified the orchestrator's brief**, measured: without the exclusion the rule does *not* fire on every correct schematic, because a wire into a symmetric pin clips to a point |
+| `KI-HIER-001` | **726 of 727** checks stay green when a detector is inserted |
+| T2 | KiCad's **text report rounds to three decimals** against 1e-4 mm resolution — deciding a choice §14.2 left open |
+
+**Two of those are defects in instruments rather than in code**, which is the
+class this area exists for. And the float gate is **the third
+classify-by-shape instrument defect in the record** — after
+`probe_harness_has_one_home` (defeated by a rename) and
+`the_four_way_rule_has_one_home` (defeated by any path component named `src`,
+which cost two reviewers real time this session). All three are hand-rolled
+matchers standing in for a parse.
+
+**`KI-TXT-001`'s green row is the skill's own clause executing correctly.**
+*Green is a finding about the instrument* — the lane did not record "break did
+not apply", it investigated, and the reviewer reproduced the false finding
+verbatim: `"text 40000001 and text 40000002 overlap, 0 % of the smaller"`.
+
+**And `KI-HIER-001`'s 726 of 727 is the sharpest single measurement of the
+milestone.** `spec/SPEC.md` §11.1 commits kicli to implementing **none** of
+KiCad's 47 ERC checks. Insert a detector's first line and **one** check in the
+entire repository notices. The reviewer confirmed it, then confirmed the
+sweep's presence control by pointing it at `grid.rs` — a rule that genuinely
+holds a detector — where both halves fail at 725/2.
+
+**A cross-review disagreement located a rule neither reviewer alone would
+have.** Two reviewers reached **opposite** verdicts on the same cited number
+(BLOCKED 3's *"scores 67"*); the resolution is the counted quantity's shape, and
+it is recorded in Findings. *First time in this record that reviewer
+disagreement was the instrument.*
+
+**Previously recorded in this area, and still standing** — four items:
 
 - **A fidelity control whose check was alive and whose constant was wrong.**
   Two genuine falsifications fired against a stale digest. **The discipline asks
@@ -928,8 +1050,33 @@ existence (`KI-TXT-001`'s missing lane, and `sch score` itself).
 
 ### 4. Coordination
 
-**Base verification: 4 of 4 lanes pasted it, all matched, no fast-forwards
-needed.** The manual worktree flow held. **Scope verification ran at every
+**THE DEFECT OF THIS STOP IS A COORDINATION DEFECT, AND IT IS THE
+ORCHESTRATOR'S.** The uuid series collision — full account at the head of this
+report — is the first gate failure found after a tick in this milestone, and
+**no lane could have found it**: three lanes drew in parallel from an allocation
+global across the fixture tree and written down nowhere, and a grep inside a
+lane worktree cannot see a sibling's uncommitted fixtures.
+
+**`lane-hier` told the orchestrator the cause, including that a lane cannot fix
+it**, and the orchestrator merged the two colliding lanes anyway. The narrow
+`MANIFEST` permission — *"your line and nothing else"* — exists so parallel
+lanes do not fight over a hotspot, and it also **prevents the one actor who
+notices the problem from preventing it.** That is the shape to remember: a rule
+that protects a shared file from lanes can also protect it from repair.
+
+**Three `MANIFEST` conflicts and two entry conflicts were resolved at merge**,
+all of them appends. The two entry conflicts were **self-inflicted**: tick
+sections written onto `main` while the lanes still held the files. A tick
+belongs on the lane branch or after the merge, never on `main` beside a live
+lane.
+
+**Four lanes were cut off and four were resumed successfully** — see Score. The
+resumption briefs' *audit-first* instruction is what makes those ticks
+trustworthy, and it was added only because `lane-snap`'s rejection had taught
+it hours earlier.
+
+**Base verification: 10 of 10 lanes pasted it, all matched, no fast-forwards
+needed.** The manual worktree flow held across both sessions. **Scope verification ran at every
 merge** and every lane's disclosure was complete — `lane-t4` disclosed four
 files including a hotspot, `lane-b` disclosed one, `lane-gate` and `lane-snap`
 none, and in each case the reviewer independently confirmed the disclosed set
@@ -981,8 +1128,57 @@ rule directory already generates its own registry, which is the precedent.
 
 ### 6. Budget
 
-**Four `lane-implementer` dispatches, four `tick-reviewer` dispatches, one
-re-review.** Subagent cost ranged from 48k tokens (the snapshot re-review) to
+**THE MERGED CHECK TOOK SEVEN ATTEMPTS AND ALL SIX FAILURES WERE THE
+ORCHESTRATOR'S EXECUTION, NOT THE CHECK.** Counted because it is the largest
+single waste of this stop:
+
+| Cause | Count |
+|---|---|
+| killed by the orchestrator's own foreground timeout | **4** |
+| reaped by the background runner on a long job | **2** |
+| starved under four-lane memory pressure | **1** |
+
+**The seventh used `Monitor` with an until-loop — the instrument built for
+exactly this — after a day of improvised waiters.** That is the correction, and
+it is embarrassing in the useful way: the tool was there the whole time.
+
+**The recipe the LANES worked out, which the orchestrator kept half-applying:**
+`run_in_background: true` on the **bare** command, then a **separate** waiter;
+never `(cmd &)`, `nohup` or `setsid` (all reaped, and nesting `&` makes the
+wrapper report "completed" when the inner shell returns, which is a lie); and
+**`git commit` is itself gate-triggering**, because the pre-commit hook *is*
+`cargo xtask check`. That last clause — found by `lane-txt` — explains all four
+killed commits exactly, and **no brief of the orchestrator's ever stated it.**
+
+**One self-inflicted red:** `pkill -f "cargo test"`, issued to clear a dyld
+stall, **killed the gate measuring the tree** and produced a `FAIL` that had to
+be re-run to disambiguate from a real one. `lane-hier`'s measured advice was
+narrower and was not followed: kill the stalled `target/debug/deps/` **binary**,
+never `cargo test` itself. *A `pkill` pattern broad enough to clear a stall is
+broad enough to kill the gate measuring you.*
+
+**Memory starvation was real and measured, not inferred.** A reviewer ran
+`vm_stat` (free pages in the tens of MB) and `sample` on a stuck process —
+**zero CPU time, zero page faults: starved, not slow** — and warned that killing
+one prematurely wastes the compile already in flight. `lane-hier` refined the
+diagnosis: a stalling binary is a **dyld stall before `main`** (`_dyld_start + 0`,
+96K footprint), **per-exec**, so the remedy is kill-and-retry. It also found
+that **macOS `ps` has no `etimes`**, so the obvious elapsed-time watchdog
+silently matches nothing and waits forever.
+
+**A reviewer's monitor loops outlived its own work.** One re-reported a
+completed APPROVE **eight times**; the orchestrator stopped the agent. The loops
+were a sensible response to contention, but nothing cleans them up and the
+orchestrator pays in attention.
+
+**Lane cost, the expensive end bought the most:** `KI-OVL-001` 338k tokens /
+327 tool calls; `KI-CONN-001` 289k / 132; `KI-HIER-001` 276k / 110;
+`KI-TXT-001` 265k then 186k on resumption. **The three most expensive lanes
+produced the float-gate false negative, the capability-seam finding and the
+726-of-727 measurement respectively** — the three findings most worth having.
+
+**Four `lane-implementer` dispatches in the first session, ten lanes and nine
+reviews across both.** Earlier figures: Subagent cost ranged from 48k tokens (the snapshot re-review) to
 289k (`KI-CONN-001`, 132 tool calls, 60 minutes) — **and the expensive one
 bought the session's best finding**, since refuting a lane's reasoning requires
 reproducing it.
@@ -1016,8 +1212,67 @@ exists; the verb does not. That exchange is what surfaced the sharpest planning
 finding of the stop, because answering it required noticing that **no task owned
 the command.**
 
-**Going back for a ruling:** BLOCKED 1 (above, with three options and a
-recommendation), and **seven PROPOSED items**. The two with a dated cost are
+### What goes back to James at this stop
+
+**Two BLOCKED items**, each with options and a recommendation: **BLOCKED 1**,
+the evidence-as-you-work rule against the `clean` gate — **five sightings,
+four actors**, and now unavoidable rather than likely. **BLOCKED 2**, the
+rate-limit guard's three-way deadlock with the `/goal` and the stop hook, whose
+documented override **cannot be reached by the agent it addresses**.
+
+**The PROPOSED set, gathered. The first is the one worth his attention:**
+
+1. **The "applied, needs no ruling" resolution class should probably not
+   survive.** **Four** rules were promoted into `orchestrator.md` at checkpoint 1
+   and **the orchestrator broke all four within hours** — the satisfiability
+   rule (by the very next brief written), the per-dispatch scratchpad (asserted
+   in three briefs, created in none), the quiescent-tree rule (twice), and the
+   `cd` prohibition (while resolving a merge conflict). **A rule in a definition
+   binds when the definition is re-read, and nothing re-reads it per action.**
+   An "applied" item leaves the record saying done with nothing that fails if it
+   is not; a ruling-tracked item at least gets re-read at the next stop.
+2. **A falsification pair proves the instrument alive, not the constant
+   correct.** `lane-snap`'s rejection, and `lane-txt`'s green row, are the two
+   worked examples. Where a check compares against a recorded constant, the
+   constant is re-derived in the same run that records it, with the producing
+   command pasted — **and the hash algorithm named**, since one lane's unlabelled
+   digests read as a moved tree under the wrong command.
+3. **A review dispatch quotes only the entry and the diff.** The orchestrator
+   passed an implementer's final-message claim into a review as though it were in
+   the record, and later injected a correction that applied to a *different*
+   task. Both cost reviewers work.
+4. **A lane hitting `guard_rate_limit.py` has exactly one correct move** —
+   stop, report, do not override — **and nothing says so.** The guard's
+   wind-down assumes a cron step and a user, which a lane has neither of.
+5. **The orchestrator checks the remaining window before dispatching a lane
+   whose deliverables are all build-and-test.** `lane-hier` was dispatched into
+   a 90 %-used window and spent its dispatch on two blocked calls.
+6. **A brief that permits a new fixture names the `MANIFEST` line as part of
+   that permission** — and the uuid **series** allocation needs a home. Third
+   sighting of the enumeration-undercounts pattern.
+7. **`geometry/` owes ONE consolidated convex clipper, not three moves.**
+   `KI-TXT-001` established that its oriented-box clipper **subsumes**
+   `KI-OVL-001`'s rect/rect intersection and `KI-WIRE-001`'s segment/box clip.
+   **The property that must survive the move: `shared_region` returns `None`
+   rather than rounding when a clipped corner is not a whole IU.** Also owed: the
+   per-kind text anchor offset (**global label x +14 288 IU**, a third of the
+   box's own width, **shared with the already-merged router**) and
+   `pin_text_boxes` being private, so per-pin text is never compared.
+8. **The `MANIFEST` header's series number is enforced by nothing** —
+   `read_manifest` skips comments — and the header says so in its own text. The
+   enforcing test is filed.
+9. **A brief that names a file IN scope *for a specific edit* should say what
+   happens when the edit proves unnecessary.** `chore-12` was told to update
+   handle strings in a file that contains none; a less careful lane could have
+   invented an edit to comply.
+
+**Three filed and undispatched:** `chore-10` (the §4 float gate's false
+negative), `chore-11` (ERC partial overlap has no mechanism — **this one gates
+`sch score`, because it decides what `--gate` prints**), and
+`phase2-sch-score-command-surface.md`, Phase 2's last task and **the one that
+makes this demoable**.
+
+**Earlier in this area:** BLOCKED 1 and seven PROPOSED items. The two with a dated cost are
 PROPOSED 1 (the stale-constant hole, which affects every golden and digest in
 the repository) and the **opt-in corpus arm**, whose deviation from its own
 recorded recommendation is flagged in `chore-9`'s entry and is James's trade to
