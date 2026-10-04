@@ -76,3 +76,9 @@ erc/precision/precision.kicad_sch 20260306 normal yes hand
 erc/precision/precision.kicad_pro - json no hand
 erc/precision/precision.erc.json - oracle - kicad-cli
 erc/precision/precision.erc.txt - oracle - kicad-cli
+erc/hier/hier.kicad_sch 20260306 normal yes hand
+erc/hier/matched.kicad_sch 20260306 normal yes hand
+erc/hier/mismatched.kicad_sch 20260306 normal yes hand
+erc/hier/hier.kicad_pro - json no hand
+erc/hier/hier.erc.json - oracle - kicad-cli
+erc/hier/hier.erc.txt - oracle - kicad-cli

@@ -1,0 +1,139 @@
+{
+    "$schema": "https://schemas.kicad.org/erc.v1.json",
+    "coordinate_units": "mm",
+    "date": "2026-10-04T13:23:07",
+    "ignored_checks": [
+        {
+            "description": "Global label only appears once in the schematic",
+            "key": "single_global_label"
+        },
+        {
+            "description": "Four connection points are joined together",
+            "key": "four_way_junction"
+        },
+        {
+            "description": "SPICE model issue",
+            "key": "simulation_model_issue"
+        },
+        {
+            "description": "Assigned footprint doesn't match footprint filters",
+            "key": "footprint_filter"
+        }
+    ],
+    "included_severities": [
+        "error",
+        "warning",
+        "exclusion"
+    ],
+    "kicad_version": "10.0.5",
+    "sheets": [
+        {
+            "path": "/",
+            "uuid_path": "/33000001-0000-4000-8000-000000000001",
+            "violations": [
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Hierarchical Sheet Pin 'READY'",
+                            "pos": {
+                                "x": 0.508,
+                                "y": 0.3175
+                            },
+                            "uuid": "33000003-0000-4000-8000-000000000001"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Sheet pin BUSY has no matching hierarchical label inside the sheet",
+                    "items": [
+                        {
+                            "description": "Hierarchical Sheet Pin 'BUSY'",
+                            "pos": {
+                                "x": 1.016,
+                                "y": 0.3175
+                            },
+                            "uuid": "33000005-0000-4000-8000-000000000001"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "hier_label_mismatch"
+                },
+                {
+                    "description": "Pin not connected",
+                    "items": [
+                        {
+                            "description": "Hierarchical Sheet Pin 'BUSY'",
+                            "pos": {
+                                "x": 1.016,
+                                "y": 0.3175
+                            },
+                            "uuid": "33000005-0000-4000-8000-000000000001"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "pin_not_connected"
+                },
+                {
+                    "description": "Label not connected",
+                    "items": [
+                        {
+                            "description": "Hierarchical Label 'READY'",
+                            "pos": {
+                                "x": 0.508,
+                                "y": 0.508
+                            },
+                            "uuid": "33000011-0000-4000-8000-000000000001"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "label_dangling"
+                },
+                {
+                    "description": "Label not connected",
+                    "items": [
+                        {
+                            "description": "Hierarchical Label 'WRONG'",
+                            "pos": {
+                                "x": 0.508,
+                                "y": 0.508
+                            },
+                            "uuid": "33000021-0000-4000-8000-000000000001"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "label_dangling"
+                }
+            ]
+        },
+        {
+            "path": "/matched/",
+            "uuid_path": "/33000001-0000-4000-8000-000000000001/33000002-0000-4000-8000-000000000001",
+            "violations": []
+        },
+        {
+            "path": "/mismatched/",
+            "uuid_path": "/33000001-0000-4000-8000-000000000001/33000004-0000-4000-8000-000000000001",
+            "violations": [
+                {
+                    "description": "Hierarchical label WRONG has no matching sheet pin in the parent sheet",
+                    "items": [
+                        {
+                            "description": "Hierarchical Label 'WRONG'",
+                            "pos": {
+                                "x": 0.508,
+                                "y": 0.508
+                            },
+                            "uuid": "33000021-0000-4000-8000-000000000001"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "hier_label_mismatch"
+                }
+            ]
+        }
+    ],
+    "source": "hier.kicad_sch"
+}
