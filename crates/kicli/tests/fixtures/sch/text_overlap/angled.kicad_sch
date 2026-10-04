@@ -2,7 +2,7 @@
 	(version 20260306)
 	(generator "eeschema")
 	(generator_version "10.0")
-	(uuid "30000001-0000-4000-8000-300000000001")
+	(uuid "35000001-0000-4000-8000-350000000001")
 	(paper "A4")
 	(lib_symbols)
 	(label "HHHHHHHHHH"
@@ -13,7 +13,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "30000002-0000-4000-8000-300000000002")
+		(uuid "35000002-0000-4000-8000-350000000002")
 	)
 	(label "HHHHHHHHHH"
 		(at 95.25 99.06 90)
@@ -23,7 +23,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "30000003-0000-4000-8000-300000000003")
+		(uuid "35000003-0000-4000-8000-350000000003")
 	)
 	(sheet_instances
 		(path "/"

@@ -2,7 +2,7 @@
 	(version 20260306)
 	(generator "eeschema")
 	(generator_version "10.0")
-	(uuid "34000001-0000-4000-8000-340000000001")
+	(uuid "39000001-0000-4000-8000-390000000001")
 	(paper "A4")
 	(lib_symbols)
 	(text "OVERLAPME"
@@ -14,7 +14,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "34000002-0000-4000-8000-340000000002")
+		(uuid "39000002-0000-4000-8000-390000000002")
 	)
 	(text "VERLAPMEO"
 		(exclude_from_sim no)
@@ -25,7 +25,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "34000003-0000-4000-8000-340000000003")
+		(uuid "39000003-0000-4000-8000-390000000003")
 	)
 	(sheet_instances
 		(path "/"

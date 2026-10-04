@@ -2,7 +2,7 @@
 	(version 20260306)
 	(generator "eeschema")
 	(generator_version "10.0")
-	(uuid "32000001-0000-4000-8000-320000000001")
+	(uuid "37000001-0000-4000-8000-370000000001")
 	(paper "A4")
 	(lib_symbols
 		(symbol "Test:SLAB"
@@ -93,7 +93,7 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "32000002-0000-4000-8000-320000000002")
+		(uuid "37000002-0000-4000-8000-370000000002")
 		(property "Reference" "R1"
 			(at 100 100 0)
 			(show_name no)
@@ -147,7 +147,7 @@
 		)
 		(instances
 			(project ""
-				(path "/32000001-0000-4000-8000-320000000001"
+				(path "/37000001-0000-4000-8000-370000000001"
 					(reference "R1")
 					(unit 1)
 				)
@@ -164,7 +164,7 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "32000003-0000-4000-8000-320000000003")
+		(uuid "37000003-0000-4000-8000-370000000003")
 		(property "Reference" "R2"
 			(at 100 100 0)
 			(show_name no)
@@ -218,7 +218,7 @@
 		)
 		(instances
 			(project ""
-				(path "/32000001-0000-4000-8000-320000000001"
+				(path "/37000001-0000-4000-8000-370000000001"
 					(reference "R2")
 					(unit 1)
 				)

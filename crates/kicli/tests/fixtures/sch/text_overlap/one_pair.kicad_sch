@@ -2,7 +2,7 @@
 	(version 20260306)
 	(generator "eeschema")
 	(generator_version "10.0")
-	(uuid "33000001-0000-4000-8000-330000000001")
+	(uuid "38000001-0000-4000-8000-380000000001")
 	(paper "A4")
 	(lib_symbols)
 	(text "OVERLAPME"
@@ -14,7 +14,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "33000002-0000-4000-8000-330000000002")
+		(uuid "38000002-0000-4000-8000-380000000002")
 	)
 	(text "VERLAPMEO"
 		(exclude_from_sim no)
@@ -25,7 +25,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "33000003-0000-4000-8000-330000000003")
+		(uuid "38000003-0000-4000-8000-380000000003")
 	)
 	(text "ERLAPMEOV"
 		(exclude_from_sim no)
@@ -36,7 +36,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "33000004-0000-4000-8000-330000000004")
+		(uuid "38000004-0000-4000-8000-380000000004")
 	)
 	(text "RLAPMEOVE"
 		(exclude_from_sim no)
@@ -47,7 +47,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "33000005-0000-4000-8000-330000000005")
+		(uuid "38000005-0000-4000-8000-380000000005")
 	)
 	(text "LAPMEOVER"
 		(exclude_from_sim no)
@@ -58,7 +58,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "33000006-0000-4000-8000-330000000006")
+		(uuid "38000006-0000-4000-8000-380000000006")
 	)
 	(sheet_instances
 		(path "/"
