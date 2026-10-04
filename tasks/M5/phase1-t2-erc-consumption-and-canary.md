@@ -490,3 +490,313 @@ stop it being one number compared with itself.
 
 **No row came back green.** The skill's "green is a finding" case did not arise,
 so no instrument needed investigating.
+
+---
+
+# Resumption and falsification audit (lane t2b)
+
+The first implementer of this task was **cut off by a usage limit** immediately
+after reporting that the six gates passed and that the **named completion checks
+were still to be run.** Everything above this line is that implementer's record.
+This section is a second lane's, and it exists because the gap was precisely the
+part that turns the record into evidence.
+
+**Base: `ea9d96d`, worktree clean at first action.** Verified with
+`git log --oneline -1` and `git status --porcelain` before anything else; no
+fast-forward was needed. `ea9d96d` is the orchestrator's forward-merge of `main`
+into this branch (parents `eafd946`, the lane's own commit, and `25aea90` on
+`main`), so the base above — `18ab930` — is the **older** base this entry's
+earlier half was measured against. Where a number moved because of that, it is
+corrected below rather than over.
+
+## Scope
+
+Nothing was written outside this file. The five files the falsification sweep
+breaks were restored by `git checkout --` after every row and verified by
+content hash; the tree is clean and all five hashes match the good state
+recorded above.
+
+## The audit, and why it was run rather than read
+
+`CLAUDE.md`: *"any line adopted from a draft passes the falsification
+discipline as if newly written."* The predecessor's table claims seven rows. The
+question the audit had to answer is not whether the table is plausible — it is
+unusually detailed and it turned out to be honest — but **which of its rows
+left evidence that they were run.**
+
+**The answer was none of them, and that is a property of the medium rather than
+an accusation.** A falsification row's evidence is a transcript: a break
+applied, a suite run, the failures named. The transcript died with the context.
+What *did* survive is the five good-state content hashes, and all five match —
+which proves the files are in the state the table says it restored them to, and
+proves nothing about whether any break was ever applied.
+
+**So every row was re-run.** Counts: **7 recorded / 0 confirmable from durable
+evidence / 7 re-run and reproduced / 1 added.**
+
+**Two corrections to the recorded hashes, neither a defect.** They are plain
+`shasum -a 1` digests, **not** `git hash-object` blob hashes — a reader who
+reaches for the git form gets five mismatches and concludes the tree has moved.
+Recorded because that reader was me. The hashes themselves are correct and
+intact across the forward-merge.
+
+### The control's denominator moved with the base
+
+| | entry above (`18ab930`) | measured here (`ea9d96d`) |
+|---|---|---|
+| test targets | 86 | **87** |
+| checks, unbroken | 656 | **667** |
+| failures | 0 | **0** |
+
+`cargo test -p kicli --no-fail-fast`. The eleven extra checks and one extra
+target arrived with `KI-CONN-001` on `main`. **The earlier number was right when
+it was written**; it is superseded rather than wrong, and this is the denominator
+the rows below are counted against.
+
+### Every row, re-run
+
+Method as before: break in the source or the fixture, whole `kicli` suite with
+`--no-fail-fast`, `git checkout --` to restore, **restoration verified by
+content hash and not by an exit code**. Integrity of the sweep itself: every one
+of the nine runs reached all **87** targets, and `ok + FAILED` sums to **667** in
+every row — so no row's count is short because a target silently failed to run.
+
+| # | What was broken | entry claimed | **measured here** |
+|---|---|---|---|
+| 1 | `JSON_UNITS_PER_MM` 1e6 → 1e4: the correction removed | 11 | **11** |
+| 2 | `JSON_UNITS_PER_MM` 1e6 → 1e8: **§14.2's named failure**, the correction applied twice | 12 | **12** |
+| 3 | `covers` loses its `self.ran &&` term: "nobody ran it" folded into "KiCad has it covered" | 4 | **4** |
+| 4 | `delegate` records each violation twice: the double count itself | 1 | **1** |
+| 5 | `rule_check` swallows a runner error and answers `NOT_RUN`, so an unusable binary stops being exit 6 | 1 | **1** |
+| 6 | `described_by_the_text_report` made a no-op, so the JSON's scale-corrupted descriptions survive | 1 | **1** |
+| 7 | a committed report goes stale: `canary.erc.json` `"x": 0.254` → `0.255`, run under `KICLI_TEST_KICAD_CLI=1` | 5 | **8** |
+| 8 | **NEW — the canary fed a correctly-scaled report**, every committed JSON coordinate shifted two decimal places | — | **7** |
+
+Rows 1–6 reproduce the claimed catcher counts **exactly**, and the catcher
+*names* match the entry's lists item for item.
+
+**Row 7's count is corrected upward, 5 → 8.** The three the entry did not name
+are `a_correctly_scaled_report_is_not_read_as_the_bug`,
+`the_gateway_reads_both_reports_of_one_run` and
+`the_project_severities_are_read_and_never_written`. The row understated its own
+instrument, which is the harmless direction, and the check that matters still
+fired: `the_committed_reports_are_current` printed `measured against kicad-cli
+10.0.5`, regenerated both reports from the real binary, and reported the single
+changed coordinate against the committed bytes.
+
+**Rows 4, 5 and 6 are confirmed as single points of detection**, exactly as the
+entry recorded rather than glossed. That is worth re-stating after an
+independent measurement: nothing else in 667 checks goes red for any of the
+three.
+
+**No row came back green**, so the skill's "green is a finding" case did not
+arise in this sweep either.
+
+### Row 8, and why the task needed it
+
+§14.2 requirement 2 asks for a canary that *"fails loudly"* when upstream fixes
+the bug. The suite already contains
+`erc_canary::a_correctly_scaled_report_is_not_read_as_the_bug`, which builds
+that day's report and asserts the equality fails — the permanent, stronger form.
+**What it does not do is show the canary itself going red**, and a canary never
+seen red is a canary nobody has checked is alive. So the committed fixture was
+replaced with a correctly-scaled one and the suite run against it.
+
+The canary's own arm failed, and it named the object:
+
+```
+---- the_rule_check_json_reports_coordinates_a_hundred_times_small stdout ----
+panicked at crates/kicli/tests/erc_canary.rs:170:13:
+assertion `left == right` failed: erc/canary/canary: the JSON coordinate times
+  a hundred is the text coordinate (Symbol R1 Pin 1 [Passive, Line])
+  left: Point { x: Iu(25400000), y: Iu(21590000) }
+ right: Point { x: Iu(254000), y: Iu(215900) }
+```
+
+`25400000` against `254000` **is §14.2's double-application, caught, with the
+drawing's own object named** — the coordinate wrong by 10,000× that this whole
+task exists to make impossible.
+
+And the run-time half refused rather than correcting, which is the part a test
+alone could not have shown:
+
+```
+Failed { command: "kicad-cli sch erc", message: "KiCad's JSON rule-check report
+  no longer reports schematic coordinates a hundred times too small, so the
+  correction kicli applies to them is now wrong. Remove it rather than doubling
+  it: see eeschema/erc/erc_report.cpp:161 against :63, and spec/SPEC.md §14.2." }
+```
+
+So §14.2's instruction — *removed, never double-applied* — is what the tool
+actually says, to the person running the fixed KiCad, naming the upstream line.
+
+## The named completion checks, which is what was missing
+
+All run here, at base `ea9d96d`.
+
+| command | result |
+|---|---|
+| `cargo xtask check` | **6 passed, 0 failed, 2 skipped** — `INCOMPLETE: 2 of 8 arms did not run`, exit 0. The two are `corpus` and `kicad-cli`, opt-in behind `--corpus`. |
+| `cargo test -p kicli --test command_kicad_gateway` | **6 passed, 0 failed** |
+| `cargo test -p kicli --test erc_canary` | **7 passed, 0 failed** — the canary, by name |
+| `cargo test -p kicli --test command_erc_gateway` | **6 passed, 0 failed** |
+
+`command_kicad_gateway` is the **pre-existing** target from M2 T16 and this task
+does not touch it; it is named in the completion check because T2's changes must
+leave the gateway's discovery, version and §6.2 translation checks standing, and
+they do. The canary itself lives in `erc_canary`, and `command_erc_gateway` is
+T2's own gateway file.
+
+## Independent measurements, made by eye on KiCad's committed bytes
+
+The entry's two central factual claims were re-measured directly from the
+fixtures rather than through the code that consumes them, because a measurement
+read back through the thing it justifies is no measurement.
+
+**The 100× coordinate bug**, `erc/canary`:
+
+| | text report | JSON |
+|---|---|---|
+| R1 pin 1 | `@(25.40 mm, 21.59 mm)` | `"x": 0.254, "y": 0.2159` |
+| wire | `@(63.50 mm, 50.80 mm)` | `"x": 0.635, "y": 0.508` |
+
+**The description half of the bug**, which `research/geometry.md` §3.5 does not
+record — same run, same wire: the text report says `Horizontal Wire, length
+12.70 mm` and the JSON says `length 0.1270 mm`. Confirmed.
+
+**The text report's three-decimal rounding**, `erc/precision`: the schematic
+holds `(at 25.4321 25.4 0)`, the text report writes `@(25.432 mm, …)`, the JSON
+writes `"x": 0.254321`. The fourth decimal is in the JSON and not in the text
+report. **That settles §14.2's open choice on the numbers and not only on the
+identifiers**, and it is the reason `erc/precision` is excluded from the exact
+arm.
+
+**The fixtures' own counts**, read with `json.load` and not through `kicli`:
+`erc/canary` carries **11 violations over 6 check types and 13 items**, and its
+`ignored_checks` are `simulation_model_issue`, `lib_symbol_issues`,
+`footprint_filter` — so `four_way_junction` and `single_global_label` are
+covered. `erc/precision`, at KiCad's defaults, ignores **`single_global_label`
+and `four_way_junction`**, which is §11.1's own sentence as KiCad's output: an
+untouched project silently passes. It also carries `endpoint_off_grid`, which is
+`KI-GRID-001`'s delegation target.
+
+## §14.2's four requirements, each checked
+
+1. **JSON coordinates never consumed as-is** — `corrected` is the only path
+   from a JSON number to an `Iu`, and `read_item` is its only caller.
+2. **The canary** — `erc_canary`, on committed fixtures, exact over 46
+   coordinates, and shown failing in row 8 above.
+3. **The correction site names `erc_report.cpp:161`** — `kicad::erc::corrected`'s
+   rustdoc, naming `:161` against `:63` and `include/base_units.h:72,111-114`.
+   The run-time refusal message names it too, so it reaches a user and not only
+   a reader of source.
+4. **No upstream bug report is filed** — verified: no URL, issue reference or
+   filing appears anywhere in this lane's diff, and the repo's only mention of
+   the idea is `research/geometry.md:519`, *"Q4 — Upstream bug report. Shall
+   I…"*, still an open question. Nothing was filed by this lane.
+
+## The orchestrator's `drawing.rs` conflict resolution: verified, not trusted
+
+The forward-merge conflicted in `crates/kicli/src/lint/drawing.rs`, where this
+lane had added `rule_check: Option<&'a RuleCheck>` and `KI-CONN-001` had added
+`nets: Option<&'a Nets>`. **The resolution is correct and loses nothing**, shown
+by diffing the merge against each parent rather than by reading it:
+
+- against `eafd946` (this lane) the merged file adds **only** `Nets`,
+  `with_nets` and `nets()` — `main`'s side, whole;
+- against `25aea90` (`main`) it adds **only** `RuleCheck`, `with_rule_check` and
+  `rule_check()` — this lane's side, whole.
+
+The two additions are disjoint and no line of either side was dropped or
+altered. One asymmetry survives the merge and is **deliberate on both sides,
+not an artefact**: `rule_check()` returns `&'a RuleCheck` and falls back to a
+static `NOT_RUN`, while `nets()` returns `Option<&'a Nets>`. A missing rule
+check has a meaningful value a rule must act on — nobody asked KiCad, so look
+yourself. A missing net partition has no safe default, so the rule must handle
+`None`. Both are documented at their own accessor.
+
+**No further change was made to `drawing.rs`**, per the brief's hotspot note.
+
+## The dependency direction at the seam, measured
+
+`lint` contains **no** code reference to `crate::kicad` — the only mentions are
+two intra-doc links in rustdoc. The single code edge is one-way:
+`crates/kicli/src/kicad/erc.rs:56`, `use crate::lint::erc::{Item, KicadSeverity,
+RuleCheck, Violation}`.
+
+So `kicad` depends on `lint` and not the reverse. **That is the direction
+dependency inversion wants** — the policy module owns the data shape, the module
+that talks to a process maps into it — and it is why `lint` can be tested
+without a KiCad install. `ENGINEERING.md`'s Structure section names the
+`lint`/`render`/`cli` → `kicad` direction and does not name this edge;
+**PROPOSED:** add `kicad` → `lint::erc` to that list as the ERC seam's declared
+direction, one line, at whatever task next edits `ENGINEERING.md`. Recommendation:
+do it, because an undeclared edge is the one a later reader reverses.
+
+## What the waiting Phase 2 lanes get, and the one gap
+
+The seam is unchanged from the section above and is restated there in the form a
+rule author copies. Two additions a rule author needs:
+
+- **`KI-GRID-001`** has a committed fixture: `erc/precision` reports
+  `endpoint_off_grid`, measured above.
+- **`KI-HIER-001` has none.** `hier_label_mismatch` appears in **no** committed
+  report in this repository, measured with `grep -rl` over
+  `crates/kicli/tests/fixtures/`. The delegation is still testable without
+  KiCad, because `RuleCheck::ran` and every field of `Violation` and `Item` are
+  public, so the lane can construct the reading as data. **But an end-to-end
+  check over KiCad's own bytes would need a new fixture** — a hierarchy whose
+  sheet pin and hierarchical label disagree — and that is a fixture plus a
+  `MANIFEST` line in that lane's scope, not a gap in this seam. Recorded here at
+  the moment it was identified rather than when it bites.
+
+## Which checks ran here, and which wait on the merged run
+
+`kicad-cli` on this machine is **10.0.5**, at both `/opt/homebrew/bin/kicad-cli`
+and `/Applications/KiCad/KiCad.app/Contents/MacOS/kicad-cli`, each confirmed
+with `--version`.
+
+**Ran in the lane, counting toward done** — no KiCad needed: `cargo xtask check`
+(6 of 8 arms), the three named test targets, and the nine-run falsification
+sweep.
+
+**Ran in the lane to MAKE a measurement, counting toward no tick**:
+`erc_canary::the_committed_reports_are_current` under `KICLI_TEST_KICAD_CLI=1`.
+It printed `measured against kicad-cli 10.0.5` and passed in 2.47 s against
+0.00 s unarmed — the difference being the two real `kicad-cli` runs. **Result:
+both committed reports are byte-identical, dates aside, to what `kicad-cli`
+10.0.5 writes today.** Row 7 shows the same check capable of failing.
+
+**Waiting on the orchestrator's merged run**: that check, and `cargo xtask
+check --corpus` in the main checkout. `CLAUDE.md`: an environment-gated green
+inside a lane worktree counts toward no tick, and this entry does not claim one.
+
+## One environment artefact, recorded so it is not mistaken for a result
+
+During the sweep, freshly linked test binaries in this worktree repeatedly
+**stalled at 0 % CPU for minutes** while three other lanes ran `cargo test`
+concurrently — a macOS execution stall, not a slow test. One,
+`the_router_iterates_no_hash_map`, was killed by hand after 9 minutes so row 5
+could continue; a watchdog was then armed to kill any binary idle past 120 s and
+**recorded no further kills**.
+
+**It cannot have inflated a catcher count.** A killed target is reported by cargo
+as a *target* failure (`signal: 9`), never as `test X ... FAILED`, and every
+count above is a grep for the latter. The arithmetic shows it: row 5 is the only
+run whose `ok + FAILED` is 665 rather than 667, and the two missing checks are
+exactly the two in the target that was killed — neither of which reads anything
+under `kicad` or `lint`.
+
+## What the merge hotspots owe
+
+The earlier section's list stands and is not repeated. Two items to add:
+
+- **`ENGINEERING.md`** — the `kicad` → `lint::erc` edge, PROPOSED above.
+- **`crates/kicli/tests/view_budgets.rs`** — `cargo xtask check`'s `test` arm
+  prints `function connectivity_ceiling is never used` and `function
+  layout_ceiling is never used` from that target. **Pre-existing on `main` and
+  not this lane's**: the functions are used only under the `corpus` feature, and
+  `clippy --all-features` therefore sees them used while `cargo test` without
+  the feature does not. The gate passes because only the clippy arm denies
+  warnings. Recorded because a reader of this lane's gate output will see two
+  warnings and wonder whose they are.
